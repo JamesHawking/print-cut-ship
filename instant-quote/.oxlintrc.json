@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error"
+  },
+  "plugins": ["typescript", "react", "import"],
+  "ignorePatterns": [
+    "src/routeTree.gen.ts",
+    "src/components/ui/**",
+    ".output/**",
+    ".nitro/**",
+    ".tanstack/**",
+    "dist/**"
+  ],
+  "rules": {
+    "no-console": "off",
+    "react/react-in-jsx-scope": "off"
+  }
+}

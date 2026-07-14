@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.output/
+.vinxi/
+.tanstack/
+.nitro/
+
+# Env
+.env
+.env.local
+
+# Office lockfiles
+~$*
+
+# Editor / OS
+.DS_Store
+*.log
+
+# Local tooling state
+.claude/
+.tokensave/
