@@ -13,14 +13,14 @@ export const strings = {
     kicker: 'On-demand 3D printing · EU',
     headline: 'Upload a part, get a price. Right now.',
     sub: 'The fastest, most transparent way to price a 3D-printed part in the EU — a full cost breakdown and a real ship date, with no account and no waiting.',
-    trust: 'Made in the EU. Ships D+1/D+2 to Germany. No account needed.',
+    trust: 'Made in the EU · Ships D+1/D+2 to Germany · No account',
     privacy: 'Private — files never leave your session unless you order',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
       'FDM materials',
       'mm build volume',
       'business-day lead',
-      'incl. 23% VAT',
+      'VAT included · PLN',
     ],
   },
   process: {
@@ -48,8 +48,12 @@ export const strings = {
     kicker: 'Materials',
     heading: 'Seven FDM materials, prototype to end-use.',
     sub: 'From cheap PLA to carbon-filled nylon and self-lubricating Igus grades — pick what the part needs.',
+    material: 'Material',
+    application: 'Application',
     density: 'Density',
     from: 'From',
+    footnote:
+      'Rates are gross, incl. 23% PL VAT · final price is computed from your geometry',
   },
   materials: {
     pla: {
@@ -102,6 +106,10 @@ export const strings = {
     multiHint: 'Add up to 5 parts',
     dragActive: 'Release to upload',
     parsing: 'Reading geometry…',
+    intake: 'File intake',
+    intakeArmed: 'File intake — armed',
+    formats: 'STL · 3MF · OBJ · STEP — up to 100 MB',
+    maxSize: 'Max 320 × 320 × 320 mm',
   },
   quote: {
     parsingTitle: 'Measuring your part…',

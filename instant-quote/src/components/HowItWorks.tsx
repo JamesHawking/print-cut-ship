@@ -4,7 +4,7 @@ export function HowItWorks() {
   const { kicker, heading, steps } = strings.process
   return (
     <section className="border-t">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:py-28">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
         <p className="text-muted-foreground font-mono text-xs tracking-[0.2em] uppercase">
           {kicker}
         </p>
@@ -15,7 +15,7 @@ export function HowItWorks() {
           {steps.map((step) => (
             <li key={step.n} className="bg-card p-6 sm:p-8">
               <div className="flex items-center gap-3">
-                <span className="text-primary font-mono text-sm font-bold tabular-nums">
+                <span className="text-primary-text font-mono text-sm font-bold tabular-nums">
                   {step.n}
                 </span>
                 <span className="bg-border h-px flex-1" />

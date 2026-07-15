@@ -6,10 +6,10 @@ import { DropZone } from './DropZone'
 // Capability figures pulled straight from the pricing config, zipped with the
 // labels in strings.hero.specs (same order).
 const SPEC_VALUES = [
-  String(PROCESS_IDS.length),
+  String(PROCESS_IDS.length).padStart(2, '0'),
   `${PRICING.processes.pla.build.x}³`,
   `${PRICING.leadTimes.express.businessDays}–${PRICING.leadTimes.economy.businessDays}`,
-  'PLN',
+  `${Math.round(PRICING.vatRate * 100)}%`,
 ]
 
 // The three line stages, positioned over their machine in the hero figure.
@@ -58,6 +58,9 @@ export function Hero({ onFiles }: { onFiles: (files: File[]) => void }) {
             </h1>
             <p className="text-muted-foreground mt-6 max-w-xl text-lg text-pretty">
               {strings.hero.sub}
+            </p>
+            <p className="text-muted-foreground mt-7 font-mono text-[0.65rem] tracking-wider uppercase">
+              {strings.hero.trust}
             </p>
           </div>
 

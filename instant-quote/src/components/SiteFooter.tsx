@@ -14,9 +14,9 @@ export function SiteFooter() {
           </div>
           <a
             href="#top"
-            className="bg-primary text-primary-foreground inline-flex shrink-0 items-center gap-2 rounded-md px-6 py-3 text-sm font-bold transition-transform hover:-translate-y-px"
+            className="bg-primary text-primary-foreground hover:shadow-primary/40 inline-flex shrink-0 items-center gap-2 rounded-md px-7 py-3.5 text-sm font-bold transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-lg"
           >
-            {ctaButton}
+            {ctaButton} ↑
           </a>
         </div>
 

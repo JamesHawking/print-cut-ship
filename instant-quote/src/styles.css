@@ -24,6 +24,11 @@
   /* Primary — TE hot orange, with black ink on top */
   --primary: oklch(0.685 0.202 42);
   --primary-foreground: oklch(0.185 0.004 250);
+  /* Darkened orange for orange-as-TEXT on paper (live price, step numbers,
+     link hover) — the fill orange fails AA at small text sizes. */
+  --primary-text: oklch(0.56 0.19 42);
+  /* Opaque orange tint for the drag-over intake field — covers idle content. */
+  --primary-tint: oklch(0.978 0.02 42);
 
   --secondary: oklch(0.925 0.003 250); /* panel aluminum */
   --secondary-foreground: oklch(0.205 0.004 250);
@@ -74,6 +79,10 @@
 
   --primary: oklch(0.685 0.202 42);
   --primary-foreground: oklch(0.16 0.003 250);
+  /* On the near-black field the fill orange already reads as text; a touch
+     brighter for headroom. Tint becomes a dim orange-washed panel. */
+  --primary-text: oklch(0.75 0.18 42);
+  --primary-tint: oklch(0.26 0.04 42);
 
   --secondary: oklch(0.27 0.004 250);
   --secondary-foreground: oklch(0.96 0.002 250);
@@ -120,6 +129,8 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
+  --color-primary-tint: var(--primary-tint);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
