@@ -19,16 +19,20 @@ runner. There is no npm/yarn step anywhere in this project.
 
 ## Getting started
 
-Two processes: the Go API and the frontend dev server. The dev server
-proxies `/api` to `localhost:8080` (override with `API_PROXY`).
+Two processes: the Go API (`:8080`, needs Go 1.26+) and the frontend dev
+server (`:3000`, proxies `/api` to the API — override with `API_PROXY`).
+One command runs both from the repo root:
 
 ```bash
-# terminal 1 — Go backend (needs Go 1.26+)
-cd ../backend && go run ./cmd/api        # :8080
+bun install        # once, in instant-quote/
+make dev           # from the repo root — Go API + frontend, Ctrl+C stops both
+```
 
-# terminal 2 — frontend
-bun install
-bun run dev        # http://localhost:3000
+Or run them separately (`make dev-backend` / `make dev-frontend`, or by hand):
+
+```bash
+cd ../backend && go run ./cmd/api        # terminal 1
+bun run dev                              # terminal 2, in instant-quote/
 ```
 
 ### Optional: MakerWorld URL import

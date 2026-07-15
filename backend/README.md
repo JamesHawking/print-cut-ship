@@ -8,7 +8,8 @@ here — see `../Plans/DECISIONS.md`.
 ## Run
 
 ```sh
-go run ./cmd/api            # listens on :8080 (PORT to override)
+make dev                    # from the repo root: this API + the frontend together
+go run ./cmd/api            # just the API, :8080 (PORT to override)
 air                         # hot-reload alternative
 ```
 
