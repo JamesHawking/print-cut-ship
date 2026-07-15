@@ -23,7 +23,13 @@ const DEFAULT_CONFIG: PartConfig = {
 }
 
 type Action =
-  | { type: 'add'; id: string; fileName: string; fileSize: number; fileKind: FileKind }
+  | {
+      type: 'add'
+      id: string
+      fileName: string
+      fileSize: number
+      fileKind: FileKind
+    }
   | {
       type: 'parsed'
       id: string
@@ -45,7 +51,7 @@ function reducer(state: Part[], action: Action): Part[] {
           fileName: action.fileName,
           fileSize: action.fileSize,
           kind: action.fileKind === 'step' ? 'step' : 'mesh',
-          status: action.fileKind === 'step' ? 'ready' : 'parsing',
+          status: 'parsing',
           config: { ...DEFAULT_CONFIG },
         },
       ]
@@ -64,12 +70,18 @@ function reducer(state: Part[], action: Action): Part[] {
     case 'failed':
       return state.map((p) =>
         p.id === action.id
-          ? { ...p, status: 'error', error: { code: action.code, message: action.message } }
+          ? {
+              ...p,
+              status: 'error',
+              error: { code: action.code, message: action.message },
+            }
           : p,
       )
     case 'updateConfig':
       return state.map((p) =>
-        p.id === action.id ? { ...p, config: { ...p.config, ...action.config } } : p,
+        p.id === action.id
+          ? { ...p, config: { ...p.config, ...action.config } }
+          : p,
       )
     case 'remove':
       return state.filter((p) => p.id !== action.id)

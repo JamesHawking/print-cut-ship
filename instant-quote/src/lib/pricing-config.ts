@@ -4,6 +4,7 @@
 // SeekMake widget): per-material PLN/kg, density, a per-material price factor,
 // and a machine hourly rate, plus mapi-tech's lead-time multipliers and
 // order/part minimums. See references/mapi-tech-pricing.md. Currency: PLN.
+// Prices are gross (VAT-inclusive), matching how mapi-tech quotes consumers.
 
 export interface BuildVolumeMm {
   x: number
@@ -92,10 +93,15 @@ export const PRICING = {
       build: FDM_BUILD,
     },
   },
-  // FDM material/time model. mapi-tech's slicer bills weight = volume × density ×
-  // infill; lacking a slicer we estimate print hours from that same weight.
+  // FDM material/time model. mapi-tech's slicer weighs walls + solid top/bottom
+  // plus infilled interior; lacking a slicer we approximate that as a solid
+  // shell (surface area × thickness) plus infill of the remaining interior,
+  // and estimate print hours from the resulting weight. shellThicknessMm 0.9
+  // calibrates the reference part (tests/test_object.step) to within 0.5% of
+  // mapi-tech's 33.67 zł. See references/mapi-tech-pricing.md.
   fdm: {
     infillFraction: 0.2, // mapi-tech "Standard 20%" default
+    shellThicknessMm: 0.9,
     gramsPerPrintHour: 12,
   },
   // Quantity discount applied to unit price. [quantity, discountFraction].
@@ -114,6 +120,7 @@ export const PRICING = {
   },
   minOrderPln: 30,
   minPartPricePln: 1.5,
+  orderFeePln: 1, // flat per-order fee observed in mapi-tech's cart (33.67 → 34.67)
   // Shipping is not part of mapi-tech's extracted config — sensible PL defaults.
   shippingFlatPln: 20,
   freeShippingThresholdPln: 500,

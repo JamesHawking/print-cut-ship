@@ -25,9 +25,9 @@ export class AnalyzeError extends Error {
 
 /**
  * Lazily creates the mesh worker (client-only) and exposes a promise-based
- * analyze() for a File. STL/OBJ bytes go straight to the worker; 3MF is parsed
- * on the main thread first (DOMParser), then its positions go to the worker for
- * the math.
+ * analyze() for a File. STL/OBJ/STEP bytes go straight to the worker; 3MF is
+ * parsed on the main thread first (DOMParser), then its positions go to the
+ * worker for the math.
  */
 export function useMeshWorker() {
   const workerRef = useRef<Worker | null>(null)
@@ -85,7 +85,7 @@ export function useMeshWorker() {
         buffer: positions.buffer as ArrayBuffer,
         fileName: file.name,
       }
-    } else if (kind === 'stl' || kind === 'obj') {
+    } else if (kind === 'stl' || kind === 'obj' || kind === 'step') {
       request = { id, format: kind, buffer: arrayBuffer, fileName: file.name }
     } else {
       throw new AnalyzeError('unsupported', 'Unsupported format for analysis.')

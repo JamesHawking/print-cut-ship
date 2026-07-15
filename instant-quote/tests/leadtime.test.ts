@@ -3,10 +3,22 @@ import { computeShipDate, getWarsawNow } from '../src/lib/leadtime'
 
 // Build a UTC instant that reads as a given Warsaw wall-clock time.
 // Summer (Jul) Warsaw = UTC+2, Winter (Jan) = UTC+1.
-function warsawSummer(y: number, m: number, d: number, hh: number, mm = 0): Date {
+function warsawSummer(
+  y: number,
+  m: number,
+  d: number,
+  hh: number,
+  mm = 0,
+): Date {
   return new Date(Date.UTC(y, m - 1, d, hh - 2, mm))
 }
-function warsawWinter(y: number, m: number, d: number, hh: number, mm = 0): Date {
+function warsawWinter(
+  y: number,
+  m: number,
+  d: number,
+  hh: number,
+  mm = 0,
+): Date {
   return new Date(Date.UTC(y, m - 1, d, hh - 1, mm))
 }
 

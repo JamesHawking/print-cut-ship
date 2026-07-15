@@ -11,7 +11,7 @@ widget is a white-label embed of **SeekMake** (`seekmake.com`), loaded via
 `https://seekmake.com/instant-quote/?isEmbed=true&manufacturer=69ca8d2ac239a7f29a4e9f87`.
 The full pricing config (machines, materials, multipliers, minimums) is delivered
 to the browser and cached in `localStorage.instantQuote`; the final price string is
-computed server-side from a custom per-machine formula that is *not* exposed to the
+computed server-side from a custom per-machine formula that is _not_ exposed to the
 client, so the numbers below are the config inputs plus empirically observed outputs,
 not the exact formula.
 
@@ -42,11 +42,11 @@ per-kg and per-hour rates rather than added as a separate markup.
 
 ### Lead time (multiplier x calendar target)
 
-| Option | Polish label | Multiplier | Target |
-|---|---|---|---|
-| Express | Ekspres | **1.30** | 3 days |
-| Standard (default) | Standard | **1.00** | 5 days |
-| Not urgent | Nie pilne | **0.90** | 10 days |
+| Option             | Polish label | Multiplier | Target  |
+| ------------------ | ------------ | ---------- | ------- |
+| Express            | Ekspres      | **1.30**   | 3 days  |
+| Standard (default) | Standard     | **1.00**   | 5 days  |
+| Not urgent         | Nie pilne    | **0.90**   | 10 days |
 
 Site also advertises "Dostawa w ciągu 24–48h" as a headline claim.
 
@@ -74,21 +74,21 @@ materials carry their own color lists (PLA has 7).
 Extracted from the seven machine profiles. `factor` is a per-material price
 multiplier applied on top of the base formula. Prices are PLN/kg.
 
-| Machine profile | PLN/h | Material | PLN/kg | Density (g/cm³) | Factor |
-|---|---|---|---|---|---|
-| P2S | 1.80 | PLA | 50 | 1.25 | 1.0 |
-| P2S PETG | 2.25 | PETG | 50 | 1.27 | 1.2 |
-| P2S PETG | 2.25 | PCTG | 150 | 1.23 | 1.0 |
-| P2S ABS/ASA | 2.50 | ASA | 120 | 1.05 | 1.5 |
-| P2S ABS/ASA | 2.50 | ASA CF | 190 | 1.12 | 1.0 |
-| P2S Iglidur | 3.50 | Iglidur I150PF | 550 | 1.30 | 1.0 |
-| P2S Iglidur | 3.50 | Nylon 12 CF / PA12 CF | 350 | 1.08 | 2.0 |
-| P2S PETG FR | 2.50 | PETG V0 (self-extinguishing) | 180 | 1.03 | 1.0 |
-| P2S PLA 0,2 mm | 2.25 | PLA | 50 | 1.30 | 1.0 |
-| P2S PLA 0,2 mm | 2.25 | PETG | 60 | 1.25 | 1.0 |
-| P2S PLA 0,2 mm | 2.25 | Iglidur I150PF | 450 | 1.30 | 1.0 |
-| P2S 0,8 mm | 2.00 | PLA | 50 | 1.25 | 1.0 |
-| P2S 0,8 mm | 2.00 | PETG | 60 | 1.25 | 1.0 |
+| Machine profile | PLN/h | Material                     | PLN/kg | Density (g/cm³) | Factor |
+| --------------- | ----- | ---------------------------- | ------ | --------------- | ------ |
+| P2S             | 1.80  | PLA                          | 50     | 1.25            | 1.0    |
+| P2S PETG        | 2.25  | PETG                         | 50     | 1.27            | 1.2    |
+| P2S PETG        | 2.25  | PCTG                         | 150    | 1.23            | 1.0    |
+| P2S ABS/ASA     | 2.50  | ASA                          | 120    | 1.05            | 1.5    |
+| P2S ABS/ASA     | 2.50  | ASA CF                       | 190    | 1.12            | 1.0    |
+| P2S Iglidur     | 3.50  | Iglidur I150PF               | 550    | 1.30            | 1.0    |
+| P2S Iglidur     | 3.50  | Nylon 12 CF / PA12 CF        | 350    | 1.08            | 2.0    |
+| P2S PETG FR     | 2.50  | PETG V0 (self-extinguishing) | 180    | 1.03            | 1.0    |
+| P2S PLA 0,2 mm  | 2.25  | PLA                          | 50     | 1.30            | 1.0    |
+| P2S PLA 0,2 mm  | 2.25  | PETG                         | 60     | 1.25            | 1.0    |
+| P2S PLA 0,2 mm  | 2.25  | Iglidur I150PF               | 450    | 1.30            | 1.0    |
+| P2S 0,8 mm      | 2.00  | PLA                          | 50     | 1.25            | 1.0    |
+| P2S 0,8 mm      | 2.00  | PETG                         | 60     | 1.25            | 1.0    |
 
 Startup cost is 0 on all materials. The public materials section also lists
 "coming soon" grades (Iglidur I180PF/I190PF, PLA HT150, PETG FR) not yet priced.
@@ -104,6 +104,26 @@ Raw computed price **≈1.21 PLN**, floored up to the **1.5 PLN** minimum part p
 So a typical small part is priced entirely by the minimums; per-part unit cost only
 starts tracking weight/time once parts get large (a 50 mm cube slices to ~129 g /
 ~33 print-hours).
+
+## Empirical anchor #2 — large part + checkout (captured 2026-07-14)
+
+Uploaded `tests/test_object.step` ("Leg R", 20 × 90 × 200 mm bar with holes).
+SeekMake's analyzer reported volume **355 446.45 mm³** — identical to our own
+occt tessellation of the same file (355.44645 cm³), so their "Objętość" is the
+raw B-rep solid volume, not an infilled weight.
+
+Quote at PETG / FDM 0.4 mm nozzle / Standard 20% infill / 0.2 mm layers /
+qty 1 / Standard 5 days:
+
+- Part price: **33.67 PLN**. At the PETG rates above
+  (`33.67 / (50×1.2/1000 + 2.25/12)`) this implies **≈136 g** — ~1.5× the naive
+  `volume × density × 0.20 = 90 g`, i.e. their slicer weight includes solid
+  walls/top/bottom. A shell-plus-infill model
+  (`shell = SA × 0.9 mm` solid + 20% interior) reproduces it within 0.5%.
+- Cart "Cena całkowita": **34.67 PLN** = part + a flat **1.00 PLN order fee**.
+- Checkout: shipping (courier, standard) **20.00 PLN**, delivery quoted
+  7 working days → total **54.67 PLN**. **No VAT is added at checkout** —
+  prices are gross (VAT-inclusive), consistent with the B2C storefront.
 
 ## Takeaways for our instant-quote prototype
 

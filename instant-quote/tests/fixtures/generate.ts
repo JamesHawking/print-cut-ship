@@ -113,7 +113,10 @@ export function cubeObj(s: number): ArrayBuffer {
   for (const c of corners) text += `v ${c[0]} ${c[1]} ${c[2]}\n`
   for (const face of CUBE_FACES) {
     const [i0, i1, i2, i3] = face
-    const n = cross(sub(corners[i1], corners[i0]), sub(corners[i2], corners[i0]))
+    const n = cross(
+      sub(corners[i1], corners[i0]),
+      sub(corners[i2], corners[i0]),
+    )
     const outward = dot(n, sub(corners[i0], center)) >= 0
     const q = outward ? [i0, i1, i2, i3] : [i0, i3, i2, i1]
     // OBJ is 1-based.
@@ -161,7 +164,10 @@ function cubeIndexTriangles(s: number): number[] {
   const center: V3 = [s / 2, s / 2, s / 2]
   const out: number[] = []
   for (const [i0, i1, i2, i3] of CUBE_FACES) {
-    const n = cross(sub(corners[i1], corners[i0]), sub(corners[i2], corners[i0]))
+    const n = cross(
+      sub(corners[i1], corners[i0]),
+      sub(corners[i2], corners[i0]),
+    )
     const outward = dot(n, sub(corners[i0], center)) >= 0
     const q = outward ? [i0, i1, i2, i3] : [i0, i3, i2, i1]
     out.push(q[0], q[1], q[2], q[0], q[2], q[3])
@@ -187,7 +193,9 @@ export function productionExtension3mf(
     .join('\n')
   const faces: string[] = []
   for (let i = 0; i < tris.length; i += 3) {
-    faces.push(`   <triangle v1="${tris[i]}" v2="${tris[i + 1]}" v3="${tris[i + 2]}"/>`)
+    faces.push(
+      `   <triangle v1="${tris[i]}" v2="${tris[i + 1]}" v3="${tris[i + 2]}"/>`,
+    )
   }
   const ns =
     'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" ' +

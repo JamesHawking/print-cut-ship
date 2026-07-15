@@ -20,7 +20,8 @@ const cross = (u: Vec3, v: Vec3): Vec3 => [
   u[2] * v[0] - u[0] * v[2],
   u[0] * v[1] - u[1] * v[0],
 ]
-const dot = (u: Vec3, v: Vec3): number => u[0] * v[0] + u[1] * v[1] + u[2] * v[2]
+const dot = (u: Vec3, v: Vec3): number =>
+  u[0] * v[0] + u[1] * v[1] + u[2] * v[2]
 const norm = (u: Vec3): number => Math.sqrt(dot(u, u))
 
 /** Convert a flat position soup (9 floats/triangle) into a deduped point list. */
@@ -35,7 +36,13 @@ export function pointsFromPositions(positions: Float32Array): Vec3[] {
   return [...seen.values()]
 }
 
-function makeFace(points: Vec3[], a: number, b: number, c: number, interior: Vec3): Face {
+function makeFace(
+  points: Vec3[],
+  a: number,
+  b: number,
+  c: number,
+  interior: Vec3,
+): Face {
   let normal = cross(sub(points[b], points[a]), sub(points[c], points[a]))
   const len = norm(normal)
   if (len > 0) normal = [normal[0] / len, normal[1] / len, normal[2] / len]
@@ -111,7 +118,9 @@ export function convexHullVolume(points: Vec3[]): number {
   return Math.abs(vol6) / 6
 }
 
-function findInitialTetra(pts: Vec3[]): [number, number, number, number] | null {
+function findInitialTetra(
+  pts: Vec3[],
+): [number, number, number, number] | null {
   const n = pts.length
   // First two: farthest-apart along x is a cheap heuristic; just take 0 and the
   // farthest point from it.

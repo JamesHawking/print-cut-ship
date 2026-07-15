@@ -4,6 +4,10 @@ import { useQueries } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { DropZone } from '@/components/DropZone'
+import { Hero } from '@/components/Hero'
+import { HowItWorks } from '@/components/HowItWorks'
+import { Materials } from '@/components/Materials'
+import { SiteFooter } from '@/components/SiteFooter'
 import { QuoteCard } from '@/components/QuoteCard'
 import { QuoteSkeleton } from '@/components/QuoteSkeleton'
 import { OrderPanel } from '@/components/OrderPanel'
@@ -43,14 +47,14 @@ function Home() {
     return () => clearInterval(t)
   }, [])
 
-  // Ready mesh parts get a live quote via TanStack Query (pure fn as fetcher).
-  const readyMeshParts = parts.filter(
+  // Ready parts get a live quote via TanStack Query (pure fn as fetcher).
+  const readyParts = parts.filter(
     (p): p is Part & { hash: string } =>
-      p.kind === 'mesh' && p.status === 'ready' && !!p.hash && !!p.metrics,
+      p.status === 'ready' && !!p.hash && !!p.metrics,
   )
 
   const quoteResults = useQueries({
-    queries: readyMeshParts.map((p) => ({
+    queries: readyParts.map((p) => ({
       queryKey: ['quote', p.hash, p.config] as const,
       queryFn: () => computePartQuote(p.metrics!, p.config),
       staleTime: Infinity,
@@ -60,15 +64,16 @@ function Home() {
 
   // At most 5 parts — cheap to rebuild each render, keeps the map in sync.
   const quotesById = new Map<string, PartQuote>()
-  readyMeshParts.forEach((p, i) => {
+  readyParts.forEach((p, i) => {
     const data = quoteResults[i]?.data
     if (data) quotesById.set(p.id, data)
   })
 
-  const orderableEntries = readyMeshParts
+  const orderableEntries = readyParts
     .map((p) => ({ part: p as Part, quote: quotesById.get(p.id) }))
     .filter(
-      (e): e is { part: Part; quote: PartQuote } => !!e.quote && !e.quote.blocked,
+      (e): e is { part: Part; quote: PartQuote } =>
+        !!e.quote && !e.quote.blocked,
     )
 
   const totals = computeOrderTotals(orderableEntries.map((e) => e.quote))
@@ -103,7 +108,6 @@ function Home() {
       })
       const id = addFile(file)
       setSelectedId(id)
-      if (kind === 'step') continue
 
       analyze(file)
         .then((res) => {
@@ -138,49 +142,56 @@ function Home() {
     setOrderOpen(true)
   }
 
-  const hasParts = parts.length > 0
+  if (parts.length === 0) {
+    return (
+      <>
+        <Hero onFiles={handleFiles} />
+        <HowItWorks />
+        <Materials />
+        <SiteFooter />
+      </>
+    )
+  }
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 sm:px-6">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          {strings.hero.headline}
-        </h1>
-        <p className="text-muted-foreground mt-2">{strings.hero.trust}</p>
+      <header className="mb-8 flex items-center justify-between border-b pb-4 font-mono text-xs tracking-widest uppercase">
+        <span className="font-bold">{strings.hero.wordmark}</span>
+        <span className="text-muted-foreground hidden sm:inline">
+          {strings.hero.status}
+        </span>
       </header>
 
-      {!hasParts ? (
-        <DropZone onFiles={handleFiles} />
-      ) : (
-        <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="lg:sticky lg:top-6 lg:self-start">
-              {selectedPart?.kind === 'mesh' &&
-              selectedPart.status === 'ready' &&
-              selectedPart.positions &&
-              selectedPart.metrics ? (
-                <ViewerPane
-                  key={selectedPart.id}
-                  positions={selectedPart.positions}
-                  bboxMm={selectedPart.metrics.bboxMm}
-                />
-              ) : selectedPart?.status === 'error' ? (
-                <ViewerFallback />
-              ) : (
-                <div className="bg-muted/30 flex h-full min-h-64 items-center justify-center rounded-xl border">
-                  <p className="text-muted-foreground text-sm">
-                    {strings.dropzone.parsing}
-                  </p>
-                </div>
-              )}
-            </div>
+      <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="lg:sticky lg:top-6 lg:self-start">
+            {selectedPart?.status === 'ready' &&
+            selectedPart.positions &&
+            selectedPart.metrics ? (
+              <ViewerPane
+                key={selectedPart.id}
+                positions={selectedPart.positions}
+                bboxMm={selectedPart.metrics.bboxMm}
+              />
+            ) : selectedPart?.status === 'error' ? (
+              <ViewerFallback />
+            ) : (
+              <div className="bg-muted/30 flex h-full min-h-64 items-center justify-center rounded-xl border">
+                <p className="text-muted-foreground text-sm">
+                  {strings.dropzone.parsing}
+                </p>
+              </div>
+            )}
+          </div>
 
-            <div className="space-y-6">
-              {selectedPart?.kind === 'step' ? (
+          <div className="space-y-6">
+            {selectedPart?.status === 'parsing' ? (
+              <QuoteSkeleton />
+            ) : selectedPart?.status === 'error' ? (
+              // STEP files that OCCT can't read fall back to a manual quote.
+              selectedPart.kind === 'step' ? (
                 <StepManualCard part={selectedPart} />
-              ) : selectedPart?.status === 'parsing' ? (
-                <QuoteSkeleton />
-              ) : selectedPart?.status === 'error' ? (
+              ) : (
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-destructive text-sm">
@@ -189,54 +200,53 @@ function Home() {
                     </p>
                   </CardContent>
                 </Card>
-              ) : selectedPart && selectedQuote ? (
-                <QuoteCard
-                  part={selectedPart}
-                  quote={selectedQuote}
-                  onConfigChange={(patch) =>
-                    handleConfigChange(selectedPart.id, patch)
-                  }
-                  now={now}
-                />
-              ) : null}
+              )
+            ) : selectedPart && selectedQuote ? (
+              <QuoteCard
+                part={selectedPart}
+                quote={selectedQuote}
+                onConfigChange={(patch) =>
+                  handleConfigChange(selectedPart.id, patch)
+                }
+                now={now}
+              />
+            ) : null}
 
-              {orderableEntries.length > 0 && (
-                <OrderPanel
-                  breakdownQuote={
-                    selectedQuote && !selectedQuote.blocked
-                      ? selectedQuote
-                      : orderableEntries[0].quote
-                  }
-                  totals={totals}
-                  pricesExVat={pricesExVat}
-                  onTogglePricesExVat={setPricesExVat}
-                  orderableCount={orderableEntries.length}
-                  onOrderClick={handleOrderClick}
-                />
-              )}
-            </div>
+            {orderableEntries.length > 0 && (
+              <OrderPanel
+                breakdownQuote={
+                  selectedQuote && !selectedQuote.blocked
+                    ? selectedQuote
+                    : orderableEntries[0].quote
+                }
+                totals={totals}
+                pricesExVat={pricesExVat}
+                onTogglePricesExVat={setPricesExVat}
+                orderableCount={orderableEntries.length}
+                onOrderClick={handleOrderClick}
+              />
+            )}
           </div>
-
-          {parts.length > 1 && (
-            <PartsList
-              parts={parts}
-              quotes={quotesById}
-              selectedId={selectedPart?.id ?? null}
-              onSelect={setSelectedId}
-              onRemove={remove}
-            />
-          )}
-
-          {parts.length < MAX_PARTS && (
-            <DropZone onFiles={handleFiles} compact />
-          )}
-
-          <p className="text-muted-foreground text-center text-xs">
-            Europe/Warsaw {formatWarsawClock(now)} ·{' '}
-            {strings.config.warsawCutoff}
-          </p>
         </div>
-      )}
+
+        {parts.length > 1 && (
+          <PartsList
+            parts={parts}
+            quotes={quotesById}
+            selectedId={selectedPart?.id ?? null}
+            onSelect={setSelectedId}
+            onRemove={remove}
+          />
+        )}
+
+        {parts.length < MAX_PARTS && (
+          <DropZone onFiles={handleFiles} variant="compact" />
+        )}
+
+        <p className="text-muted-foreground text-center font-mono text-[0.7rem] tracking-wide uppercase">
+          Europe/Warsaw {formatWarsawClock(now)} · {strings.config.warsawCutoff}
+        </p>
+      </div>
 
       <OrderDialog
         open={orderOpen}

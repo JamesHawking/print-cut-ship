@@ -6,8 +6,8 @@ no checkout. Everything runs client-side except a single quote-submission server
 function. It exists to validate one funnel: **upload → quote → "order" click**.
 
 - Made in the EU. Ships D+1/D+2 to Germany. No account needed.
-- Accepts `.stl`, `.3mf`, `.obj` (priced instantly) and `.step`/`.stp`
-  (accepted, routed to a manual check — never given a fake price).
+- Accepts `.stl`, `.3mf`, `.obj`, and `.step`/`.stp` — all priced instantly
+  (STEP is tessellated in the browser via OpenCascade WASM).
 - Mesh math (volume, bbox, surface area, watertight check) runs in a Web Worker.
 - 3D preview via three.js. Pricing is a pure, unit-tested TypeScript engine.
 
@@ -49,10 +49,14 @@ PLN (zł).
 
 **Per-part unit price**
 
-- FDM materials, priced by weight and machine time:
-  `weight_g = volume_cm3 × density × 0.20` (20% infill, matching mapi-tech's
-  slicer), `material = weight_g × zł/kg × factor / 1000`,
+- FDM materials, priced by weight and machine time. Weight approximates a
+  slicer's walls + solid top/bottom as a shell plus 20% infill of the interior:
+  `shell_cm3 = min(volume, surface_area_cm2 × 0.09)` (0.9 mm shell),
+  `weight_g = (shell_cm3 + 0.20 × (volume_cm3 − shell_cm3)) × density`,
+  `material = weight_g × zł/kg × factor / 1000`,
   `machine = (weight_g / 12 g·h⁻¹) × zł/h`, `base = material + machine`.
+  The 0.9 mm shell is calibrated against mapi-tech's real quote for
+  `tests/test_object.step` (33.67 zł PETG → we price 33.51 zł, −0.5%).
   Materials (density / zł·kg⁻¹ / factor / zł·h⁻¹): PLA 1.25 / 50 / 1.0 / 1.8,
   PETG 1.27 / 50 / 1.2 / 2.25, PCTG 1.23 / 150 / 1.0 / 2.25,
   ASA 1.05 / 120 / 1.5 / 2.5, PETG FR 1.03 / 180 / 1.0 / 2.5,
@@ -65,8 +69,10 @@ PLN (zł).
 **Order level**
 
 - Minimum order 30 zł (top-up applied once, across all parts).
+- Flat 1 zł order fee (observed in mapi-tech's cart).
 - Shipping 20 zł flat, free at/above 500 zł.
-- VAT 23% (PL), toggleable in the breakdown.
+- Prices are **gross** — 23% VAT (PL) is included, not added on top, matching
+  mapi-tech's checkout. The breakdown can show the ex-VAT total instead.
 
 **DFM checks**
 
@@ -95,11 +101,13 @@ These are deliberately stubbed — no backend, no persistence, no payment:
   for a real `posthog.capture()`.
 - **Lead-time ship dates** are computed from the Europe/Warsaw wall clock and a
   14:00 cutoff, but there is no real production calendar or capacity model.
-- **STEP files** are accepted and routed to a manual-quote card. They are never
-  auto-priced (STEP needs server-side CAD tessellation we don't do here).
-- **Print time is estimated, not sliced.** We have no slicer, so machine time is
-  derived from infilled weight (`weight_g / 12 g·h⁻¹`) rather than a real toolpath.
-  mapi-tech's own quotes come from SeekMake's slicer.
+- **STEP files** are auto-priced: occt-import-js (OpenCascade WASM, lazy-loaded
+  in the mesh worker) tessellates the B-rep in the browser. If OCCT can't read
+  a file, it falls back to the manual-quote email card.
+- **Print weight and time are estimated, not sliced.** We have no slicer, so
+  weight is a shell + infill approximation of the toolpath and machine time is
+  derived from that weight (`weight_g / 12 g·h⁻¹`). mapi-tech's own quotes come
+  from SeekMake's slicer; ours is calibrated to it on one reference part.
 - The material rates mirror mapi-tech's published config; **shipping (20 zł /
   free ≥ 500 zł) is a sensible PL default**, not part of their extracted config.
 

@@ -4,6 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 
+// Type system (Anduril-inspired): Archivo grotesque for display/UI, Martian Mono
+// for technical labels & numerics. Self-hosted via @fontsource (no external CDN).
+import '@fontsource-variable/archivo'
+import '@fontsource-variable/martian-mono'
+
 import appCss from '../styles.css?url'
 import { strings } from '@/lib/strings'
 

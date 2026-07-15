@@ -162,7 +162,8 @@ export function parse3mf(buffer: ArrayBuffer): Float32Array {
   }
 
   const rootFile = findFile(rootPath)
-  if (!rootFile) throw new MeshParseError('corrupt', 'Could not read the 3MF file.')
+  if (!rootFile)
+    throw new MeshParseError('corrupt', 'Could not read the 3MF file.')
   const rootXml = dec.decode(rootFile)
 
   const chunks: Float32Array[] = []
@@ -209,7 +210,12 @@ export function parse3mf(buffer: ArrayBuffer): Float32Array {
     while ((im = ire.exec(buildM[1]))) {
       const objectid = attr(im[1], 'objectid')
       if (!objectid) continue
-      emitObject(rootPath, objectid, parseTransform(attr(im[1], 'transform')), 0)
+      emitObject(
+        rootPath,
+        objectid,
+        parseTransform(attr(im[1], 'transform')),
+        0,
+      )
     }
   }
 

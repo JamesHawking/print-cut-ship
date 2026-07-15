@@ -121,9 +121,7 @@ export function OrderDialog({
               }}
             >
               <div className="space-y-1.5">
-                <Label htmlFor="order-email">
-                  {strings.order.emailLabel}
-                </Label>
+                <Label htmlFor="order-email">{strings.order.emailLabel}</Label>
                 <Input
                   id="order-email"
                   type="email"

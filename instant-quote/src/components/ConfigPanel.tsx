@@ -74,7 +74,9 @@ export function ConfigPanel({ config, onChange, now }: Props) {
             min={1}
             value={config.quantity}
             onChange={(e) =>
-              onChange({ quantity: Math.max(1, Math.floor(Number(e.target.value) || 1)) })
+              onChange({
+                quantity: Math.max(1, Math.floor(Number(e.target.value) || 1)),
+              })
             }
             className="w-20"
           />
@@ -113,7 +115,11 @@ export function ConfigPanel({ config, onChange, now }: Props) {
                   </div>
                 </div>
                 <div className="text-muted-foreground text-xs tabular-nums">
-                  {delta === 0 ? 'base' : delta > 0 ? `+${delta}%` : `${delta}%`}
+                  {delta === 0
+                    ? 'base'
+                    : delta > 0
+                      ? `+${delta}%`
+                      : `${delta}%`}
                 </div>
               </label>
             )

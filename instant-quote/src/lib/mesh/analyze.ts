@@ -112,7 +112,10 @@ export function analyze(positions: Float32Array): MeshMetrics {
 }
 
 /** True when every edge is shared by exactly two triangles (closed 2-manifold). */
-function isEdgeManifold(positions: Float32Array, triangleCount: number): boolean {
+function isEdgeManifold(
+  positions: Float32Array,
+  triangleCount: number,
+): boolean {
   const vertexId = new Map<string, number>()
   const idOf = (i: number): number => {
     const key = `${Math.round(positions[i] * 1e4)},${Math.round(positions[i + 1] * 1e4)},${Math.round(positions[i + 2] * 1e4)}`

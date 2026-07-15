@@ -13,7 +13,10 @@ export function parseObj(buffer: ArrayBuffer): Float32Array {
     const count = verts.length / 3
     const i = index > 0 ? index - 1 : count + index
     if (i < 0 || i >= count) {
-      throw new MeshParseError('corrupt', 'OBJ face references a missing vertex.')
+      throw new MeshParseError(
+        'corrupt',
+        'OBJ face references a missing vertex.',
+      )
     }
     return [verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]]
   }

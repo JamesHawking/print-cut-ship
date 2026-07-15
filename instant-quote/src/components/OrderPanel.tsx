@@ -58,7 +58,7 @@ export function OrderPanel({
             <p className="text-muted-foreground text-xs">
               {strings.order.orderTotal}
             </p>
-            <p className="text-2xl font-semibold tabular-nums">
+            <p className="font-mono text-2xl font-semibold tracking-tight tabular-nums">
               {formatPln(displayTotal)}
             </p>
           </div>

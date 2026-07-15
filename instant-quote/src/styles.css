@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -153,6 +153,12 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Archivo grotesque for display/UI, Martian Mono for technical labels & numerics */
+  --font-sans:
+    'Archivo Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono:
+    'Martian Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 @layer base {

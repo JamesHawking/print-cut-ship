@@ -38,7 +38,7 @@ export function QuoteCard({ part, quote, onConfigChange, now }: Props) {
               </p>
             ) : (
               <>
-                <div className="text-3xl font-semibold tabular-nums">
+                <div className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
                   {formatPln(quote.unitPricePln)}
                 </div>
                 <p className="text-muted-foreground text-xs">

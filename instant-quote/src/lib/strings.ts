@@ -7,8 +7,93 @@ export const strings = {
       'Upload an STL, 3MF, OBJ or STEP file and get an instant price. Made in the EU, ships D+1/D+2 to Germany. No account needed.',
   },
   hero: {
+    wordmark: 'INSTANT_QUOTE',
+    status: 'EU · FDM · PLN',
+    ready: 'System ready',
+    kicker: 'On-demand 3D printing · EU',
     headline: 'Upload a part, get a price. Right now.',
+    sub: 'The fastest, most transparent way to price a 3D-printed part in the EU — a full cost breakdown and a real ship date, with no account and no waiting.',
     trust: 'Made in the EU. Ships D+1/D+2 to Germany. No account needed.',
+    privacy: 'Private — files never leave your session unless you order',
+    // Zipped with computed values in Hero.tsx (same order).
+    specs: [
+      'FDM materials',
+      'mm build volume',
+      'business-day lead',
+      'incl. 23% VAT',
+    ],
+  },
+  process: {
+    kicker: 'How it works',
+    heading: 'From file to ship date in three steps.',
+    steps: [
+      {
+        n: '01',
+        title: 'Upload',
+        body: 'Drop an STL, 3MF, OBJ or STEP. The geometry is measured right in your browser — nothing is uploaded just to price it.',
+      },
+      {
+        n: '02',
+        title: 'Price',
+        body: 'A transparent, itemized quote appears in seconds. Material, machine time, quantity, lead time — every number is explainable.',
+      },
+      {
+        n: '03',
+        title: 'Order',
+        body: 'Pick material and quantity, see a real ship date, and place the order. No account, no sales call, no waiting.',
+      },
+    ],
+  },
+  materialsSection: {
+    kicker: 'Materials',
+    heading: 'Seven FDM materials, prototype to end-use.',
+    sub: 'From cheap PLA to carbon-filled nylon and self-lubricating Igus grades — pick what the part needs.',
+    density: 'Density',
+    from: 'From',
+  },
+  materials: {
+    pla: {
+      family: 'Standard',
+      tagline:
+        'Cheapest and easiest to print. Prototypes, concept models, display parts.',
+    },
+    petg: {
+      family: 'Standard',
+      tagline:
+        'Tough, moisture-resistant workhorse. Enclosures, brackets, functional parts.',
+    },
+    pctg: {
+      family: 'Standard',
+      tagline:
+        'Upgraded PETG with higher impact resistance. Housings and mechanical parts.',
+    },
+    asa: {
+      family: 'Engineering',
+      tagline:
+        'UV- and weather-stable. Outdoor, automotive and exterior parts.',
+    },
+    petg_fr: {
+      family: 'Specialty',
+      tagline:
+        'Flame-retardant (UL94 V-0). Electronics enclosures and control cabinets.',
+    },
+    pa12_cf: {
+      family: 'Engineering',
+      tagline:
+        'Carbon-filled nylon — peak strength, heat resistance to ~170°C. Jigs, gears, motorsport.',
+    },
+    iglidur: {
+      family: 'Specialty',
+      tagline:
+        'Self-lubricating Igus material. Bearings, bushings and sliding parts.',
+    },
+  },
+  footer: {
+    ctaHeading: 'Have a part in hand?',
+    ctaBody: 'Get a transparent price in seconds — no account required.',
+    ctaButton: 'Upload a file',
+    note: 'Prototype · illustrative rates · every quote is fully itemized',
+    meta: 'EU · FDM · PLN · 23% VAT',
   },
   dropzone: {
     idle: 'Drop a 3D file here',
@@ -41,8 +126,8 @@ export const strings = {
     warsawCutoff: 'Times in Europe/Warsaw · 14:00 same-day cutoff',
   },
   step: {
-    title: 'STEP needs a quick manual check',
-    body: 'We quote STEP files by hand to get the geometry right. Leave your email and we will send a price within 4 business hours.',
+    title: 'This STEP needs a quick manual check',
+    body: 'We could not read this STEP file automatically. Leave your email and we will quote it by hand within 4 business hours.',
     emailLabel: 'Email',
     submit: 'Request quote',
     success: 'Got it — we will email your quote within 4 business hours.',

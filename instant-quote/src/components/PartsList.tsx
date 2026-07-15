@@ -45,10 +45,10 @@ export function PartsList({
               )}
             >
               <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-md">
-                {part.kind === 'step' ? (
-                  <FileClock className="text-muted-foreground size-4" />
-                ) : part.status === 'parsing' ? (
+                {part.status === 'parsing' ? (
                   <Loader2 className="text-muted-foreground size-4 animate-spin" />
+                ) : part.status === 'error' && part.kind === 'step' ? (
+                  <FileClock className="text-muted-foreground size-4" />
                 ) : (
                   <Box className="text-primary size-4" />
                 )}
@@ -56,13 +56,13 @@ export function PartsList({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{part.fileName}</p>
                 <p className="text-muted-foreground truncate text-xs">
-                  {part.kind === 'step'
-                    ? 'Manual quote'
-                    : part.status === 'parsing'
-                      ? 'Reading…'
-                      : part.status === 'error'
-                        ? 'Failed'
-                        : `${PRICING.processes[part.config.process].label} · ×${part.config.quantity}`}
+                  {part.status === 'parsing'
+                    ? 'Reading…'
+                    : part.status === 'error'
+                      ? part.kind === 'step'
+                        ? 'Manual quote'
+                        : 'Failed'
+                      : `${PRICING.processes[part.config.process].label} · ×${part.config.quantity}`}
                 </p>
               </div>
               <div className="text-right text-sm tabular-nums">

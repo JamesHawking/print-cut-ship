@@ -8,11 +8,13 @@ import {
 } from '../src/lib/pricing'
 import type { MeshMetrics } from '../src/lib/mesh/types'
 
+// Default part: 100 cm³ / 100 cm² → shell 100×0.09 = 9 cm³ solid, interior
+// 91 cm³ at 20% infill → effective volume 27.2 cm³.
 function metrics(overrides: Partial<MeshMetrics> = {}): MeshMetrics {
   return {
     volumeCm3: 100,
     rawSignedVolumeCm3: 100,
-    surfaceAreaCm2: 6,
+    surfaceAreaCm2: 100,
     bboxMm: { x: 20, y: 20, z: 20 },
     triangleCount: 12,
     watertight: true,
@@ -28,32 +30,50 @@ const cfg = (o: Partial<PartConfig> = {}): PartConfig => ({
   ...o,
 })
 
-describe('FDM pricing (weight × rate + machine time, 20% infill)', () => {
-  it('PLA 100 cm³ = 5.00 zł', () => {
-    // weight 100×1.25×0.2 = 25 g; material 25×50/1000 = 1.25;
-    // print 25/12 = 2.0833 h × 1.8 = 3.75; total 5.00
-    const q = computePartQuote(metrics({ volumeCm3: 100 }), cfg())
-    expect(q.unitPricePln).toBe(5.0)
-    expect(q.lineTotalPln).toBe(5.0)
+describe('FDM pricing (shell + 20% infill weight × rate + machine time)', () => {
+  it('PLA 100 cm³ / 100 cm² = 6.80 zł', () => {
+    // eff 27.2 cm³ × 1.25 = 34 g; material 34×50/1000 = 1.70;
+    // print 34/12 = 2.8333 h × 1.8 = 5.10; total 6.80
+    const q = computePartQuote(metrics(), cfg())
+    expect(q.unitPricePln).toBe(6.8)
+    expect(q.lineTotalPln).toBe(6.8)
   })
-  it('PETG 100 cm³ = 6.29 zł (factor 1.2, 2.25 zł/h)', () => {
-    // weight 25.4 g; material 25.4×50×1.2/1000 = 1.524;
-    // print 25.4/12 × 2.25 = 4.7625; total 6.2865 → 6.29
-    const q = computePartQuote(metrics({ volumeCm3: 100 }), cfg({ process: 'petg' }))
-    expect(q.unitPricePln).toBe(6.29)
+  it('PETG 100 cm³ / 100 cm² = 8.55 zł (factor 1.2, 2.25 zł/h)', () => {
+    // eff 27.2 × 1.27 = 34.544 g; material 34.544×50×1.2/1000 = 2.0726;
+    // print 34.544/12 × 2.25 = 6.477; total 8.5496 → 8.55
+    const q = computePartQuote(metrics(), cfg({ process: 'petg' }))
+    expect(q.unitPricePln).toBe(8.55)
   })
-  it('PA12-CF 100 cm³ = 21.42 zł (factor 2.0, 3.5 zł/h)', () => {
-    // weight 21.6 g; material 21.6×350×2/1000 = 15.12;
-    // print 21.6/12 = 1.8 h × 3.5 = 6.30; total 21.42
-    const q = computePartQuote(metrics({ volumeCm3: 100 }), cfg({ process: 'pa12_cf' }))
-    expect(q.unitPricePln).toBe(21.42)
+  it('PA12-CF 100 cm³ / 100 cm² = 29.13 zł (factor 2.0, 3.5 zł/h)', () => {
+    // eff 27.2 × 1.08 = 29.376 g; material 29.376×350×2/1000 = 20.5632;
+    // print 29.376/12 = 2.448 h × 3.5 = 8.568; total 29.1312 → 29.13
+    const q = computePartQuote(metrics(), cfg({ process: 'pa12_cf' }))
+    expect(q.unitPricePln).toBe(29.13)
+  })
+  it('thin part (shell ≥ volume) is billed fully solid', () => {
+    // shell min(2, 100×0.09) = 2 cm³ → eff 2 cm³, no infill discount:
+    // 2×1.25 = 2.5 g; material 0.125; print 2.5/12×1.8 = 0.375; total 0.50 → floor 1.50
+    const q = computePartQuote(
+      metrics({ volumeCm3: 2, surfaceAreaCm2: 100 }),
+      cfg(),
+    )
+    expect(q.unitPricePln).toBe(1.5)
   })
 })
 
 describe('minimum part price floor', () => {
-  it('small PLA part floors to 1.50 zł', () => {
-    // 5 cm³ → base ~0.25 zł, floored to the 1.50 zł part minimum
-    const q = computePartQuote(metrics({ volumeCm3: 5 }), cfg())
+  it('small PETG part floors to 1.50 zł (mapi 20 mm cube anchor)', () => {
+    // mapi's widget slices a 20 mm PETG cube to a raw ≈1.21 zł, floored to
+    // 1.50. Our model: shell min(8, 24×0.09 = 2.16) → eff 3.328 cm³ →
+    // 4.2266 g → material 0.2536 + machine 0.7925 = 1.05 → floor 1.50.
+    const q = computePartQuote(
+      metrics({
+        volumeCm3: 8,
+        surfaceAreaCm2: 24,
+        bboxMm: { x: 20, y: 20, z: 20 },
+      }),
+      cfg({ process: 'petg' }),
+    )
     expect(q.unitPricePln).toBe(1.5)
   })
 })
@@ -81,13 +101,13 @@ describe('quantity discount interpolation', () => {
 
 describe('lead-time multiplier (mapi-tech)', () => {
   it('economy = base × 0.90', () => {
-    // PLA 100 cm³ base 5.00 → 4.50
-    const q = computePartQuote(metrics({ volumeCm3: 100 }), cfg({ leadTime: 'economy' }))
-    expect(q.unitPricePln).toBe(4.5)
+    // PLA base 6.80 → 6.12
+    const q = computePartQuote(metrics(), cfg({ leadTime: 'economy' }))
+    expect(q.unitPricePln).toBe(6.12)
   })
   it('express = base × 1.30', () => {
-    const q = computePartQuote(metrics({ volumeCm3: 100 }), cfg({ leadTime: 'express' }))
-    expect(q.unitPricePln).toBe(6.5)
+    const q = computePartQuote(metrics(), cfg({ leadTime: 'express' }))
+    expect(q.unitPricePln).toBe(8.84)
   })
 })
 
@@ -103,7 +123,10 @@ describe('breakdown lines sum to line total', () => {
   ] as const
   for (const process of processes) {
     it(process, () => {
-      const q = computePartQuote(metrics({ volumeCm3: 142 }), cfg({ process, quantity: 7 }))
+      const q = computePartQuote(
+        metrics({ volumeCm3: 142 }),
+        cfg({ process, quantity: 7 }),
+      )
       const sum = q.breakdown.reduce((s, l) => s + l.amountPln, 0)
       expect(Math.round(sum * 100) / 100).toBe(q.lineTotalPln)
     })
@@ -113,17 +136,26 @@ describe('breakdown lines sum to line total', () => {
 describe('DFM flags', () => {
   it('exceeds the 320 mm build volume → blocked, no alternatives', () => {
     // Every material shares one 320³ envelope, so nothing else fits either.
-    const q = computePartQuote(metrics({ bboxMm: { x: 330, y: 330, z: 330 } }), cfg())
+    const q = computePartQuote(
+      metrics({ bboxMm: { x: 330, y: 330, z: 330 } }),
+      cfg(),
+    )
     expect(q.blocked).toBe(true)
     const flag = q.dfmFlags.find((f) => f.code === 'exceeds_build_volume')
     expect(flag?.suggestedProcesses).toBeUndefined()
   })
   it('rotation-aware fit: 315×320×318 passes 320³', () => {
-    const q = computePartQuote(metrics({ bboxMm: { x: 315, y: 320, z: 318 } }), cfg())
+    const q = computePartQuote(
+      metrics({ bboxMm: { x: 315, y: 320, z: 318 } }),
+      cfg(),
+    )
     expect(q.blocked).toBe(false)
   })
   it('smallest dimension < 1mm → feature warning', () => {
-    const q = computePartQuote(metrics({ bboxMm: { x: 0.5, y: 20, z: 20 } }), cfg())
+    const q = computePartQuote(
+      metrics({ bboxMm: { x: 0.5, y: 20, z: 20 } }),
+      cfg(),
+    )
     expect(q.dfmFlags.some((f) => f.code === 'small_feature')).toBe(true)
   })
   it('volume < 1cm³ → billed at 1cm³ with info flag', () => {
@@ -134,7 +166,9 @@ describe('DFM flags', () => {
   })
   it('non-watertight → geometry approximated', () => {
     const q = computePartQuote(metrics({ usedHullFallback: true }), cfg())
-    expect(q.dfmFlags.some((f) => f.code === 'geometry_approximated')).toBe(true)
+    expect(q.dfmFlags.some((f) => f.code === 'geometry_approximated')).toBe(
+      true,
+    )
   })
 })
 
@@ -170,15 +204,52 @@ describe('order totals', () => {
     expect(computeOrderTotals([fakeQuote(500)]).shippingPln).toBe(0)
     expect(computeOrderTotals([fakeQuote(500)]).freeShipping).toBe(true)
   })
-  it('VAT is 23% of net total', () => {
+  it('flat 1 zł order fee applies once per order', () => {
+    expect(computeOrderTotals([fakeQuote(100)]).orderFeePln).toBe(1)
+    expect(computeOrderTotals([fakeQuote(50), fakeQuote(50)]).orderFeePln).toBe(
+      1,
+    )
+    expect(computeOrderTotals([]).orderFeePln).toBe(0)
+    expect(computeOrderTotals([fakeQuote(999, true)]).orderFeePln).toBe(0)
+  })
+  it('totals are gross — VAT is included, not added on top', () => {
     const t = computeOrderTotals([fakeQuote(100)])
-    // net = 100 + 20 shipping = 120; VAT = 27.60; gross = 147.60
-    expect(t.netTotalPln).toBe(120)
-    expect(t.vatPln).toBe(27.6)
-    expect(t.grossTotalPln).toBe(147.6)
+    // gross = 100 + 1 fee + 20 shipping = 121; included VAT = 121×0.23/1.23
+    // = 22.63; net = 98.37
+    expect(t.grossTotalPln).toBe(121)
+    expect(t.vatPln).toBe(22.63)
+    expect(t.netTotalPln).toBe(98.37)
+    expect(Math.round((t.netTotalPln + t.vatPln) * 100) / 100).toBe(
+      t.grossTotalPln,
+    )
   })
   it('blocked parts are excluded from totals', () => {
     const t = computeOrderTotals([fakeQuote(40), fakeQuote(999, true)])
     expect(t.partsSubtotalPln).toBe(40)
+  })
+})
+
+describe('price is monotonic in part size', () => {
+  it('more volume at fixed surface area never costs less', () => {
+    const volumes = [50, 100, 200, 400]
+    const prices = volumes.map(
+      (volumeCm3) =>
+        computePartQuote(metrics({ volumeCm3 }), cfg({ process: 'petg' }))
+          .unitPricePln,
+    )
+    for (let i = 1; i < prices.length; i++) {
+      expect(prices[i]).toBeGreaterThan(prices[i - 1])
+    }
+  })
+  it('more surface area at fixed volume never costs less', () => {
+    const areas = [50, 100, 200, 400]
+    const prices = areas.map(
+      (surfaceAreaCm2) =>
+        computePartQuote(metrics({ surfaceAreaCm2 }), cfg({ process: 'petg' }))
+          .unitPricePln,
+    )
+    for (let i = 1; i < prices.length; i++) {
+      expect(prices[i]).toBeGreaterThanOrEqual(prices[i - 1])
+    }
   })
 })

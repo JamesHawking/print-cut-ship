@@ -55,6 +55,7 @@ export interface PartQuote {
 export interface OrderTotals {
   partsSubtotalPln: number
   minOrderTopUpPln: number
+  orderFeePln: number
   shippingPln: number
   netTotalPln: number
   vatPln: number
@@ -85,14 +86,24 @@ export function interpolateDiscount(quantity: number): number {
 
 /**
  * Base unit price for a single part before discount & lead-time multiplier.
- * FDM model (mapi-tech): material cost from infilled weight × per-material rate
- * and factor, plus machine time estimated from that weight.
+ * FDM model (mapi-tech): weight approximates a slicer's walls + solid
+ * top/bottom as a shell (surface area × thickness, clamped to the part
+ * volume) plus infill of the remaining interior; material cost from that
+ * weight × per-material rate and factor, plus machine time estimated from
+ * the same weight.
  */
 function unitBasePrice(
   proc: ProcessDef,
   volumeCm3: number,
+  surfaceAreaCm2: number,
 ): { total: number; lines: BreakdownLine[] } {
-  const weightG = volumeCm3 * proc.densityGCm3 * PRICING.fdm.infillFraction
+  const shellVolCm3 = Math.min(
+    volumeCm3,
+    surfaceAreaCm2 * (PRICING.fdm.shellThicknessMm / 10),
+  )
+  const effectiveVolCm3 =
+    shellVolCm3 + PRICING.fdm.infillFraction * (volumeCm3 - shellVolCm3)
+  const weightG = effectiveVolCm3 * proc.densityGCm3
   const material = (weightG * proc.plnPerKg * proc.factor) / 1000
   const printH = weightG / PRICING.fdm.gramsPerPrintHour
   const machine = printH * proc.plnPerHour
@@ -111,7 +122,10 @@ function sortedDesc(v: { x: number; y: number; z: number }): number[] {
   return [v.x, v.y, v.z].sort((a, b) => b - a)
 }
 
-function fitsBuildVolume(proc: ProcessDef, bboxMm: MeshMetrics['bboxMm']): boolean {
+function fitsBuildVolume(
+  proc: ProcessDef,
+  bboxMm: MeshMetrics['bboxMm'],
+): boolean {
   const part = sortedDesc(bboxMm)
   const build = sortedDesc(proc.build)
   return part[0] <= build[0] && part[1] <= build[1] && part[2] <= build[2]
@@ -176,6 +190,7 @@ export function computePartQuote(
   const { total: unitBasePln, lines: baseLines } = unitBasePrice(
     proc,
     billableVolumeCm3,
+    metrics.surfaceAreaCm2,
   )
   const discountFraction = interpolateDiscount(config.quantity)
   const leadTimeMultiplier = PRICING.leadTimes[config.leadTime].mult
@@ -220,7 +235,11 @@ export function computePartQuote(
   }
 }
 
-/** Order-level totals: minimum order, shipping, VAT. Blocked parts excluded. */
+/**
+ * Order-level totals: minimum order, flat order fee, shipping. Blocked parts
+ * excluded. All prices are gross (VAT-inclusive, like mapi-tech's checkout);
+ * vatPln is the included portion, netTotalPln the gross minus that VAT.
+ */
 export function computeOrderTotals(quotes: PartQuote[]): OrderTotals {
   const active = quotes.filter((q) => !q.blocked)
   const partsSubtotalPln = round2(
@@ -232,17 +251,21 @@ export function computeOrderTotals(quotes: PartQuote[]): OrderTotals {
   )
   const minOrderApplied = minOrderTopUpPln > 0
 
-  const netAfterMin = round2(partsSubtotalPln + minOrderTopUpPln)
-  const freeShipping = netAfterMin >= PRICING.freeShippingThresholdPln
+  const afterMin = round2(partsSubtotalPln + minOrderTopUpPln)
+  const orderFeePln = active.length > 0 ? PRICING.orderFeePln : 0
+  const freeShipping = afterMin >= PRICING.freeShippingThresholdPln
   const shippingPln = freeShipping ? 0 : PRICING.shippingFlatPln
 
-  const netTotalPln = round2(netAfterMin + shippingPln)
-  const vatPln = round2(netTotalPln * PRICING.vatRate)
-  const grossTotalPln = round2(netTotalPln + vatPln)
+  const grossTotalPln = round2(afterMin + orderFeePln + shippingPln)
+  const vatPln = round2(
+    (grossTotalPln * PRICING.vatRate) / (1 + PRICING.vatRate),
+  )
+  const netTotalPln = round2(grossTotalPln - vatPln)
 
   return {
     partsSubtotalPln,
     minOrderTopUpPln,
+    orderFeePln,
     shippingPln,
     netTotalPln,
     vatPln,

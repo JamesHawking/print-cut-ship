@@ -10,7 +10,7 @@ export interface MeshMetrics {
   usedHullFallback: boolean
 }
 
-export type MeshFormat = 'stl' | 'obj' | 'positions'
+export type MeshFormat = 'stl' | 'obj' | 'step' | 'positions'
 
 export interface WorkerRequest {
   id: string
