@@ -23,6 +23,21 @@ bun install
 bun run dev        # http://localhost:3000
 ```
 
+### Optional: MakerWorld URL import
+
+Pasting a `makerworld.com/…/models/…` link into the dropzone downloads that
+model's default print-profile 3MF server-side and quotes it like a local file.
+This uses MakerWorld's undocumented endpoints and needs a Bambu Cloud bearer
+token in `instant-quote/.env` (gitignored):
+
+```bash
+BAMBU_CLOUD_TOKEN=eyJ...
+```
+
+Grab the token from a logged-in makerworld.com session (devtools → Application
+→ Cookies → `token`). It expires after ~90 days; an expired or missing token
+degrades to a clear error toast, everything else keeps working.
+
 ## Scripts
 
 ```bash

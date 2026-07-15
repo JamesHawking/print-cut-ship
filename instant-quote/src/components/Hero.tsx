@@ -20,7 +20,15 @@ const STAGES = [
   { n: '03', label: 'Pack & ship', left: '61%', line: 'h-16' },
 ]
 
-export function Hero({ onFiles }: { onFiles: (files: File[]) => void }) {
+export function Hero({
+  onFiles,
+  onUrl,
+  urlPending,
+}: {
+  onFiles: (files: File[]) => void
+  onUrl?: (url: string) => void
+  urlPending?: boolean
+}) {
   const specs = strings.hero.specs.map((label, i) => ({
     label,
     value: SPEC_VALUES[i],
@@ -45,46 +53,53 @@ export function Hero({ onFiles }: { onFiles: (files: File[]) => void }) {
           </span>
         </div>
 
-        {/* hero body — left column carries the copy, specs and upload panel;
-            the right column is the factory-line illustration. On mobile they
-            stack: copy → illustration → upload → specs. */}
-        <div className="grid gap-10 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)] lg:items-center lg:gap-x-12 lg:gap-y-8 lg:py-20">
-          <div className="lg:col-start-1 lg:row-start-1">
-            <p className="text-muted-foreground font-mono text-xs tracking-[0.2em] uppercase">
-              {strings.hero.kicker}
-            </p>
-            <h1 className="mt-5 text-4xl leading-[0.95] font-black tracking-tight text-balance sm:text-5xl md:text-6xl">
-              {strings.hero.headline}
-            </h1>
-            <p className="text-muted-foreground mt-6 max-w-xl text-lg text-pretty">
-              {strings.hero.sub}
-            </p>
-            <p className="text-muted-foreground mt-7 font-mono text-[0.65rem] tracking-wider uppercase">
-              {strings.hero.trust}
-            </p>
+        {/* hero body — copy and the upload panel sit side by side; below them a
+            full-width capability strip, then the full-width factory figure.
+            On mobile everything stacks in that order. */}
+        <div className="py-12 lg:py-20">
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch lg:gap-12">
+            <div className="flex flex-col justify-center">
+              <p className="text-muted-foreground font-mono text-xs tracking-[0.2em] uppercase">
+                {strings.hero.kicker}
+              </p>
+              <h1 className="mt-5 text-4xl leading-[0.95] font-black tracking-tight text-balance sm:text-5xl md:text-6xl">
+                {strings.hero.headline}
+              </h1>
+              <p className="text-muted-foreground mt-6 max-w-xl text-[17px] leading-relaxed text-pretty">
+                {strings.hero.sub}
+              </p>
+              <p className="text-muted-foreground mt-7 font-mono text-[0.65rem] tracking-wider uppercase">
+                {strings.hero.trust}
+              </p>
+            </div>
+
+            <div className="flex flex-col">
+              <DropZone
+                onFiles={onFiles}
+                variant="hero"
+                onUrl={onUrl}
+                urlPending={urlPending}
+              />
+              <p className="text-muted-foreground mt-3.5 text-center font-mono text-[0.7rem] tracking-widest uppercase">
+                {strings.hero.privacy}
+              </p>
+            </div>
           </div>
 
-          <FactoryFigure className="lg:col-start-2 lg:row-span-3 lg:self-start" />
-
-          <dl className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-4 lg:col-start-1 lg:row-start-2">
+          <dl className="bg-border mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-4">
             {specs.map((s) => (
-              <div key={s.label} className="bg-card p-4">
-                <dt className="font-mono text-xl font-bold tracking-tight tabular-nums">
+              <div key={s.label} className="bg-card p-5">
+                <dt className="font-mono text-2xl leading-none font-bold tracking-tight tabular-nums">
                   {s.value}
                 </dt>
-                <dd className="text-muted-foreground mt-1 font-mono text-[0.65rem] tracking-wider uppercase">
+                <dd className="text-muted-foreground mt-2.5 font-mono text-[0.65rem] tracking-wider uppercase">
                   {s.label}
                 </dd>
               </div>
             ))}
           </dl>
 
-          <div className="lg:col-start-1 lg:row-start-3">
-            <DropZone onFiles={onFiles} variant="hero" />
-            <p className="text-muted-foreground mt-3 text-center font-mono text-[0.7rem] tracking-widest uppercase">
-              {strings.hero.privacy}
-            </p>
-          </div>
+          <FactoryFigure className="mt-16 lg:mt-[72px]" />
         </div>
       </div>
     </section>
@@ -130,6 +145,10 @@ function FactoryFigure({ className }: { className?: string }) {
           </div>
         ))}
       </div>
+      <figcaption className="text-muted-foreground mt-5 flex items-center justify-between gap-4 border-t pt-3 font-mono text-[0.65rem] tracking-wider uppercase">
+        <span>{strings.hero.figCaption}</span>
+        <span>{strings.hero.figNo}</span>
+      </figcaption>
     </figure>
   )
 }

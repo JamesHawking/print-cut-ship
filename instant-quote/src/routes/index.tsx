@@ -27,6 +27,12 @@ import {
   type PartQuote,
 } from '@/lib/pricing'
 import { classifyFile, MAX_FILE_BYTES, MAX_PARTS } from '@/lib/upload'
+import {
+  parseMakerworldUrl,
+  MAKERWORLD_ERROR_MESSAGES,
+  type MakerworldErrorCode,
+} from '@/lib/makerworld'
+import { fetchMakerworldModel } from '@/server/makerworld.functions'
 import { track } from '@/lib/funnel'
 import { formatWarsawClock } from '@/lib/leadtime'
 import { strings } from '@/lib/strings'
@@ -40,6 +46,7 @@ function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [pricesExVat, setPricesExVat] = useState(false)
   const [orderOpen, setOrderOpen] = useState(false)
+  const [mwPending, setMwPending] = useState(false)
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -129,6 +136,44 @@ function Home() {
     }
   }
 
+  // Paste-a-MakerWorld-link intake: the server function downloads the 3MF
+  // (browser CORS rules out a direct fetch), then the bytes re-enter the
+  // normal pipeline as a synthesized File.
+  async function handleMakerworldUrl(url: string) {
+    const ref = parseMakerworldUrl(url)
+    if (!ref) {
+      toast.error(strings.errors.mwInvalidUrl)
+      return
+    }
+    setMwPending(true)
+    track('makerworld_fetch_started', { ...ref })
+    try {
+      const res = await fetchMakerworldModel({ data: ref })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          code?: MakerworldErrorCode
+        } | null
+        track('makerworld_fetch_failed', { ...ref, code: body?.code })
+        toast.error(
+          (body?.code && MAKERWORLD_ERROR_MESSAGES[body.code]) ??
+            strings.errors.mwDownloadFailed,
+        )
+        return
+      }
+      const buf = await res.arrayBuffer()
+      const name =
+        decodeURIComponent(res.headers.get('x-mw-filename') ?? '') ||
+        `makerworld-${ref.designId}.3mf`
+      track('makerworld_fetch_succeeded', { ...ref, sizeBytes: buf.byteLength })
+      await handleFiles([new File([buf], name, { type: 'model/3mf' })])
+    } catch {
+      track('makerworld_fetch_failed', { ...ref, code: 'network' })
+      toast.error(strings.errors.mwDownloadFailed)
+    } finally {
+      setMwPending(false)
+    }
+  }
+
   function handleConfigChange(id: string, patch: Partial<PartConfig>) {
     updateConfig(id, patch)
     track('config_changed', { partId: id, ...patch })
@@ -145,7 +190,11 @@ function Home() {
   if (parts.length === 0) {
     return (
       <>
-        <Hero onFiles={handleFiles} />
+        <Hero
+          onFiles={handleFiles}
+          onUrl={handleMakerworldUrl}
+          urlPending={mwPending}
+        />
         <HowItWorks />
         <Materials />
         <SiteFooter />
@@ -240,7 +289,12 @@ function Home() {
         )}
 
         {parts.length < MAX_PARTS && (
-          <DropZone onFiles={handleFiles} variant="compact" />
+          <DropZone
+            onFiles={handleFiles}
+            variant="compact"
+            onUrl={handleMakerworldUrl}
+            urlPending={mwPending}
+          />
         )}
 
         <p className="text-muted-foreground text-center font-mono text-[0.7rem] tracking-wide uppercase">

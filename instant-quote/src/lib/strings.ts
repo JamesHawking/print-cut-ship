@@ -15,6 +15,8 @@ export const strings = {
     sub: 'The fastest, most transparent way to price a 3D-printed part in the EU — a full cost breakdown and a real ship date, with no account and no waiting.',
     trust: 'Made in the EU · Ships D+1/D+2 to Germany · No account',
     privacy: 'Private — files never leave your session unless you order',
+    figCaption: 'Automated line — print · pick · pack · ship',
+    figNo: 'Fig. 01',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
       'FDM materials',
@@ -98,6 +100,7 @@ export const strings = {
     ctaButton: 'Upload a file',
     note: 'Prototype · illustrative rates · every quote is fully itemized',
     meta: 'EU · FDM · PLN · 23% VAT',
+    cutoff: '14:00 cutoff',
   },
   dropzone: {
     idle: 'Drop a 3D file here',
@@ -110,6 +113,10 @@ export const strings = {
     intakeArmed: 'File intake — armed',
     formats: 'STL · 3MF · OBJ · STEP — up to 100 MB',
     maxSize: 'Max 320 × 320 × 320 mm',
+    mwLabel: 'or paste a MakerWorld link',
+    mwPlaceholder: 'makerworld.com/en/models/…',
+    mwButton: 'Fetch',
+    mwFetching: 'Fetching from MakerWorld…',
   },
   quote: {
     parsingTitle: 'Measuring your part…',
@@ -158,5 +165,14 @@ export const strings = {
     parseFailed: 'Something went wrong reading the geometry. Try re-uploading.',
     webglMissing:
       'Your browser can’t show the 3D preview, but your quote is unaffected.',
+    mwInvalidUrl: 'That doesn’t look like a MakerWorld model link.',
+    mwNotFound: 'Model not found on MakerWorld — check the link.',
+    mwNoProfile: 'This model has no downloadable print profile.',
+    mwAuthExpired:
+      'MakerWorld access expired — refresh BAMBU_CLOUD_TOKEN on the server.',
+    mwNotConfigured: 'MakerWorld import is not configured on this server.',
+    mwDownloadFailed:
+      'Could not download the model from MakerWorld. Try again.',
+    mwTooLarge: 'That model is over 100 MB. Download and simplify it first.',
   },
 } as const

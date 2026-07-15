@@ -10,6 +10,9 @@ export type FunnelEvent =
   | 'order_clicked'
   | 'order_submitted'
   | 'step_quote_requested'
+  | 'makerworld_fetch_started'
+  | 'makerworld_fetch_succeeded'
+  | 'makerworld_fetch_failed'
 
 let sessionId: string | null = null
 

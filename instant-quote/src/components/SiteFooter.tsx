@@ -1,7 +1,14 @@
+import { useEffect, useState } from 'react'
 import { strings } from '@/lib/strings'
+import { formatWarsawClock } from '@/lib/leadtime'
 
 export function SiteFooter() {
-  const { ctaHeading, ctaBody, ctaButton, note, meta } = strings.footer
+  const { ctaHeading, ctaBody, ctaButton, note, meta, cutoff } = strings.footer
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(t)
+  }, [])
   return (
     <footer className="border-t">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -20,11 +27,14 @@ export function SiteFooter() {
           </a>
         </div>
 
-        <div className="text-muted-foreground flex flex-col gap-3 border-t py-6 font-mono text-xs tracking-widest uppercase sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground flex flex-col gap-3 border-t py-6 font-mono text-xs tracking-widest uppercase sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <span className="text-foreground font-bold">
             {strings.hero.wordmark}
           </span>
           <span>{meta}</span>
+          <span className="tabular-nums">
+            Europe/Warsaw {formatWarsawClock(now)} · {cutoff}
+          </span>
         </div>
         <p className="text-muted-foreground/70 pb-8 font-mono text-[0.65rem] tracking-wider uppercase">
           {note}
