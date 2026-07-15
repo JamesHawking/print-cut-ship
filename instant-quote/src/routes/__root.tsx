@@ -3,6 +3,7 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
+import { PartsProvider } from '@/hooks/useParts'
 
 // Type system (Anduril-inspired): Archivo grotesque for display/UI, Martian Mono
 // for technical labels & numerics. Self-hosted via @fontsource (no external CDN).
@@ -42,7 +43,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased">
         <QueryClientProvider client={queryClient}>
-          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+          <PartsProvider>
+            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+          </PartsProvider>
           <Toaster richColors position="top-right" />
         </QueryClientProvider>
         <Scripts />

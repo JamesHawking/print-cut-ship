@@ -158,19 +158,19 @@ describe('breakdown lines sum to line total', () => {
 })
 
 describe('DFM flags', () => {
-  it('exceeds the 320 mm build volume → blocked, no alternatives', () => {
-    // Every material shares one 320³ envelope, so nothing else fits either.
+  it('exceeds the 340×320×340 mm plate → blocked, no alternatives', () => {
+    // Every material shares the one H2S plate, so nothing else fits either.
     const q = computePartQuote(
-      metrics({ bboxMm: { x: 330, y: 330, z: 330 } }),
+      metrics({ bboxMm: { x: 350, y: 350, z: 350 } }),
       cfg(),
     )
     expect(q.blocked).toBe(true)
     const flag = q.dfmFlags.find((f) => f.code === 'exceeds_build_volume')
     expect(flag?.suggestedProcesses).toBeUndefined()
   })
-  it('rotation-aware fit: 315×320×318 passes 320³', () => {
+  it('rotation-aware fit: 335×320×338 passes 340×320×340', () => {
     const q = computePartQuote(
-      metrics({ bboxMm: { x: 315, y: 320, z: 318 } }),
+      metrics({ bboxMm: { x: 335, y: 320, z: 338 } }),
       cfg(),
     )
     expect(q.blocked).toBe(false)
@@ -193,6 +193,73 @@ describe('DFM flags', () => {
     expect(q.dfmFlags.some((f) => f.code === 'geometry_approximated')).toBe(
       true,
     )
+  })
+})
+
+describe('multi-piece 3MF plate packing', () => {
+  // One plate-filling piece + three mid pieces → packs onto 2 plates even
+  // though the merged bbox (438 mm wide) exceeds the 340×320×340 plate.
+  const pieces = [
+    { bboxMm: { x: 320, y: 300, z: 100 } },
+    { bboxMm: { x: 150, y: 150, z: 50 } },
+    { bboxMm: { x: 150, y: 150, z: 50 } },
+    { bboxMm: { x: 150, y: 150, z: 50 } },
+  ]
+  const multi = metrics({ bboxMm: { x: 438, y: 150, z: 245 }, pieces })
+
+  it('oversize merged bbox is not blocked when every piece fits', () => {
+    const q = computePartQuote(multi, cfg())
+    expect(q.blocked).toBe(false)
+    expect(q.pieceCount).toBe(4)
+    expect(q.plates).toBe(2)
+  })
+  it('adds one extra-plate fee to the unit price with a breakdown line', () => {
+    // PLA base 6.5063 + 10 zł plate fee = 16.5063 → 16.51
+    const q = computePartQuote(multi, cfg())
+    expect(q.unitPricePln).toBe(16.51)
+    const line = q.breakdown.find((l) => l.key === 'plates')
+    expect(line?.amountPln).toBe(10)
+  })
+  it('raises the multi_plate info flag', () => {
+    const q = computePartQuote(multi, cfg())
+    const flag = q.dfmFlags.find((f) => f.code === 'multi_plate')
+    expect(flag?.severity).toBe('info')
+  })
+  it('breakdown lines still sum to the line total at quantity', () => {
+    const q = computePartQuote(multi, cfg({ quantity: 7 }))
+    const sum = q.breakdown.reduce((s, l) => s + l.amountPln, 0)
+    expect(Math.round(sum * 100) / 100).toBe(q.lineTotalPln)
+  })
+  it('pieces on a single plate: no fee, no flag', () => {
+    const q = computePartQuote(
+      metrics({
+        bboxMm: { x: 250, y: 100, z: 50 },
+        pieces: [
+          { bboxMm: { x: 100, y: 100, z: 50 } },
+          { bboxMm: { x: 100, y: 100, z: 50 } },
+        ],
+      }),
+      cfg(),
+    )
+    expect(q.plates).toBe(1)
+    expect(q.unitPricePln).toBe(6.51)
+    expect(q.breakdown.some((l) => l.key === 'plates')).toBe(false)
+    expect(q.dfmFlags.some((f) => f.code === 'multi_plate')).toBe(false)
+  })
+  it('still blocked when one piece cannot fit any plate', () => {
+    const q = computePartQuote(
+      metrics({
+        bboxMm: { x: 100, y: 100, z: 350 },
+        pieces: [
+          { bboxMm: { x: 100, y: 100, z: 350 } },
+          { bboxMm: { x: 50, y: 50, z: 50 } },
+        ],
+      }),
+      cfg(),
+    )
+    expect(q.blocked).toBe(true)
+    expect(q.dfmFlags.some((f) => f.code === 'exceeds_build_volume')).toBe(true)
+    expect(q.dfmFlags.some((f) => f.code === 'multi_plate')).toBe(false)
   })
 })
 

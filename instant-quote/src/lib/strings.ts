@@ -25,6 +25,12 @@ export const strings = {
       'VAT included · PLN',
     ],
   },
+  nav: {
+    howItWorks: 'How it works',
+    materials: 'Materials',
+    resume: (n: number) => `Resume quote (${n}) →`,
+    newQuote: '← New quote',
+  },
   process: {
     kicker: 'How it works',
     heading: 'From file to ship date in three steps.',
@@ -112,7 +118,7 @@ export const strings = {
     intake: 'File intake',
     intakeArmed: 'File intake — armed',
     formats: 'STL · 3MF · OBJ · STEP — up to 100 MB',
-    maxSize: 'Max 320 × 320 × 320 mm',
+    maxSize: 'Max 340 × 320 × 340 mm',
     mwLabel: 'or paste a MakerWorld link',
     mwPlaceholder: 'makerworld.com/en/models/…',
     mwButton: 'Fetch',

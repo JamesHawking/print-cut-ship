@@ -3,7 +3,7 @@ import { strings } from '@/lib/strings'
 export function HowItWorks() {
   const { kicker, heading, steps } = strings.process
   return (
-    <section className="border-t">
+    <section id="how-it-works" className="scroll-mt-14 border-t">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
         <p className="text-muted-foreground font-mono text-xs tracking-[0.2em] uppercase">
           {kicker}

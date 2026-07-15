@@ -7,7 +7,7 @@ import { DropZone } from './DropZone'
 // labels in strings.hero.specs (same order).
 const SPEC_VALUES = [
   String(PROCESS_IDS.length).padStart(2, '0'),
-  `${PRICING.processes.pla.build.x}³`,
+  `${PRICING.processes.pla.build.x}×${PRICING.processes.pla.build.y}×${PRICING.processes.pla.build.z}`,
   `${PRICING.leadTimes.express.businessDays}–${PRICING.leadTimes.economy.businessDays}`,
   `${Math.round(PRICING.vatRate * 100)}%`,
 ]
@@ -39,20 +39,6 @@ export function Hero({
       <CornerMarks />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        {/* brand / status bar */}
-        <div className="text-muted-foreground flex items-center justify-between border-b py-4 font-mono text-xs tracking-widest uppercase">
-          <span className="text-foreground font-bold">
-            {strings.hero.wordmark}
-          </span>
-          <span className="flex items-center gap-4">
-            <span className="hidden sm:inline">{strings.hero.status}</span>
-            <span className="text-foreground flex items-center gap-1.5">
-              <span className="bg-signal size-1.5 rounded-full" />
-              {strings.hero.ready}
-            </span>
-          </span>
-        </div>
-
         {/* hero body — copy and the upload panel sit side by side; below them a
             full-width capability strip, then the full-width factory figure.
             On mobile everything stacks in that order. */}

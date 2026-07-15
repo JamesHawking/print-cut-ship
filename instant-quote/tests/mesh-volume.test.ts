@@ -2,7 +2,7 @@ import { describe, it, expect } from 'bun:test'
 import { parseStl } from '../src/lib/mesh/parse-stl'
 import { parseObj } from '../src/lib/mesh/parse-obj'
 import { analyze } from '../src/lib/mesh/analyze'
-import { parse3mf } from '../src/lib/mesh/parse-3mf'
+import { parse3mf, parse3mfParts } from '../src/lib/mesh/parse-3mf'
 import { convexHullVolume } from '../src/lib/mesh/hull'
 import {
   cubeBinaryStl,
@@ -13,6 +13,7 @@ import {
   cubeTriangles,
   tetraPoints,
   productionExtension3mf,
+  multiItem3mf,
 } from './fixtures/generate'
 
 describe('10 mm cube (binary STL)', () => {
@@ -99,5 +100,31 @@ describe('3MF (production extension, split model parts)', () => {
     )
     expect(m.bboxMm).toEqual({ x: 20, y: 10, z: 10 })
     expect(m.volumeCm3).toBeCloseTo(2, 6)
+  })
+})
+
+describe('3MF multi-item builds (one piece per build item)', () => {
+  it('parse3mfParts returns one soup per top-level item', () => {
+    const parts = parse3mfParts(multiItem3mf(10, 3, 50))
+    expect(parts.length).toBe(3)
+    for (const p of parts) expect(p.length).toBe(12 * 9)
+  })
+  it('single-item production-extension file → one part', () => {
+    expect(parse3mfParts(productionExtension3mf(10)).length).toBe(1)
+  })
+  it('item transforms are applied per piece (translation along X)', () => {
+    const parts = parse3mfParts(multiItem3mf(10, 2, 50))
+    const minX = (p: Float32Array) => {
+      let min = Infinity
+      for (let i = 0; i < p.length; i += 3) if (p[i] < min) min = p[i]
+      return min
+    }
+    expect(minX(parts[0])).toBeCloseTo(0, 6)
+    expect(minX(parts[1])).toBeCloseTo(50, 6)
+  })
+  it('parse3mf merges all items (3 cubes → 3 cm³, spanning bbox)', () => {
+    const m = analyze(parse3mf(multiItem3mf(10, 3, 50)))
+    expect(m.volumeCm3).toBeCloseTo(3, 6)
+    expect(m.bboxMm.x).toBeCloseTo(110, 6)
   })
 })

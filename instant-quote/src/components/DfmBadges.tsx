@@ -62,5 +62,7 @@ function label(code: DfmFlag['code']): string {
       return 'Min. volume'
     case 'geometry_approximated':
       return 'Geometry approximated'
+    case 'multi_plate':
+      return 'Multi-plate'
   }
 }

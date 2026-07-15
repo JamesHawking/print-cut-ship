@@ -35,7 +35,7 @@ export function Materials() {
     footnote,
   } = strings.materialsSection
   return (
-    <section className="bg-secondary/40 border-t">
+    <section id="materials" className="bg-secondary/40 scroll-mt-14 border-t">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
         <p className="text-muted-foreground font-mono text-xs tracking-[0.2em] uppercase">
           {kicker}

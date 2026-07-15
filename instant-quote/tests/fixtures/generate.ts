@@ -250,3 +250,69 @@ ${faces.join('\n')}
     zipped.byteOffset + zipped.byteLength,
   ) as ArrayBuffer
 }
+
+/**
+ * A .3mf whose build has `count` top-level items (one physical piece each),
+ * every item referencing the same cube mesh (side s) translated i×spacingMm
+ * along X via its item transform. Geometry lives in the root model part —
+ * exercises multi-item builds rather than the production extension.
+ */
+export function multiItem3mf(
+  s: number,
+  count: number,
+  spacingMm = 0,
+): ArrayBuffer {
+  const corners = cubeCorners(s)
+  const tris = cubeIndexTriangles(s)
+  const verts = corners
+    .map((c) => `   <vertex x="${c[0]}" y="${c[1]}" z="${c[2]}"/>`)
+    .join('\n')
+  const faces: string[] = []
+  for (let i = 0; i < tris.length; i += 3) {
+    faces.push(
+      `   <triangle v1="${tris[i]}" v2="${tris[i + 1]}" v3="${tris[i + 2]}"/>`,
+    )
+  }
+  const items = Array.from(
+    { length: count },
+    (_, i) =>
+      `  <item objectid="1" transform="1 0 0 0 1 0 0 0 1 ${i * spacingMm} 0 0"/>`,
+  ).join('\n')
+
+  const rootModel = `<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
+ <resources>
+  <object id="1" type="model">
+   <mesh>
+    <vertices>
+${verts}
+    </vertices>
+    <triangles>
+${faces.join('\n')}
+    </triangles>
+   </mesh>
+  </object>
+ </resources>
+ <build>
+${items}
+ </build>
+</model>`
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+ <Relationship Target="/3D/3dmodel.model" Id="rel-1" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>
+</Relationships>`
+
+  const enc = (str: string) => new TextEncoder().encode(str)
+  const zipped = zipSync({
+    '[Content_Types].xml': enc(
+      '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/></Types>',
+    ),
+    '_rels/.rels': enc(rootRels),
+    '3D/3dmodel.model': enc(rootModel),
+  })
+  return zipped.buffer.slice(
+    zipped.byteOffset,
+    zipped.byteOffset + zipped.byteLength,
+  ) as ArrayBuffer
+}

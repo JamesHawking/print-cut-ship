@@ -8,6 +8,10 @@ export interface MeshMetrics {
   triangleCount: number
   watertight: boolean // heuristic; false => hull fallback used
   usedHullFallback: boolean
+  // Per-piece bounding boxes for multi-item 3MF files (one entry per
+  // top-level build item). Computed on the main thread; absent for
+  // single-piece files and non-3MF formats.
+  pieces?: Array<{ bboxMm: { x: number; y: number; z: number } }>
 }
 
 export type MeshFormat = 'stl' | 'obj' | 'step' | 'positions'

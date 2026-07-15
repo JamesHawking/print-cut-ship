@@ -24,8 +24,14 @@ export interface FdmProcess {
 
 export type ProcessDef = FdmProcess
 
-// mapi-tech runs a single 320×320×320 mm build envelope across all materials.
-const FDM_BUILD: BuildVolumeMm = { x: 320, y: 320, z: 320 }
+// Our shop prints on Bambu Lab H2S machines: one 340×320×340 mm plate shared
+// across all materials (mapi-tech models a 320³ envelope; ours is the H2S).
+export const PRINTER = {
+  id: 'h2s',
+  label: 'Bambu Lab H2S',
+  plate: { x: 340, y: 320, z: 340 } satisfies BuildVolumeMm,
+} as const
+const FDM_BUILD: BuildVolumeMm = PRINTER.plate
 
 export const PRICING = {
   processes: {
@@ -122,6 +128,11 @@ export const PRICING = {
     standard: { mult: 1.0, businessDays: 5 },
     express: { mult: 1.3, businessDays: 3 }, // "Ekspres"
   },
+  // Multi-piece 3MF files whose pieces don't fit one plate: flat fee per
+  // extra plate (plate change + setup). TODO: calibrate — mapi-tech has no
+  // analog line item to anchor against.
+  extraPlateFeePln: 10,
+  plateGutterMm: 5, // spacing required between pieces on a plate
   minOrderPln: 30,
   minPartPricePln: 1.5,
   orderFeePln: 1, // flat per-order fee observed in mapi-tech's cart (33.67 → 34.67)

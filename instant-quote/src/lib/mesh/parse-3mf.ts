@@ -115,8 +115,12 @@ function parseModelPart(xml: string): ModelPart {
   return objects
 }
 
-/** Parse a .3mf file into a flattened position soup (world-space, 9 floats/tri). */
-export function parse3mf(buffer: ArrayBuffer): Float32Array {
+/**
+ * Parse a .3mf file into one flattened position soup per top-level build item
+ * (world-space, 9 floats/tri). One build item = one physical piece on the
+ * plate; nested component meshes stay merged within their piece.
+ */
+export function parse3mfParts(buffer: ArrayBuffer): Float32Array[] {
   let zip: Record<string, Uint8Array>
   try {
     zip = unzipSync(new Uint8Array(buffer))
@@ -166,7 +170,7 @@ export function parse3mf(buffer: ArrayBuffer): Float32Array {
     throw new MeshParseError('corrupt', 'Could not read the 3MF file.')
   const rootXml = dec.decode(rootFile)
 
-  const chunks: Float32Array[] = []
+  let chunks: Float32Array[] = []
   const emitObject = (
     partPath: string,
     objectId: string,
@@ -203,6 +207,7 @@ export function parse3mf(buffer: ArrayBuffer): Float32Array {
     }
   }
 
+  const parts: Float32Array[] = []
   const buildM = rootXml.match(/<build\b[^>]*>([\s\S]*?)<\/build>/)
   if (buildM) {
     const ire = /<item\b([^>]*?)\/?>/g
@@ -210,19 +215,27 @@ export function parse3mf(buffer: ArrayBuffer): Float32Array {
     while ((im = ire.exec(buildM[1]))) {
       const objectid = attr(im[1], 'objectid')
       if (!objectid) continue
+      chunks = []
       emitObject(
         rootPath,
         objectid,
         parseTransform(attr(im[1], 'transform')),
         0,
       )
+      const merged = mergeChunks(chunks)
+      if (merged.length > 0) parts.push(merged)
     }
   }
 
-  const total = chunks.reduce((s, c) => s + c.length, 0)
-  if (total === 0) {
+  if (parts.length === 0) {
     throw new MeshParseError('empty', '3MF contains no printable geometry.')
   }
+  return parts
+}
+
+function mergeChunks(chunks: Float32Array[]): Float32Array {
+  if (chunks.length === 1) return chunks[0]
+  const total = chunks.reduce((s, c) => s + c.length, 0)
   const merged = new Float32Array(total)
   let offset = 0
   for (const c of chunks) {
@@ -230,4 +243,9 @@ export function parse3mf(buffer: ArrayBuffer): Float32Array {
     offset += c.length
   }
   return merged
+}
+
+/** Parse a .3mf file into a flattened position soup (world-space, 9 floats/tri). */
+export function parse3mf(buffer: ArrayBuffer): Float32Array {
+  return mergeChunks(parse3mfParts(buffer))
 }

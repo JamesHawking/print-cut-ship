@@ -8,6 +8,7 @@ import {
   type ProcessDef,
 } from './pricing-config'
 import type { MeshMetrics } from './mesh/types'
+import { countPlates } from './packing'
 
 export type { LeadTimeId, ProcessId } from './pricing-config'
 
@@ -23,13 +24,14 @@ export interface DfmFlag {
     | 'small_feature'
     | 'min_volume_billed'
     | 'geometry_approximated'
+    | 'multi_plate'
   severity: 'block' | 'warn' | 'info'
   message: string
   suggestedProcesses?: ProcessId[]
 }
 
 export interface BreakdownLine {
-  key: 'material' | 'machine' | 'finishing'
+  key: 'material' | 'machine' | 'finishing' | 'plates'
   label: string
   amountPln: number
 }
@@ -50,6 +52,9 @@ export interface PartQuote {
   breakdown: BreakdownLine[]
   dfmFlags: DfmFlag[]
   priceBreaks: PriceBreak[]
+  // Present only for multi-piece 3MF parts.
+  pieceCount?: number
+  plates?: number
 }
 
 export interface OrderTotals {
@@ -179,23 +184,66 @@ export function computePartQuote(
     })
   }
 
-  // Build-volume check for the chosen process (blocking).
-  const fits = fitsBuildVolume(proc, metrics.bboxMm)
-  if (!fits) {
-    const alternatives = processesThatFit(metrics.bboxMm)
-    dfmFlags.push({
-      code: 'exceeds_build_volume',
-      severity: 'block',
-      message: `Part exceeds the ${proc.build.x}×${proc.build.y}×${proc.build.z} mm build volume.`,
-      suggestedProcesses: alternatives.length ? alternatives : undefined,
-    })
+  // Build-volume check for the chosen process (blocking). Multi-piece 3MF
+  // files are gated piece-by-piece with plate packing — a merged bbox that
+  // exceeds the plate is fine as long as every piece fits (possibly across
+  // several plates). Single-piece parts keep the rotation-aware bbox check.
+  const pieces = metrics.pieces
+  const multiPiece = pieces !== undefined && pieces.length >= 2
+  let plates = 1
+  let fits: boolean
+  if (multiPiece) {
+    const packOpts = { gutterMm: PRICING.plateGutterMm }
+    const counted = countPlates(pieces, proc.build, packOpts)
+    fits = counted !== null
+    plates = counted ?? 1
+    if (!fits) {
+      const alternatives = (
+        Object.keys(PRICING.processes) as ProcessId[]
+      ).filter(
+        (id) =>
+          countPlates(pieces, PRICING.processes[id].build, packOpts) !== null,
+      )
+      dfmFlags.push({
+        code: 'exceeds_build_volume',
+        severity: 'block',
+        message: `A piece exceeds the ${proc.build.x}×${proc.build.y}×${proc.build.z} mm build plate.`,
+        suggestedProcesses: alternatives.length ? alternatives : undefined,
+      })
+    } else if (plates > 1) {
+      dfmFlags.push({
+        code: 'multi_plate',
+        severity: 'info',
+        message: `${pieces.length} pieces pack onto ${plates} build plates — ${PRICING.extraPlateFeePln} zł per extra plate.`,
+      })
+    }
+  } else {
+    fits = fitsBuildVolume(proc, metrics.bboxMm)
+    if (!fits) {
+      const alternatives = processesThatFit(metrics.bboxMm)
+      dfmFlags.push({
+        code: 'exceeds_build_volume',
+        severity: 'block',
+        message: `Part exceeds the ${proc.build.x}×${proc.build.y}×${proc.build.z} mm build volume.`,
+        suggestedProcesses: alternatives.length ? alternatives : undefined,
+      })
+    }
   }
 
-  const { total: unitBasePln, lines: baseLines } = unitBasePrice(
-    proc,
-    billableVolumeCm3,
-    metrics.surfaceAreaCm2,
-  )
+  const base = unitBasePrice(proc, billableVolumeCm3, metrics.surfaceAreaCm2)
+  const baseLines = base.lines
+  let unitBasePln = base.total
+  // Per-unit fee for each plate beyond the first, folded into the base so
+  // discounts, lead-time multipliers, and breakdown scaling apply uniformly.
+  const plateFeePln = (plates - 1) * PRICING.extraPlateFeePln
+  if (plateFeePln > 0) {
+    unitBasePln += plateFeePln
+    baseLines.push({
+      key: 'plates',
+      label: `Extra plates (${plates - 1})`,
+      amountPln: plateFeePln,
+    })
+  }
   const discountFraction = interpolateDiscount(config.quantity)
   const leadTimeMultiplier = PRICING.leadTimes[config.leadTime].mult
 
@@ -236,6 +284,7 @@ export function computePartQuote(
     breakdown: scaled,
     dfmFlags,
     priceBreaks,
+    ...(multiPiece && { pieceCount: pieces.length, plates }),
   }
 }
 

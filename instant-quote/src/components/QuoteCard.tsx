@@ -28,6 +28,13 @@ export function QuoteCard({ part, quote, onConfigChange, now }: Props) {
               <p className="text-muted-foreground text-xs">
                 {formatVolume(quote.billableVolumeCm3)} ·{' '}
                 {part.metrics.triangleCount.toLocaleString()} triangles
+                {quote.pieceCount != null && quote.plates != null && (
+                  <>
+                    {' '}
+                    · {quote.pieceCount} parts · {quote.plates}{' '}
+                    {quote.plates === 1 ? 'plate' : 'plates'}
+                  </>
+                )}
               </p>
             )}
           </div>
