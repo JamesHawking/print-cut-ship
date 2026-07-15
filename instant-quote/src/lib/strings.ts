@@ -7,7 +7,7 @@ export const strings = {
       'Upload an STL, 3MF, OBJ or STEP file and get an instant price. Made in the EU, ships D+1/D+2 to Germany. No account needed.',
   },
   hero: {
-    wordmark: 'INSTANT_QUOTE',
+    wordmark: 'MICRO_FACTORY',
     status: 'EU · FDM · PLN',
     ready: 'System ready',
     kicker: 'On-demand 3D printing · EU',
