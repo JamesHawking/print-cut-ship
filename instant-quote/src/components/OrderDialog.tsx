@@ -21,10 +21,16 @@ import {
 import { toast } from 'sonner'
 import { strings } from '@/lib/strings'
 import { formatPln } from '@/lib/format'
-import { submitQuote, EU_COUNTRIES } from '@/server/quote.functions'
+import {
+  api,
+  toApiMetrics,
+  EU_COUNTRIES,
+  type EuCountry,
+  type OrderTotals,
+  type PartQuote,
+} from '@/lib/api/client'
 import { track } from '@/lib/funnel'
 import type { Part } from '@/hooks/useParts'
-import type { PartQuote, OrderTotals } from '@/lib/pricing'
 
 interface Props {
   open: boolean
@@ -52,27 +58,28 @@ export function OrderDialog({
     if (!email) return
     setSubmitting(true)
     try {
-      const res = await submitQuote({
-        data: {
+      // The backend re-prices the order from the raw metrics; the displayed
+      // total rides along only so server logs catch UI/engine drift.
+      const res = await api.POST('/api/v1/quotes', {
+        body: {
           email,
-          country: country as (typeof EU_COUNTRIES)[number],
-          parts: parts.map(({ part, quote }) => ({
+          country: country as EuCountry,
+          parts: parts.map(({ part }) => ({
             fileName: part.fileName,
             hash: part.hash ?? '',
+            metrics: toApiMetrics(part.metrics!),
             process: part.config.process,
             quantity: part.config.quantity,
             leadTime: part.config.leadTime,
-            unitPricePln: quote.unitPricePln,
-            lineTotalPln: quote.lineTotalPln,
           })),
-          grossTotalPln: totals.grossTotalPln,
-          pricesExVat,
+          clientGrossTotalPln: totals.grossTotalPln,
         },
       })
-      setQuoteId(res.quoteId)
+      if (!res.data) throw new Error('order failed')
+      setQuoteId(res.data.quoteId)
       track('order_submitted', {
-        quoteId: res.quoteId,
-        grossTotalPln: totals.grossTotalPln,
+        quoteId: res.data.quoteId,
+        grossTotalPln: res.data.totals.grossTotalPln,
         parts: parts.length,
       })
       toast.success(strings.order.successTitle)

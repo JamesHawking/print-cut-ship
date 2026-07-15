@@ -5,9 +5,8 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { formatPln } from '@/lib/format'
-import { PRICING } from '@/lib/pricing-config'
-import type { PartQuote } from '@/lib/pricing'
-import type { OrderTotals } from '@/lib/pricing'
+import { useCatalog } from '@/hooks/useApi'
+import type { OrderTotals, PartQuote } from '@/lib/api/client'
 import { strings } from '@/lib/strings'
 
 interface Props {
@@ -17,6 +16,8 @@ interface Props {
 }
 
 export function BreakdownAccordion({ quote, totals, pricesExVat }: Props) {
+  const catalog = useCatalog()
+  const vatPct = Math.round((catalog?.vatRate ?? 0.23) * 100)
   const rows: Array<{ label: string; value: number; muted?: boolean }> = [
     ...quote.breakdown.map((l) => ({ label: l.label, value: l.amountPln })),
     { label: 'Order fee', value: totals.orderFeePln },
@@ -49,7 +50,7 @@ export function BreakdownAccordion({ quote, totals, pricesExVat }: Props) {
               </dd>
             </div>
             <div className="text-muted-foreground flex justify-between">
-              <dt>Includes VAT ({Math.round(PRICING.vatRate * 100)}% PL)</dt>
+              <dt>Includes VAT ({vatPct}% PL)</dt>
               <dd className="tabular-nums">{formatPln(totals.vatPln)}</dd>
             </div>
           </dl>

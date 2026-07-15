@@ -169,6 +169,7 @@ export const strings = {
     corrupt: 'We could not read that file — it may be corrupt or empty.',
     tooManyParts: 'Up to 5 parts per quote. Remove one to add another.',
     parseFailed: 'Something went wrong reading the geometry. Try re-uploading.',
+    priceFailed: 'Could not fetch a price. Check your connection and retry.',
     webglMissing:
       'Your browser can’t show the 3D preview, but your quote is unaffected.',
     mwInvalidUrl: 'That doesn’t look like a MakerWorld model link.',

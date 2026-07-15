@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 import { strings } from '@/lib/strings'
-import { PRICING, PROCESS_IDS, type ProcessId } from '@/lib/pricing-config'
+import { MATERIALS, type StaticMaterial } from '@/lib/catalog-static'
 
 // Signal-color coding by material family (TE Pocket-Operator style). The dot is
 // always paired with the family name, so colour never carries meaning alone.
@@ -18,10 +18,14 @@ const FAMILY_ORDER = ['Standard', 'Engineering', 'Specialty'] as const
 const ROW_COLS =
   'grid grid-cols-[minmax(90px,0.9fr)_minmax(0,2fr)_minmax(78px,100px)_minmax(74px,100px)] gap-4'
 
+type MaterialId = keyof typeof strings.materials
+
 const groups = FAMILY_ORDER.map((family) => ({
   family,
-  ids: PROCESS_IDS.filter((id) => strings.materials[id].family === family),
-})).filter((g) => g.ids.length > 0)
+  items: MATERIALS.filter(
+    (m) => strings.materials[m.id as MaterialId].family === family,
+  ),
+})).filter((g) => g.items.length > 0)
 
 export function Materials() {
   const {
@@ -75,11 +79,16 @@ export function Materials() {
                   {group.family}
                 </span>
                 <span className="text-muted-foreground font-mono text-[0.62rem] tracking-[0.18em]">
-                  — {String(group.ids.length).padStart(2, '0')}
+                  — {String(group.items.length).padStart(2, '0')}
                 </span>
               </div>
-              {group.ids.map((id) => (
-                <MaterialRow key={id} id={id} density={density} from={from} />
+              {group.items.map((m) => (
+                <MaterialRow
+                  key={m.id}
+                  material={m}
+                  density={density}
+                  from={from}
+                />
               ))}
             </div>
           ))}
@@ -93,16 +102,15 @@ export function Materials() {
 }
 
 function MaterialRow({
-  id,
+  material: p,
   density,
   from,
 }: {
-  id: ProcessId
+  material: StaticMaterial
   density: string
   from: string
 }) {
-  const p = PRICING.processes[id]
-  const m = strings.materials[id]
+  const m = strings.materials[p.id as MaterialId]
   return (
     <div
       className={cn(

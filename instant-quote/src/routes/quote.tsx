@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQueries } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import { DropZone } from '@/components/DropZone'
 import { SiteHeader } from '@/components/SiteHeader'
@@ -16,14 +16,14 @@ import { Card, CardContent } from '@/components/ui/card'
 
 import { useParts, type Part } from '@/hooks/useParts'
 import {
-  computePartQuote,
-  computeOrderTotals,
+  api,
+  toApiMetrics,
   type PartConfig,
   type PartQuote,
-} from '@/lib/pricing'
+} from '@/lib/api/client'
 import { MAX_PARTS } from '@/lib/upload'
 import { track } from '@/lib/funnel'
-import { formatWarsawClock } from '@/lib/leadtime'
+import { formatWarsawClock } from '@/lib/clock'
 import { strings } from '@/lib/strings'
 
 export const Route = createFileRoute('/quote')({ component: QuoteWorkspace })
@@ -58,27 +58,52 @@ function QuoteWorkspace() {
     window.scrollTo(0, 0)
   }, [])
 
-  // Ready parts get a live quote via TanStack Query (pure fn as fetcher).
+  // Ready parts get a live quote from the pricing API. One request covers
+  // every part and the order totals; keepPreviousData stops prices from
+  // flashing while a config change is in flight.
   const readyParts = parts.filter(
     (p): p is Part & { hash: string } =>
       p.status === 'ready' && !!p.hash && !!p.metrics,
   )
 
-  const quoteResults = useQueries({
-    queries: readyParts.map((p) => ({
-      queryKey: ['quote', p.hash, p.config] as const,
-      queryFn: () => computePartQuote(p.metrics!, p.config),
-      staleTime: Infinity,
-      gcTime: Infinity,
-    })),
+  const priceQuery = useQuery({
+    queryKey: [
+      'price',
+      readyParts.map((p) => [
+        p.hash,
+        p.config.process,
+        p.config.quantity,
+        p.config.leadTime,
+      ]),
+    ],
+    queryFn: async () => {
+      const res = await api.POST('/api/v1/price', {
+        body: {
+          parts: readyParts.map((p) => ({
+            metrics: toApiMetrics(p.metrics!),
+            process: p.config.process,
+            quantity: p.config.quantity,
+            leadTime: p.config.leadTime,
+          })),
+        },
+      })
+      if (!res.data) throw new Error(strings.errors.priceFailed)
+      return res.data
+    },
+    enabled: readyParts.length > 0,
+    placeholderData: keepPreviousData,
+    staleTime: Infinity,
+    gcTime: 10 * 60_000,
   })
 
   // At most 5 parts — cheap to rebuild each render, keeps the map in sync.
+  // Response parts come back in request order.
   const quotesById = new Map<string, PartQuote>()
-  readyParts.forEach((p, i) => {
-    const data = quoteResults[i]?.data
-    if (data) quotesById.set(p.id, data)
-  })
+  if (priceQuery.data && priceQuery.data.parts.length === readyParts.length) {
+    readyParts.forEach((p, i) => {
+      quotesById.set(p.id, priceQuery.data.parts[i])
+    })
+  }
 
   const orderableEntries = readyParts
     .map((p) => ({ part: p as Part, quote: quotesById.get(p.id) }))
@@ -87,7 +112,7 @@ function QuoteWorkspace() {
         !!e.quote && !e.quote.blocked,
     )
 
-  const totals = computeOrderTotals(orderableEntries.map((e) => e.quote))
+  const totals = priceQuery.data?.totals ?? null
 
   const selectedPart =
     parts.find((p) => p.id === selectedId) ?? parts[parts.length - 1] ?? null
@@ -108,7 +133,7 @@ function QuoteWorkspace() {
 
   function handleOrderClick() {
     track('order_clicked', {
-      grossTotalPln: totals.grossTotalPln,
+      grossTotalPln: totals?.grossTotalPln,
       parts: orderableEntries.length,
     })
     setOrderOpen(true)
@@ -157,6 +182,21 @@ function QuoteWorkspace() {
                     </CardContent>
                   </Card>
                 )
+              ) : selectedPart && !selectedQuote && priceQuery.isError ? (
+                <Card>
+                  <CardContent className="space-y-3 pt-6">
+                    <p className="text-destructive text-sm">
+                      {strings.errors.priceFailed}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2"
+                      onClick={() => void priceQuery.refetch()}
+                    >
+                      Retry
+                    </button>
+                  </CardContent>
+                </Card>
               ) : selectedPart && selectedQuote ? (
                 <QuoteCard
                   part={selectedPart}
@@ -164,11 +204,10 @@ function QuoteWorkspace() {
                   onConfigChange={(patch) =>
                     handleConfigChange(selectedPart.id, patch)
                   }
-                  now={now}
                 />
               ) : null}
 
-              {orderableEntries.length > 0 && (
+              {totals && orderableEntries.length > 0 && (
                 <OrderPanel
                   breakdownQuote={
                     selectedQuote && !selectedQuote.blocked
@@ -210,13 +249,15 @@ function QuoteWorkspace() {
           </p>
         </div>
 
-        <OrderDialog
-          open={orderOpen}
-          onOpenChange={setOrderOpen}
-          parts={orderableEntries}
-          totals={totals}
-          pricesExVat={pricesExVat}
-        />
+        {totals && (
+          <OrderDialog
+            open={orderOpen}
+            onOpenChange={setOrderOpen}
+            parts={orderableEntries}
+            totals={totals}
+            pricesExVat={pricesExVat}
+          />
+        )}
       </main>
     </>
   )

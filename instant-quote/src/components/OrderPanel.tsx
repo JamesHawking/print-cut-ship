@@ -6,8 +6,8 @@ import { BreakdownAccordion } from './BreakdownAccordion'
 import { HowWePriceDialog } from './HowWePriceDialog'
 import { formatPln } from '@/lib/format'
 import { strings } from '@/lib/strings'
-import { PRICING } from '@/lib/pricing-config'
-import type { OrderTotals, PartQuote } from '@/lib/pricing'
+import { useCatalog } from '@/hooks/useApi'
+import type { OrderTotals, PartQuote } from '@/lib/api/client'
 
 interface Props {
   breakdownQuote: PartQuote | null
@@ -26,6 +26,7 @@ export function OrderPanel({
   orderableCount,
   onOrderClick,
 }: Props) {
+  const catalog = useCatalog()
   const displayTotal = pricesExVat ? totals.netTotalPln : totals.grossTotalPln
 
   return (
@@ -64,9 +65,9 @@ export function OrderPanel({
           </div>
         </div>
 
-        {totals.minOrderApplied && (
+        {totals.minOrderApplied && catalog && (
           <p className="text-muted-foreground text-xs">
-            {strings.quote.minOrderHint(formatPln(PRICING.minOrderPln))}
+            {strings.quote.minOrderHint(formatPln(catalog.minOrderPln))}
           </p>
         )}
         <p className="text-muted-foreground text-xs">

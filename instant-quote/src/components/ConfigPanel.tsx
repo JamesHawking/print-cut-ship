@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -10,20 +11,13 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
-import {
-  PRICING,
-  PROCESS_IDS,
-  LEAD_TIME_IDS,
-  QUANTITY_CHIPS,
-} from '@/lib/pricing-config'
-import type { PartConfig, ProcessId, LeadTimeId } from '@/lib/pricing'
-import { computeShipDate } from '@/lib/leadtime'
+import type { LeadTimeId, PartConfig, ProcessId } from '@/lib/api/client'
+import { useCatalog, useShipDates } from '@/hooks/useApi'
 import { strings } from '@/lib/strings'
 
 interface Props {
   config: PartConfig
   onChange: (patch: Partial<PartConfig>) => void
-  now: Date
 }
 
 const LEAD_LABEL: Record<LeadTimeId, string> = {
@@ -32,7 +26,40 @@ const LEAD_LABEL: Record<LeadTimeId, string> = {
   express: strings.config.express,
 }
 
-export function ConfigPanel({ config, onChange, now }: Props) {
+// Chips and selects requote instantly; the free-form quantity input debounces
+// so typing "125" doesn't fire a pricing request per keystroke.
+const QTY_DEBOUNCE_MS = 250
+
+export function ConfigPanel({ config, onChange }: Props) {
+  const catalog = useCatalog()
+  const shipDates = useShipDates()
+
+  const [qtyText, setQtyText] = useState(String(config.quantity))
+  const qtyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Keep the input in sync when quantity changes elsewhere (chips).
+  useEffect(() => {
+    setQtyText(String(config.quantity))
+  }, [config.quantity])
+
+  useEffect(
+    () => () => {
+      if (qtyTimer.current) clearTimeout(qtyTimer.current)
+    },
+    [],
+  )
+
+  function handleQtyInput(raw: string) {
+    setQtyText(raw)
+    if (qtyTimer.current) clearTimeout(qtyTimer.current)
+    qtyTimer.current = setTimeout(() => {
+      onChange({ quantity: Math.max(1, Math.floor(Number(raw) || 1)) })
+    }, QTY_DEBOUNCE_MS)
+  }
+
+  const quantityChips = catalog?.quantityChips ?? []
+  const shipByLead = new Map(shipDates?.map((s) => [s.leadTime, s]))
+
   return (
     <div className="space-y-5">
       <div className="space-y-2">
@@ -45,9 +72,9 @@ export function ConfigPanel({ config, onChange, now }: Props) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PROCESS_IDS.map((id) => (
-              <SelectItem key={id} value={id}>
-                {PRICING.processes[id].label}
+            {(catalog?.processes ?? []).map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -57,7 +84,7 @@ export function ConfigPanel({ config, onChange, now }: Props) {
       <div className="space-y-2">
         <Label htmlFor="qty">{strings.config.quantity}</Label>
         <div className="flex flex-wrap items-center gap-2">
-          {QUANTITY_CHIPS.map((q) => (
+          {quantityChips.map((q) => (
             <Button
               key={q}
               type="button"
@@ -72,12 +99,8 @@ export function ConfigPanel({ config, onChange, now }: Props) {
             id="qty"
             type="number"
             min={1}
-            value={config.quantity}
-            onChange={(e) =>
-              onChange({
-                quantity: Math.max(1, Math.floor(Number(e.target.value) || 1)),
-              })
-            }
+            value={qtyText}
+            onChange={(e) => handleQtyInput(e.target.value)}
             className="w-20"
           />
         </div>
@@ -90,28 +113,31 @@ export function ConfigPanel({ config, onChange, now }: Props) {
           onValueChange={(v) => onChange({ leadTime: v as LeadTimeId })}
           className="gap-2"
         >
-          {LEAD_TIME_IDS.map((id) => {
-            const ship = computeShipDate(id, now)
-            const mult = PRICING.leadTimes[id].mult
-            const delta = Math.round((mult - 1) * 100)
+          {(catalog?.leadTimes ?? []).map((lt) => {
+            const ship = shipByLead.get(lt.id)
+            const delta = Math.round((lt.mult - 1) * 100)
             return (
               <label
-                key={id}
-                htmlFor={`lead-${id}`}
+                key={lt.id}
+                htmlFor={`lead-${lt.id}`}
                 className={cn(
                   'flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors',
-                  config.leadTime === id
+                  config.leadTime === lt.id
                     ? 'border-primary bg-primary/5'
                     : 'hover:bg-muted/50',
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <RadioGroupItem value={id} id={`lead-${id}`} />
+                  <RadioGroupItem value={lt.id} id={`lead-${lt.id}`} />
                   <div>
-                    <div className="text-sm font-medium">{LEAD_LABEL[id]}</div>
-                    <div className="text-muted-foreground text-xs">
-                      Ships {ship.label}
+                    <div className="text-sm font-medium">
+                      {LEAD_LABEL[lt.id]}
                     </div>
+                    {ship && (
+                      <div className="text-muted-foreground text-xs">
+                        Ships {ship.label}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-muted-foreground text-xs tabular-nums">

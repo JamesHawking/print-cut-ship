@@ -1,0 +1,531 @@
+openapi: 3.0.3
+info:
+  title: Instant Quote API
+  description: >-
+    Canonical backend for the instant-quote app. Owns pricing (single source
+    of truth), quote/order intake, ship-date computation, and the MakerWorld
+    model proxy. All prices are gross PLN (VAT-inclusive).
+  version: 0.1.0
+
+paths:
+  /api/v1/price:
+    post:
+      operationId: price
+      summary: Price a set of parts and compute order totals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriceRequest'
+      responses:
+        '200':
+          description: Per-part quotes plus order totals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/config:
+    get:
+      operationId: getConfig
+      summary: Pricing catalog for display (processes, lead times, fees)
+      responses:
+        '200':
+          description: The current pricing catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogResponse'
+
+  /api/v1/ship-dates:
+    get:
+      operationId: getShipDates
+      summary: Estimated ship dates per lead time (Europe/Warsaw clock)
+      responses:
+        '200':
+          description: Ship date for each lead time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipDatesResponse'
+
+  /api/v1/quotes:
+    post:
+      operationId: submitQuote
+      summary: Submit an order request; prices are recomputed server-side
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitQuoteRequest'
+      responses:
+        '200':
+          description: Quote accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitQuoteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/step-quotes:
+    post:
+      operationId: submitStepQuote
+      summary: Request a manual quote for a STEP file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepQuoteRequest'
+      responses:
+        '200':
+          description: Manual quote request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepQuoteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/makerworld/fetch:
+    post:
+      operationId: fetchMakerworldModel
+      summary: Download a MakerWorld model's 3MF via Bambu Cloud
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MakerworldFetchRequest'
+      responses:
+        '200':
+          description: Raw 3MF bytes
+          headers:
+            X-Mw-Filename:
+              description: URI-encoded file name of the downloaded model
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/MakerworldError'
+        '404':
+          $ref: '#/components/responses/MakerworldError'
+        '413':
+          $ref: '#/components/responses/MakerworldError'
+        '502':
+          $ref: '#/components/responses/MakerworldError'
+        '503':
+          $ref: '#/components/responses/MakerworldError'
+
+components:
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    MakerworldError:
+      description: MakerWorld download failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MakerworldError'
+
+  schemas:
+    ProcessId:
+      type: string
+      enum: [pla, petg, pctg, asa, petg_fr, pa12_cf, iglidur]
+
+    LeadTimeId:
+      type: string
+      enum: [economy, standard, express]
+
+    EuCountry:
+      type: string
+      description: Supported EU shipping destinations
+      enum:
+        [PL, DE, FR, NL, BE, CZ, AT, IT, ES, SE, DK, FI, IE, PT, SK, SI,
+         HU, RO, LT, LV, EE, LU, BG, HR, GR]
+
+    Vec3Mm:
+      type: object
+      required: [x, y, z]
+      properties:
+        x: { type: number, format: double }
+        y: { type: number, format: double }
+        z: { type: number, format: double }
+
+    PieceMetrics:
+      type: object
+      required: [bboxMm]
+      properties:
+        bboxMm:
+          $ref: '#/components/schemas/Vec3Mm'
+
+    MeshMetrics:
+      type: object
+      description: Pricing-relevant subset of client-side mesh analysis
+      required: [volumeCm3, surfaceAreaCm2, bboxMm, usedHullFallback]
+      properties:
+        volumeCm3:
+          type: number
+          format: double
+          minimum: 0
+        surfaceAreaCm2:
+          type: number
+          format: double
+          minimum: 0
+        bboxMm:
+          $ref: '#/components/schemas/Vec3Mm'
+        usedHullFallback:
+          type: boolean
+        pieces:
+          type: array
+          description: Per-piece bounding boxes for multi-item 3MF files
+          items:
+            $ref: '#/components/schemas/PieceMetrics'
+
+    PricePart:
+      type: object
+      required: [metrics, process, quantity, leadTime]
+      properties:
+        metrics:
+          $ref: '#/components/schemas/MeshMetrics'
+        process:
+          $ref: '#/components/schemas/ProcessId'
+        quantity:
+          type: integer
+          minimum: 1
+        leadTime:
+          $ref: '#/components/schemas/LeadTimeId'
+
+    PriceRequest:
+      type: object
+      required: [parts]
+      properties:
+        parts:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/PricePart'
+
+    DfmFlag:
+      type: object
+      required: [code, severity, message]
+      properties:
+        code:
+          type: string
+          enum:
+            [exceeds_build_volume, small_feature, min_volume_billed,
+             geometry_approximated, multi_plate]
+        severity:
+          type: string
+          enum: [block, warn, info]
+        message:
+          type: string
+        suggestedProcesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessId'
+
+    BreakdownLine:
+      type: object
+      required: [key, label, amountPln]
+      properties:
+        key:
+          type: string
+          enum: [material, machine, finishing, plates]
+        label:
+          type: string
+        amountPln:
+          type: number
+          format: double
+
+    PriceBreak:
+      type: object
+      required: [quantity, unitPricePln, discountFraction]
+      properties:
+        quantity: { type: integer }
+        unitPricePln: { type: number, format: double }
+        discountFraction: { type: number, format: double }
+
+    PartQuote:
+      type: object
+      required:
+        [blocked, billableVolumeCm3, unitBasePln, discountFraction,
+         leadTimeMultiplier, unitPricePln, lineTotalPln, breakdown,
+         dfmFlags, priceBreaks]
+      properties:
+        blocked: { type: boolean }
+        billableVolumeCm3: { type: number, format: double }
+        unitBasePln: { type: number, format: double }
+        discountFraction: { type: number, format: double }
+        leadTimeMultiplier: { type: number, format: double }
+        unitPricePln: { type: number, format: double }
+        lineTotalPln: { type: number, format: double }
+        breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreakdownLine'
+        dfmFlags:
+          type: array
+          items:
+            $ref: '#/components/schemas/DfmFlag'
+        priceBreaks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceBreak'
+        pieceCount:
+          type: integer
+          description: Present only for multi-piece 3MF parts
+        plates:
+          type: integer
+          description: Present only for multi-piece 3MF parts
+
+    OrderTotals:
+      type: object
+      required:
+        [partsSubtotalPln, minOrderTopUpPln, orderFeePln, shippingPln,
+         netTotalPln, vatPln, grossTotalPln, freeShipping, minOrderApplied]
+      properties:
+        partsSubtotalPln: { type: number, format: double }
+        minOrderTopUpPln: { type: number, format: double }
+        orderFeePln: { type: number, format: double }
+        shippingPln: { type: number, format: double }
+        netTotalPln: { type: number, format: double }
+        vatPln: { type: number, format: double }
+        grossTotalPln: { type: number, format: double }
+        freeShipping: { type: boolean }
+        minOrderApplied: { type: boolean }
+
+    PriceResponse:
+      type: object
+      required: [parts, totals]
+      properties:
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartQuote'
+        totals:
+          $ref: '#/components/schemas/OrderTotals'
+
+    CatalogProcess:
+      type: object
+      required: [id, label, densityGCm3, plnPerKg, factor, plnPerHour, build]
+      properties:
+        id:
+          $ref: '#/components/schemas/ProcessId'
+        label: { type: string }
+        densityGCm3: { type: number, format: double }
+        plnPerKg: { type: number, format: double }
+        factor: { type: number, format: double }
+        plnPerHour: { type: number, format: double }
+        build:
+          $ref: '#/components/schemas/Vec3Mm'
+
+    CatalogLeadTime:
+      type: object
+      required: [id, mult, businessDays]
+      properties:
+        id:
+          $ref: '#/components/schemas/LeadTimeId'
+        mult: { type: number, format: double }
+        businessDays: { type: integer }
+
+    DiscountTier:
+      type: object
+      required: [quantity, fraction]
+      properties:
+        quantity: { type: integer }
+        fraction: { type: number, format: double }
+
+    FdmModel:
+      type: object
+      required:
+        [infillFraction, shellThicknessMm, shellGramsPerPrintHour,
+         infillGramsPerPrintHour]
+      properties:
+        infillFraction: { type: number, format: double }
+        shellThicknessMm: { type: number, format: double }
+        shellGramsPerPrintHour: { type: number, format: double }
+        infillGramsPerPrintHour: { type: number, format: double }
+
+    CatalogResponse:
+      type: object
+      required:
+        [processes, leadTimes, discountTiers, fdm, quantityChips, maxParts,
+         minOrderPln, minPartPricePln, orderFeePln, shippingFlatPln,
+         freeShippingThresholdPln, vatRate, extraPlateFeePln]
+      properties:
+        processes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogProcess'
+        leadTimes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogLeadTime'
+        discountTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscountTier'
+        fdm:
+          $ref: '#/components/schemas/FdmModel'
+        quantityChips:
+          type: array
+          items: { type: integer }
+        maxParts: { type: integer }
+        minOrderPln: { type: number, format: double }
+        minPartPricePln: { type: number, format: double }
+        orderFeePln: { type: number, format: double }
+        shippingFlatPln: { type: number, format: double }
+        freeShippingThresholdPln: { type: number, format: double }
+        vatRate: { type: number, format: double }
+        extraPlateFeePln: { type: number, format: double }
+
+    CalDate:
+      type: object
+      required: [y, m, d]
+      properties:
+        y: { type: integer }
+        m: { type: integer, description: '1-12' }
+        d: { type: integer }
+
+    ShipDate:
+      type: object
+      required: [leadTime, date, dispatchStartsToday, label]
+      properties:
+        leadTime:
+          $ref: '#/components/schemas/LeadTimeId'
+        date:
+          $ref: '#/components/schemas/CalDate'
+        dispatchStartsToday: { type: boolean }
+        label:
+          type: string
+          description: e.g. "Thu, 16 Jul"
+
+    ShipDatesResponse:
+      type: object
+      required: [shipDates]
+      properties:
+        shipDates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipDate'
+
+    SubmitQuotePart:
+      type: object
+      required: [fileName, hash, metrics, process, quantity, leadTime]
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+        hash:
+          type: string
+          minLength: 1
+        metrics:
+          $ref: '#/components/schemas/MeshMetrics'
+        process:
+          $ref: '#/components/schemas/ProcessId'
+        quantity:
+          type: integer
+          minimum: 1
+        leadTime:
+          $ref: '#/components/schemas/LeadTimeId'
+
+    SubmitQuoteRequest:
+      type: object
+      required: [email, country, parts]
+      properties:
+        email:
+          type: string
+          format: email
+        country:
+          $ref: '#/components/schemas/EuCountry'
+        parts:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/SubmitQuotePart'
+        clientGrossTotalPln:
+          type: number
+          format: double
+          description: >-
+            The gross total the client displayed, for mismatch telemetry.
+            The server's own computation is authoritative.
+
+    SubmitQuoteResponse:
+      type: object
+      required: [quoteId, totals]
+      properties:
+        quoteId:
+          type: string
+          description: e.g. "Q-1A2B3C4D"
+        totals:
+          $ref: '#/components/schemas/OrderTotals'
+
+    StepQuoteRequest:
+      type: object
+      required: [email, fileName, fileSize]
+      properties:
+        email:
+          type: string
+          format: email
+        fileName:
+          type: string
+          minLength: 1
+        fileSize:
+          type: integer
+          minimum: 0
+
+    StepQuoteResponse:
+      type: object
+      required: [requestId]
+      properties:
+        requestId:
+          type: string
+          description: e.g. "STEP-1A2B3C4D"
+
+    MakerworldFetchRequest:
+      type: object
+      required: [designId]
+      properties:
+        designId:
+          type: integer
+          format: int64
+          minimum: 1
+        profileId:
+          type: integer
+          format: int64
+          minimum: 1
+
+    MakerworldError:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          enum:
+            [token_missing, design_not_found, no_instance, auth_expired,
+             download_failed, too_large]
+
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

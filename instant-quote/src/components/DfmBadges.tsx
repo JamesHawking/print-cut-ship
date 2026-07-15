@@ -5,8 +5,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { PRICING } from '@/lib/pricing-config'
-import type { DfmFlag } from '@/lib/pricing'
+import { useCatalog } from '@/hooks/useApi'
+import type { DfmFlag } from '@/lib/api/client'
 
 const ICON = {
   block: Ban,
@@ -21,14 +21,17 @@ const VARIANT = {
 } as const
 
 export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
+  const catalog = useCatalog()
   if (flags.length === 0) return null
+  const labelOf = (id: string) =>
+    catalog?.processes.find((p) => p.id === id)?.label ?? id
   return (
     <div className="flex flex-wrap gap-2">
       {flags.map((flag) => {
         const Icon = ICON[flag.severity]
         const suggestion =
           flag.suggestedProcesses && flag.suggestedProcesses.length > 0
-            ? ` Try: ${flag.suggestedProcesses.map((p) => PRICING.processes[p].label).join(', ')}.`
+            ? ` Try: ${flag.suggestedProcesses.map(labelOf).join(', ')}.`
             : ''
         return (
           <Tooltip key={flag.code}>

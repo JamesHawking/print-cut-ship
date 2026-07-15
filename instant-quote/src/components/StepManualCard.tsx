@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { strings } from '@/lib/strings'
-import { requestStepQuote } from '@/server/quote.functions'
+import { api } from '@/lib/api/client'
 import { track } from '@/lib/funnel'
 import type { Part } from '@/hooks/useParts'
 
@@ -19,10 +19,11 @@ export function StepManualCard({ part }: { part: Part }) {
     if (!email) return
     setSubmitting(true)
     try {
-      const res = await requestStepQuote({
-        data: { email, fileName: part.fileName, fileSize: part.fileSize },
+      const res = await api.POST('/api/v1/step-quotes', {
+        body: { email, fileName: part.fileName, fileSize: part.fileSize },
       })
-      track('step_quote_requested', { requestId: res.requestId })
+      if (!res.data) throw new Error('request failed')
+      track('step_quote_requested', { requestId: res.data.requestId })
       setDone(true)
       toast.success(strings.step.success)
     } catch {

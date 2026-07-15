@@ -2,8 +2,9 @@
 
 An instant quoting flow for an EU (Poland-based) on-demand 3D-printing service.
 A visitor drops a 3D file and sees a transparent price in seconds — no account,
-no checkout. Everything runs client-side except a single quote-submission server
-function. It exists to validate one funnel: **upload → quote → "order" click**.
+no checkout. Mesh parsing and the 3D preview run client-side; pricing and all
+other API surface live in the Go backend at [`../backend`](../backend). It
+exists to validate one funnel: **upload → quote → "order" click**.
 
 - Made in the EU. Ships D+1/D+2 to Germany. No account needed.
 - Accepts `.stl`, `.3mf`, `.obj`, and `.step`/`.stp` — all priced instantly
@@ -18,7 +19,14 @@ runner. There is no npm/yarn step anywhere in this project.
 
 ## Getting started
 
+Two processes: the Go API and the frontend dev server. The dev server
+proxies `/api` to `localhost:8080` (override with `API_PROXY`).
+
 ```bash
+# terminal 1 — Go backend (needs Go 1.26+)
+cd ../backend && go run ./cmd/api        # :8080
+
+# terminal 2 — frontend
 bun install
 bun run dev        # http://localhost:3000
 ```
@@ -26,12 +34,12 @@ bun run dev        # http://localhost:3000
 ### Optional: MakerWorld URL import
 
 Pasting a `makerworld.com/…/models/…` link into the dropzone downloads that
-model's default print-profile 3MF server-side and quotes it like a local file.
-This uses MakerWorld's undocumented endpoints and needs a Bambu Cloud bearer
-token in `instant-quote/.env` (gitignored):
+model's default print-profile 3MF via the backend and quotes it like a local
+file. This uses MakerWorld's undocumented endpoints and needs a Bambu Cloud
+bearer token in the **backend's** environment:
 
 ```bash
-BAMBU_CLOUD_TOKEN=eyJ...
+BAMBU_CLOUD_TOKEN=eyJ... go run ./cmd/api
 ```
 
 Grab the token from a logged-in makerworld.com session (devtools → Application
@@ -44,7 +52,7 @@ degrades to a clear error toast, everything else keeps working.
 bun run dev         # dev server (Vite + TanStack Start)
 bun run build       # production build
 bun run preview     # preview the production build
-bun test            # unit tests (pricing, lead time, mesh volume)
+bun test            # unit tests (mesh volume, STEP geometry, MakerWorld URLs)
 bun run lint        # oxlint, type-aware, correctness = error
 bun run format      # prettier --write
 bun run typecheck   # tsc --noEmit
@@ -52,10 +60,13 @@ bun run typecheck   # tsc --noEmit
 
 ## How pricing works
 
-All tunable numbers live in `src/lib/pricing-config.ts` (the `PRICING` const).
-The engine in `src/lib/pricing.ts` is pure and reads only from that config — no
-magic numbers, no `Date`/random/I/O — which is why the pricing tests need zero
-setup. Change a price by editing the config; the engine and UI follow.
+The pricing engine lives in the Go backend (`backend/internal/pricing`) and is
+served via `POST /api/v1/price`; the UI requotes through that endpoint on every
+config change (the free-form quantity input debounces ~250 ms). Tunable numbers
+live in `backend/internal/pricing/config.go` and are exposed to the UI via
+`GET /api/v1/config`, so displayed constants can't drift from what is charged.
+(The engine started life in TypeScript here; the Go port is pinned to it by
+golden-fixture tests — see `backend/README.md`.)
 
 Rates and structure follow the Polish FDM service **mapi-tech.pl** (quoted
 through its SeekMake widget); the reverse-engineered model is documented in
@@ -106,10 +117,10 @@ These are deliberately stubbed — no backend, no persistence, no payment:
 
 - **No database / no accounts.** Nothing is stored. Reloading the page clears
   all parts and quotes.
-- **`submitQuote` / `requestStepQuote`** (`src/server/quote.functions.ts`) are
-  real TanStack Start server functions with Zod validation, but they only
-  `console.info` the payload and return a generated id (`Q-XXXXXXXX` /
-  `STEP-XXXXXXXX`). No email is sent, no order is created.
+- **`POST /api/v1/quotes` / `/api/v1/step-quotes`** (Go backend) validate the
+  payload and recompute prices server-side, but only log it and return a
+  generated id (`Q-XXXXXXXX` / `STEP-XXXXXXXX`). No email is sent, no order is
+  created.
 - **Funnel analytics** (`src/lib/funnel.ts`) log PostHog-shaped events to the
   console (`upload_started`, `parse_succeeded`, `quote_shown`, `config_changed`,
   `order_clicked`, `order_submitted`, …). `track()` has a marked drop-in point
@@ -130,21 +141,20 @@ These are deliberately stubbed — no backend, no persistence, no payment:
 
 ```
 src/
-  routes/            # __root.tsx (providers, Toaster) + index.tsx (the whole tool)
+  routes/            # __root.tsx (providers, Toaster), index.tsx (landing), quote.tsx
   components/        # DropZone, PartViewer (R3F), QuoteCard, OrderDialog, ui/…
   lib/
-    pricing-config.ts  # every tunable number
-    pricing.ts         # pure pricing engine
-    leadtime.ts        # Europe/Warsaw ship-date math (pure, injectable `now`)
-    mesh/              # DOM-free STL/OBJ parsers, analyze, convex hull
+    api/               # generated OpenAPI types + typed fetch client (make gen-ts)
+    catalog-static.ts  # landing-page marketing figures (mirrors backend config)
+    mesh/              # DOM-free STL/OBJ/3MF/STEP parsers, analyze, convex hull
   workers/mesh.worker.ts   # SHA-256 + mesh analysis off the main thread
-  hooks/             # useParts, useMeshWorker
-  server/            # submitQuote, requestStepQuote
-tests/               # pricing, leadtime, mesh-volume + fixtures
+  hooks/             # useParts, useMeshWorker, useApi (catalog + ship dates)
+tests/               # mesh-volume, STEP geometry, MakerWorld URLs + fixtures
+../backend/          # Go API: pricing, ship dates, quotes, MakerWorld proxy
 ```
 
 ## Stack
 
-TanStack Start (file routing + server functions) · TanStack Query (quote state,
-`staleTime: Infinity`) · shadcn/ui on Tailwind CSS v4 · three.js via
-@react-three/fiber + drei · Zod · oxlint + Prettier · `bun test`.
+TanStack Start (file routing) · TanStack Query · openapi-fetch against the Go
+backend · shadcn/ui on Tailwind CSS v4 · three.js via @react-three/fiber +
+drei · oxlint + Prettier · `bun test` · Go backend: chi + oapi-codegen.

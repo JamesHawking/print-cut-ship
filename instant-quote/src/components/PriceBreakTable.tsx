@@ -8,8 +8,7 @@ import {
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import { formatPln, formatPercent } from '@/lib/format'
-import { interpolateDiscount } from '@/lib/pricing'
-import type { PriceBreak } from '@/lib/pricing'
+import type { PriceBreak } from '@/lib/api/client'
 import { strings } from '@/lib/strings'
 
 export function PriceBreakTable({
@@ -45,7 +44,7 @@ export function PriceBreakTable({
                   {formatPln(row.unitPricePln)}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-right tabular-nums">
-                  {formatPercent(interpolateDiscount(row.quantity))}
+                  {formatPercent(row.discountFraction)}
                 </TableCell>
               </TableRow>
             )

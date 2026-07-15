@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { strings } from '@/lib/strings'
-import { formatWarsawClock } from '@/lib/leadtime'
+import { formatWarsawClock } from '@/lib/clock'
 
 export function SiteFooter() {
   const { ctaHeading, ctaBody, ctaButton, note, meta, cutoff } = strings.footer

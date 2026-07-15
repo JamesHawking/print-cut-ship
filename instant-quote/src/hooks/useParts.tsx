@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 import type { MeshMetrics } from '@/lib/mesh/types'
-import type { PartConfig } from '@/lib/pricing'
+import type { PartConfig } from '@/lib/api/client'
 import {
   classifyFile,
   MAX_FILE_BYTES,
@@ -19,7 +19,6 @@ import {
   MAKERWORLD_ERROR_MESSAGES,
   type MakerworldErrorCode,
 } from '@/lib/makerworld'
-import { fetchMakerworldModel } from '@/server/makerworld.functions'
 import { useMeshWorker } from '@/hooks/useMeshWorker'
 import { track } from '@/lib/funnel'
 import { strings } from '@/lib/strings'
@@ -199,8 +198,9 @@ export function PartsProvider({ children }: { children: ReactNode }) {
     return added
   }
 
-  // The server function downloads the 3MF (browser CORS rules out a direct
-  // fetch), then the bytes re-enter the normal pipeline as a synthesized File.
+  // The backend downloads the 3MF (browser CORS rules out a direct fetch),
+  // then the bytes re-enter the normal pipeline as a synthesized File. Raw
+  // fetch instead of the typed client: the success body is binary.
   async function handleMakerworldUrl(url: string): Promise<string[]> {
     const ref = parseMakerworldUrl(url)
     if (!ref) {
@@ -210,7 +210,11 @@ export function PartsProvider({ children }: { children: ReactNode }) {
     setMwPending(true)
     track('makerworld_fetch_started', { ...ref })
     try {
-      const res = await fetchMakerworldModel({ data: ref })
+      const res = await fetch('/api/v1/makerworld/fetch', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(ref),
+      })
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as {
           code?: MakerworldErrorCode

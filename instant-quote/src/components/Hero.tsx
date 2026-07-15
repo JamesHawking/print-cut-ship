@@ -1,15 +1,20 @@
 import { cn } from '@/lib/utils'
 import { strings } from '@/lib/strings'
-import { PRICING, PROCESS_IDS } from '@/lib/pricing-config'
+import {
+  BUILD_VOLUME_MM,
+  LEAD_TIME_DAYS,
+  MATERIALS,
+  VAT_RATE,
+} from '@/lib/catalog-static'
 import { DropZone } from './DropZone'
 
-// Capability figures pulled straight from the pricing config, zipped with the
+// Capability figures from the static marketing catalog, zipped with the
 // labels in strings.hero.specs (same order).
 const SPEC_VALUES = [
-  String(PROCESS_IDS.length).padStart(2, '0'),
-  `${PRICING.processes.pla.build.x}×${PRICING.processes.pla.build.y}×${PRICING.processes.pla.build.z}`,
-  `${PRICING.leadTimes.express.businessDays}–${PRICING.leadTimes.economy.businessDays}`,
-  `${Math.round(PRICING.vatRate * 100)}%`,
+  String(MATERIALS.length).padStart(2, '0'),
+  `${BUILD_VOLUME_MM.x}×${BUILD_VOLUME_MM.y}×${BUILD_VOLUME_MM.z}`,
+  `${LEAD_TIME_DAYS.min}–${LEAD_TIME_DAYS.max}`,
+  `${Math.round(VAT_RATE * 100)}%`,
 ]
 
 // The three line stages, positioned over their machine in the hero figure.

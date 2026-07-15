@@ -4,16 +4,15 @@ import { PriceBreakTable } from './PriceBreakTable'
 import { DfmBadges } from './DfmBadges'
 import { formatPln, formatPercent, formatVolume } from '@/lib/format'
 import type { Part } from '@/hooks/useParts'
-import type { PartConfig, PartQuote } from '@/lib/pricing'
+import type { PartConfig, PartQuote } from '@/lib/api/client'
 
 interface Props {
   part: Part
   quote: PartQuote
   onConfigChange: (patch: Partial<PartConfig>) => void
-  now: Date
 }
 
-export function QuoteCard({ part, quote, onConfigChange, now }: Props) {
+export function QuoteCard({ part, quote, onConfigChange }: Props) {
   const discount = quote.discountFraction
 
   return (
@@ -73,7 +72,7 @@ export function QuoteCard({ part, quote, onConfigChange, now }: Props) {
         )}
       </CardHeader>
       <CardContent className="space-y-6">
-        <ConfigPanel config={part.config} onChange={onConfigChange} now={now} />
+        <ConfigPanel config={part.config} onChange={onConfigChange} />
         {!quote.blocked && (
           <PriceBreakTable
             priceBreaks={quote.priceBreaks}

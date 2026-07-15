@@ -2,9 +2,9 @@ import { Box, FileClock, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { formatPln } from '@/lib/format'
-import { PRICING } from '@/lib/pricing-config'
+import { useCatalog } from '@/hooks/useApi'
 import type { Part } from '@/hooks/useParts'
-import type { PartQuote } from '@/lib/pricing'
+import type { PartQuote } from '@/lib/api/client'
 
 interface Props {
   parts: Part[]
@@ -21,6 +21,9 @@ export function PartsList({
   onSelect,
   onRemove,
 }: Props) {
+  const catalog = useCatalog()
+  const processLabel = (id: string) =>
+    catalog?.processes.find((p) => p.id === id)?.label ?? id
   return (
     <ul className="space-y-2">
       {parts.map((part) => {
@@ -62,7 +65,7 @@ export function PartsList({
                       ? part.kind === 'step'
                         ? 'Manual quote'
                         : 'Failed'
-                      : `${PRICING.processes[part.config.process].label} · ×${part.config.quantity}`}
+                      : `${processLabel(part.config.process)} · ×${part.config.quantity}`}
                 </p>
               </div>
               <div className="text-right text-sm tabular-nums">
