@@ -68,7 +68,7 @@ export function DropZone({
       <div
         {...dnd}
         className={cn(
-          'group bg-card relative isolate overflow-hidden rounded-lg border px-6 py-16 text-center transition-colors sm:py-20',
+          'group bg-card relative isolate overflow-hidden rounded-lg border px-6 py-16 text-center shadow-xl shadow-black/[0.06] transition-colors sm:py-20',
           'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
           dragging
             ? 'border-primary bg-primary/5'

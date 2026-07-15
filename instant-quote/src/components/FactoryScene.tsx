@@ -252,10 +252,13 @@ function Rig({ accentColor, speed, running, staticMode }: SceneProps) {
       metalness: 0.1,
     })
     return {
+      // ground tone tracks the page's aluminum --background so the full-bleed
+      // scene blends seamlessly behind the hero content.
+      floor: new THREE.MeshStandardMaterial({ color: '#eef0f2', roughness: 1 }),
       machine: new THREE.MeshStandardMaterial({
-        color: '#e7e6e2',
-        roughness: 0.6,
-        metalness: 0.08,
+        color: '#e9e9ec',
+        roughness: 0.55,
+        metalness: 0.1,
       }),
       metal: new THREE.MeshStandardMaterial({
         color: '#9a9a9f',
@@ -461,7 +464,7 @@ function Rig({ accentColor, speed, running, staticMode }: SceneProps) {
       {/* floor + soft contact shadow */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        material={mats.machine}
+        material={mats.floor}
         position={[0, 0, 0]}
       >
         <planeGeometry args={[60, 60]} />
@@ -710,7 +713,7 @@ export default function FactoryScene(props: SceneProps) {
       camera={{ position: [3.5, 3.8, 9], fov: 34 }}
       style={{ width: '100%', height: '100%' }}
     >
-      <color attach="background" args={['#f4f3f0']} />
+      <color attach="background" args={['#f3f3f4']} />
       <ambientLight intensity={0.75} />
       <directionalLight position={[6, 9, 5]} intensity={1.5} />
       <directionalLight position={[-5, 4, -4]} intensity={0.35} />

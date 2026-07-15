@@ -74,8 +74,9 @@ export function FactoryHero({
     <div
       ref={ref}
       aria-hidden="true"
-      className={className}
-      style={{ position: 'relative', width: '100%', height: '100%' }}
+      // Caller positions/sizes this (e.g. `absolute inset-0` as a backdrop, or a
+      // sized `relative` wrapper standalone). Falls back to filling its parent.
+      className={className ?? 'relative h-full w-full'}
     >
       {mounted ? (
         <Suspense fallback={<Placeholder accentColor={accentColor} />}>
