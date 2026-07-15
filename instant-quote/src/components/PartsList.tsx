@@ -1,4 +1,4 @@
-import { Box, FileClock, Loader2, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { formatPln } from '@/lib/format'
@@ -28,11 +28,17 @@ export function PartsList({
     <ul className="space-y-2">
       {parts.map((part) => {
         const quote = quotes.get(part.id)
+        const selected = selectedId === part.id
+        const ext =
+          part.status === 'parsing'
+            ? '…'
+            : (part.fileName.split('.').pop() ?? '').toUpperCase()
         return (
           <li key={part.id}>
             <div
               role="button"
               tabIndex={0}
+              aria-pressed={selected}
               onClick={() => onSelect(part.id)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -41,24 +47,31 @@ export function PartsList({
                 }
               }}
               className={cn(
-                'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors',
-                selectedId === part.id
-                  ? 'border-primary bg-primary/5'
-                  : 'hover:bg-muted/50',
+                'flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors',
+                'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                selected
+                  ? 'border-foreground bg-secondary/50'
+                  : 'border-border bg-card hover:bg-primary/5',
               )}
             >
-              <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-md">
-                {part.status === 'parsing' ? (
-                  <Loader2 className="text-muted-foreground size-4 animate-spin" />
-                ) : part.status === 'error' && part.kind === 'step' ? (
-                  <FileClock className="text-muted-foreground size-4" />
-                ) : (
-                  <Box className="text-primary size-4" />
+              <span
+                className={cn(
+                  'bg-secondary min-w-11 shrink-0 rounded px-1.5 py-1 text-center font-mono text-[0.59375rem] font-bold tracking-wider',
+                  part.status === 'error'
+                    ? 'text-muted-foreground'
+                    : 'text-foreground',
                 )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{part.fileName}</p>
-                <p className="text-muted-foreground truncate text-xs">
+              >
+                {ext}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span
+                  className="block truncate text-sm font-semibold"
+                  title={part.fileName}
+                >
+                  {part.fileName}
+                </span>
+                <span className="text-muted-foreground mt-1 block truncate font-mono text-[0.59375rem] tracking-wider uppercase tabular-nums">
                   {part.status === 'parsing'
                     ? 'Reading…'
                     : part.status === 'error'
@@ -66,19 +79,19 @@ export function PartsList({
                         ? 'Manual quote'
                         : 'Failed'
                       : `${processLabel(part.config.process)} · ×${part.config.quantity}`}
-                </p>
-              </div>
-              <div className="text-right text-sm tabular-nums">
+                </span>
+              </span>
+              <span className="font-mono text-[0.8125rem] font-bold whitespace-nowrap tabular-nums">
                 {quote && !quote.blocked
                   ? formatPln(quote.lineTotalPln)
                   : quote?.blocked
                     ? '—'
                     : ''}
-              </div>
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-7 shrink-0"
+                className="text-muted-foreground hover:text-destructive size-7 shrink-0"
                 aria-label={`Remove ${part.fileName}`}
                 onClick={(e) => {
                   e.stopPropagation()

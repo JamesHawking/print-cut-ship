@@ -10,6 +10,7 @@ import { OrderPanel } from '@/components/OrderPanel'
 import { OrderDialog } from '@/components/OrderDialog'
 import { PartsList } from '@/components/PartsList'
 import { StepManualCard } from '@/components/StepManualCard'
+import { ViewerFrame } from '@/components/ViewerFrame'
 import { ViewerPane } from '@/components/ViewerPane'
 import { ViewerFallback } from '@/components/ViewerFallback'
 import { Card, CardContent } from '@/components/ui/card'
@@ -149,15 +150,21 @@ function QuoteWorkspace() {
               {selectedPart?.status === 'ready' &&
               selectedPart.positions &&
               selectedPart.metrics ? (
-                <ViewerPane
-                  key={selectedPart.id}
-                  positions={selectedPart.positions}
-                  bboxMm={selectedPart.metrics.bboxMm}
-                />
+                <ViewerFrame
+                  part={selectedPart}
+                  index={parts.indexOf(selectedPart)}
+                  quote={selectedQuote}
+                >
+                  <ViewerPane
+                    key={selectedPart.id}
+                    positions={selectedPart.positions}
+                    bboxMm={selectedPart.metrics.bboxMm}
+                  />
+                </ViewerFrame>
               ) : selectedPart?.status === 'error' ? (
                 <ViewerFallback />
               ) : (
-                <div className="bg-muted/30 flex h-full min-h-64 items-center justify-center rounded-xl border">
+                <div className="bg-muted/30 flex h-full min-h-[340px] items-center justify-center rounded-lg border">
                   <p className="text-muted-foreground text-sm">
                     {strings.dropzone.parsing}
                   </p>
@@ -243,7 +250,7 @@ function QuoteWorkspace() {
             />
           )}
 
-          <p className="text-muted-foreground text-center font-mono text-[0.7rem] tracking-wide uppercase">
+          <p className="text-muted-foreground text-center font-mono text-[0.625rem] tracking-[0.16em] uppercase tabular-nums">
             Europe/Warsaw {formatWarsawClock(now)} ·{' '}
             {strings.config.warsawCutoff}
           </p>

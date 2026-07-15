@@ -46,6 +46,41 @@ func loadGolden(t *testing.T) goldenFile {
 	return g
 }
 
+// subsetMatch reports whether every field present in want exists in got
+// with an exactly equal value (recursively; arrays must match element-wise
+// at the same length). Fields present only in got are allowed: the engine
+// may grow additive outputs (e.g. weightG, printHours) that postdate the
+// frozen TS fixtures, but every fixture-pinned field stays exact.
+func subsetMatch(got, want any) bool {
+	switch w := want.(type) {
+	case map[string]any:
+		g, ok := got.(map[string]any)
+		if !ok {
+			return false
+		}
+		for k, wv := range w {
+			gv, ok := g[k]
+			if !ok || !subsetMatch(gv, wv) {
+				return false
+			}
+		}
+		return true
+	case []any:
+		g, ok := got.([]any)
+		if !ok || len(g) != len(w) {
+			return false
+		}
+		for i := range w {
+			if !subsetMatch(g[i], w[i]) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(got, want)
+	}
+}
+
 // asTree round-trips a value through JSON into a generic tree, so expected
 // (raw TS output) and actual (Go structs) compare on the wire format —
 // field names, presence/absence, and exact float64 values.
@@ -79,7 +114,7 @@ func TestGoldenPartQuotes(t *testing.T) {
 	for _, tc := range g.PartQuotes {
 		got := asTree(t, Default.ComputePartQuote(tc.Metrics, tc.Config))
 		want := rawTree(t, tc.Expected)
-		if !reflect.DeepEqual(got, want) {
+		if !subsetMatch(got, want) {
 			gotJSON, _ := json.MarshalIndent(got, "", " ")
 			wantJSON, _ := json.MarshalIndent(want, "", " ")
 			t.Errorf("%s:\n got: %s\nwant: %s", tc.Name, gotJSON, wantJSON)

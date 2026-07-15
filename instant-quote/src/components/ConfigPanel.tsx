@@ -7,17 +7,23 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
-import type { LeadTimeId, PartConfig, ProcessId } from '@/lib/api/client'
+import type {
+  LeadTimeId,
+  PartConfig,
+  PartQuote,
+  ProcessId,
+} from '@/lib/api/client'
 import { useCatalog, useShipDates } from '@/hooks/useApi'
 import { strings } from '@/lib/strings'
 
 interface Props {
   config: PartConfig
   onChange: (patch: Partial<PartConfig>) => void
+  /** Enables the material meta line (weight / print-time estimates). */
+  quote?: PartQuote
 }
 
 const LEAD_LABEL: Record<LeadTimeId, string> = {
@@ -30,7 +36,14 @@ const LEAD_LABEL: Record<LeadTimeId, string> = {
 // so typing "125" doesn't fire a pricing request per keystroke.
 const QTY_DEBOUNCE_MS = 250
 
-export function ConfigPanel({ config, onChange }: Props) {
+const num = new Intl.NumberFormat('pl-PL')
+const num1 = new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 1 })
+const num2 = new Intl.NumberFormat('pl-PL', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+export function ConfigPanel({ config, onChange, quote }: Props) {
   const catalog = useCatalog()
   const shipDates = useShipDates()
 
@@ -57,18 +70,22 @@ export function ConfigPanel({ config, onChange }: Props) {
     }, QTY_DEBOUNCE_MS)
   }
 
-  const quantityChips = catalog?.quantityChips ?? []
+  const process = catalog?.processes.find((p) => p.id === config.process)
   const shipByLead = new Map(shipDates?.map((s) => [s.leadTime, s]))
+  const discountAt = (q: number) =>
+    catalog?.discountTiers.find((t) => t.quantity === q)?.fraction ?? 0
 
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label>{strings.config.process}</Label>
+        <Label className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
+          {strings.config.process}
+        </Label>
         <Select
           value={config.process}
           onValueChange={(v) => onChange({ process: v as ProcessId })}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full font-semibold">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -79,41 +96,76 @@ export function ConfigPanel({ config, onChange }: Props) {
             ))}
           </SelectContent>
         </Select>
+        {process && quote && !quote.blocked && (
+          <p className="text-muted-foreground font-mono text-[0.625rem] tracking-wider tabular-nums">
+            {num2.format(process.densityGCm3)} g/cm³ · {process.plnPerKg} zł/kg
+            · ~{num.format(Math.round(quote.weightG))} g ·{' '}
+            {num1.format(quote.printHours)} h print
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="qty">{strings.config.quantity}</Label>
-        <div className="flex flex-wrap items-center gap-2">
-          {quantityChips.map((q) => (
-            <Button
-              key={q}
-              type="button"
-              size="sm"
-              variant={config.quantity === q ? 'default' : 'outline'}
-              onClick={() => onChange({ quantity: q })}
-            >
-              {q}
-            </Button>
-          ))}
+        <Label
+          htmlFor="qty"
+          className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase"
+        >
+          {strings.config.quantity}
+        </Label>
+        <div className="flex flex-wrap items-stretch gap-2">
+          {(catalog?.quantityChips ?? []).map((q) => {
+            const active = config.quantity === q
+            const disc = discountAt(q)
+            return (
+              <button
+                key={q}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onChange({ quantity: q })}
+                className={cn(
+                  'min-w-[52px] cursor-pointer rounded-md border px-3 py-1.5 text-center font-mono transition-colors',
+                  'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  active
+                    ? 'border-foreground bg-foreground text-background'
+                    : 'border-border bg-card hover:bg-secondary/60',
+                )}
+              >
+                <span className="block text-[0.8125rem] font-bold tabular-nums">
+                  {q}
+                </span>
+                <span
+                  className={cn(
+                    'mt-0.5 block text-[0.5625rem]',
+                    active ? 'text-background/75' : 'text-muted-foreground',
+                  )}
+                >
+                  {disc > 0 ? `−${Math.round(disc * 100)}%` : ' '}
+                </span>
+              </button>
+            )
+          })}
           <Input
             id="qty"
             type="number"
             min={1}
             value={qtyText}
             onChange={(e) => handleQtyInput(e.target.value)}
-            className="w-20"
+            className="h-auto w-20 self-stretch font-mono text-[0.8125rem]"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>{strings.config.leadTime}</Label>
+        <Label className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
+          {strings.config.leadTime}
+        </Label>
         <RadioGroup
           value={config.leadTime}
           onValueChange={(v) => onChange({ leadTime: v as LeadTimeId })}
           className="gap-2"
         >
           {(catalog?.leadTimes ?? []).map((lt) => {
+            const active = config.leadTime === lt.id
             const ship = shipByLead.get(lt.id)
             const delta = Math.round((lt.mult - 1) * 100)
             return (
@@ -121,26 +173,26 @@ export function ConfigPanel({ config, onChange }: Props) {
                 key={lt.id}
                 htmlFor={`lead-${lt.id}`}
                 className={cn(
-                  'flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors',
-                  config.leadTime === lt.id
-                    ? 'border-primary bg-primary/5'
-                    : 'hover:bg-muted/50',
+                  'flex cursor-pointer items-center justify-between gap-3 rounded-md border px-3.5 py-3 transition-colors',
+                  active
+                    ? 'border-foreground bg-secondary/50'
+                    : 'border-border bg-card hover:bg-muted/50',
                 )}
               >
                 <div className="flex items-center gap-3">
                   <RadioGroupItem value={lt.id} id={`lead-${lt.id}`} />
                   <div>
-                    <div className="text-sm font-medium">
+                    <div className="text-[0.8125rem] font-semibold">
                       {LEAD_LABEL[lt.id]}
                     </div>
                     {ship && (
-                      <div className="text-muted-foreground text-xs">
+                      <div className="text-muted-foreground mt-0.5 text-[0.6875rem]">
                         Ships {ship.label}
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="text-muted-foreground text-xs tabular-nums">
+                <div className="text-muted-foreground font-mono text-[0.6875rem] tabular-nums">
                   {delta === 0
                     ? 'base'
                     : delta > 0
@@ -151,7 +203,7 @@ export function ConfigPanel({ config, onChange }: Props) {
             )
           })}
         </RadioGroup>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase">
           {strings.config.warsawCutoff}
         </p>
       </div>

@@ -99,18 +99,23 @@ export function OrderDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         {quoteId ? (
-          <div className="space-y-4 py-4 text-center">
-            <CheckCircle2 className="text-primary mx-auto size-12" />
+          <div className="space-y-4 py-2 text-center">
+            <span className="border-primary text-primary-text mx-auto flex size-12 items-center justify-center rounded-full border-[2.5px]">
+              <CheckCircle2 className="size-6" />
+            </span>
             <div>
-              <DialogTitle className="mb-1">
+              <DialogTitle className="mb-1 text-xl font-extrabold tracking-tight">
                 {strings.order.successTitle}
               </DialogTitle>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-[0.8125rem]">
                 {strings.order.successBody}
               </p>
-              <p className="mt-2 font-mono text-lg font-semibold">{quoteId}</p>
+              <p className="mt-2.5 font-mono text-lg font-bold">{quoteId}</p>
             </div>
-            <Button onClick={() => handleOpenChange(false)} className="w-full">
+            <Button
+              onClick={() => handleOpenChange(false)}
+              className="w-full font-bold"
+            >
               Done
             </Button>
           </div>
@@ -127,8 +132,13 @@ export function OrderDialog({
                 void submit()
               }}
             >
-              <div className="space-y-1.5">
-                <Label htmlFor="order-email">{strings.order.emailLabel}</Label>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="order-email"
+                  className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase"
+                >
+                  {strings.order.emailLabel}
+                </Label>
                 <Input
                   id="order-email"
                   type="email"
@@ -138,8 +148,11 @@ export function OrderDialog({
                   placeholder="you@company.com"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="order-country">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="order-country"
+                  className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase"
+                >
                   {strings.order.countryLabel}
                 </Label>
                 <Select value={country} onValueChange={setCountry}>
@@ -155,11 +168,11 @@ export function OrderDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center justify-between border-t pt-3 text-sm">
-                <span className="text-muted-foreground">
+              <div className="flex items-baseline justify-between border-t pt-3 text-sm">
+                <span className="text-muted-foreground text-[0.8125rem]">
                   {strings.order.orderTotal}
                 </span>
-                <span className="text-lg font-semibold tabular-nums">
+                <span className="font-mono text-lg font-bold tabular-nums">
                   {formatPln(displayTotal)}
                 </span>
               </div>
@@ -167,7 +180,7 @@ export function OrderDialog({
                 <Button
                   type="submit"
                   disabled={submitting || !email}
-                  className="w-full"
+                  className="w-full font-bold"
                 >
                   {strings.order.submit(formatPln(displayTotal))}
                 </Button>

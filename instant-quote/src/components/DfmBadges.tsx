@@ -1,24 +1,19 @@
-import { AlertTriangle, Ban, Info } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import { useCatalog } from '@/hooks/useApi'
 import type { DfmFlag } from '@/lib/api/client'
 
-const ICON = {
-  block: Ban,
-  warn: AlertTriangle,
-  info: Info,
-} as const
-
-const VARIANT = {
-  block: 'destructive',
-  warn: 'secondary',
-  info: 'outline',
-} as const
+// Severity-coded mono chips: blocking = filled red, warning = panel
+// aluminum, info = outlined. Hover/tap reveals the full engine message.
+const CHIP: Record<DfmFlag['severity'], string> = {
+  block: 'bg-destructive text-destructive-foreground border-transparent',
+  warn: 'bg-secondary text-foreground border-transparent',
+  info: 'bg-card text-foreground border-border',
+}
 
 export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
   const catalog = useCatalog()
@@ -28,7 +23,6 @@ export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
   return (
     <div className="flex flex-wrap gap-2">
       {flags.map((flag) => {
-        const Icon = ICON[flag.severity]
         const suggestion =
           flag.suggestedProcesses && flag.suggestedProcesses.length > 0
             ? ` Try: ${flag.suggestedProcesses.map(labelOf).join(', ')}.`
@@ -36,13 +30,14 @@ export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
         return (
           <Tooltip key={flag.code}>
             <TooltipTrigger asChild>
-              <Badge
-                variant={VARIANT[flag.severity]}
-                className="cursor-help gap-1"
+              <span
+                className={cn(
+                  'inline-flex cursor-help items-center rounded border px-2 py-1 font-mono text-[0.59375rem] font-bold tracking-wider uppercase',
+                  CHIP[flag.severity],
+                )}
               >
-                <Icon className="size-3" />
                 {label(flag.code)}
-              </Badge>
+              </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               {flag.message}

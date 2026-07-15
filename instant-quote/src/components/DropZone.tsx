@@ -84,7 +84,7 @@ export function DropZone({
     <form
       className={cn(
         'flex w-full max-w-sm cursor-auto flex-col gap-2',
-        compact && 'max-w-xs',
+        compact && 'mx-auto max-w-xs',
       )}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
@@ -190,23 +190,31 @@ export function DropZone({
       <Upload
         className={cn(
           'text-muted-foreground group-hover:text-primary transition-colors',
-          compact ? 'size-5' : 'size-8',
+          compact ? 'size-4' : 'size-8',
         )}
       />
       <p className={cn('font-medium', compact ? 'text-sm' : 'text-lg')}>
         {dragging ? strings.dropzone.dragActive : strings.dropzone.idle}
       </p>
-      {!compact && (
+      {compact ? (
+        <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase">
+          {strings.dropzone.multiHint}
+        </p>
+      ) : (
         <p className="text-muted-foreground text-sm">{strings.dropzone.hint}</p>
       )}
-      {urlForm && <div className="mt-2 w-full px-2">{urlForm}</div>}
+      {urlForm && (
+        <div className={cn('w-full px-2', compact ? 'mt-3' : 'mt-2')}>
+          {urlForm}
+        </div>
+      )}
       {input}
     </div>
   )
 }
 
 /** TE/Anduril-style corner alignment marks. */
-function CornerMarks() {
+export function CornerMarks() {
   const base = 'pointer-events-none absolute size-3 border-foreground/25'
   return (
     <>

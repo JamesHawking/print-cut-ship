@@ -52,8 +52,13 @@ type PriceBreak struct {
 }
 
 type PartQuote struct {
-	Blocked            bool            `json:"blocked"`
-	BillableVolumeCm3  float64         `json:"billableVolumeCm3"`
+	Blocked           bool    `json:"blocked"`
+	BillableVolumeCm3 float64 `json:"billableVolumeCm3"`
+	// Estimated print weight and time from the shell+infill model. Additive
+	// vs the original TS engine (absent from golden fixtures — the golden
+	// tests do a subset match, so fixture-pinned fields stay exact).
+	WeightG            float64         `json:"weightG"`
+	PrintHours         float64         `json:"printHours"`
 	UnitBasePln        float64         `json:"unitBasePln"`
 	DiscountFraction   float64         `json:"discountFraction"`
 	LeadTimeMultiplier float64         `json:"leadTimeMultiplier"`
@@ -117,20 +122,20 @@ func (c *Config) InterpolateDiscount(quantity float64) float64 {
 // unitBasePrice: shell (surface area × thickness, clamped to volume) plus
 // infill of the remaining interior; material from weight × per-kg rate and
 // factor; machine time books shell and infill grams at separate throughputs.
-func (c *Config) unitBasePrice(proc ProcessDef, volumeCm3, surfaceAreaCm2 float64) (float64, []BreakdownLine) {
+func (c *Config) unitBasePrice(proc ProcessDef, volumeCm3, surfaceAreaCm2 float64) (total float64, lines []BreakdownLine, weightG, printH float64) {
 	shellVolCm3 := math.Min(volumeCm3, surfaceAreaCm2*(c.Fdm.ShellThicknessMm/10))
 	infillVolCm3 := c.Fdm.InfillFraction * (volumeCm3 - shellVolCm3)
 	shellG := shellVolCm3 * proc.DensityGCm3
 	infillG := infillVolCm3 * proc.DensityGCm3
-	weightG := shellG + infillG
+	weightG = shellG + infillG
 	material := (weightG * proc.PlnPerKg * proc.Factor) / 1000
-	printH := shellG/c.Fdm.ShellGramsPerPrintHour + infillG/c.Fdm.InfillGramsPerPrintHour
+	printH = shellG/c.Fdm.ShellGramsPerPrintHour + infillG/c.Fdm.InfillGramsPerPrintHour
 	machine := printH * proc.PlnPerHour
 	return material + machine, []BreakdownLine{
 		{Key: "material", Label: "Material", AmountPln: material},
 		{Key: "machine", Label: "Machine time", AmountPln: machine},
 		{Key: "finishing", Label: "Finishing", AmountPln: 0},
-	}
+	}, weightG, printH
 }
 
 // sortedDesc lets us compare a part against a build box allowing any rotation.
@@ -239,7 +244,7 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 		}
 	}
 
-	unitBasePln, baseLines := c.unitBasePrice(proc, billableVolumeCm3, metrics.SurfaceAreaCm2)
+	unitBasePln, baseLines, weightG, printHours := c.unitBasePrice(proc, billableVolumeCm3, metrics.SurfaceAreaCm2)
 	// Per-unit fee for each plate beyond the first, folded into the base so
 	// discounts, lead-time multipliers, and breakdown scaling apply uniformly.
 	plateFeePln := float64(plates-1) * c.ExtraPlateFeePln
@@ -298,6 +303,8 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 	quote := PartQuote{
 		Blocked:            !fits,
 		BillableVolumeCm3:  billableVolumeCm3,
+		WeightG:            weightG,
+		PrintHours:         printHours,
 		UnitBasePln:        round2(unitBasePln),
 		DiscountFraction:   discountFraction,
 		LeadTimeMultiplier: leadTimeMultiplier,

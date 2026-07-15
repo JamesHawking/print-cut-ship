@@ -86,6 +86,8 @@ func fromDomainQuote(q pricing.PartQuote) PartQuote {
 	out := PartQuote{
 		Blocked:            q.Blocked,
 		BillableVolumeCm3:  q.BillableVolumeCm3,
+		WeightG:            q.WeightG,
+		PrintHours:         q.PrintHours,
 		UnitBasePln:        q.UnitBasePln,
 		DiscountFraction:   q.DiscountFraction,
 		LeadTimeMultiplier: q.LeadTimeMultiplier,

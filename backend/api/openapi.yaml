@@ -265,12 +265,20 @@ components:
     PartQuote:
       type: object
       required:
-        [blocked, billableVolumeCm3, unitBasePln, discountFraction,
-         leadTimeMultiplier, unitPricePln, lineTotalPln, breakdown,
-         dfmFlags, priceBreaks]
+        [blocked, billableVolumeCm3, weightG, printHours, unitBasePln,
+         discountFraction, leadTimeMultiplier, unitPricePln, lineTotalPln,
+         breakdown, dfmFlags, priceBreaks]
       properties:
         blocked: { type: boolean }
         billableVolumeCm3: { type: number, format: double }
+        weightG:
+          type: number
+          format: double
+          description: Estimated print weight (shell + infill model)
+        printHours:
+          type: number
+          format: double
+          description: Estimated print time in hours
         unitBasePln: { type: number, format: double }
         discountFraction: { type: number, format: double }
         leadTimeMultiplier: { type: number, format: double }

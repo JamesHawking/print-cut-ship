@@ -207,6 +207,16 @@ export interface components {
       blocked: boolean
       /** Format: double */
       billableVolumeCm3: number
+      /**
+       * Format: double
+       * @description Estimated print weight (shell + infill model)
+       */
+      weightG: number
+      /**
+       * Format: double
+       * @description Estimated print time in hours
+       */
+      printHours: number
       /** Format: double */
       unitBasePln: number
       /** Format: double */

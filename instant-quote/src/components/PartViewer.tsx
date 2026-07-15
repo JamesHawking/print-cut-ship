@@ -28,8 +28,9 @@ export default function PartViewer({
   positions: Float32Array
   bboxMm: { x: number; y: number; z: number }
 }) {
+  // Chrome-less: the surrounding ViewerFrame owns border and radius.
   return (
-    <div className="bg-muted/30 relative h-full min-h-64 overflow-hidden rounded-xl border">
+    <div className="bg-muted/30 relative h-full min-h-64 overflow-hidden">
       <Canvas
         camera={{ position: [1.5, 1.2, 1.8], fov: 45 }}
         dpr={[1, 2]}

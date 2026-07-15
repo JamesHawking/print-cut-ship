@@ -53,8 +53,11 @@ export function StepManualCard({ part }: { part: Part }) {
               void submit()
             }}
           >
-            <div className="space-y-1.5">
-              <Label htmlFor={`step-email-${part.id}`}>
+            <div className="space-y-2">
+              <Label
+                htmlFor={`step-email-${part.id}`}
+                className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase"
+              >
                 {strings.step.emailLabel}
               </Label>
               <Input

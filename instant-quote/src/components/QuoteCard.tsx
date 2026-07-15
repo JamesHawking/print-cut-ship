@@ -18,15 +18,18 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium" title={part.fileName}>
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+          <div className="min-w-0 flex-1 basis-44">
+            <p
+              className="truncate text-[0.9375rem] font-bold"
+              title={part.fileName}
+            >
               {part.fileName}
             </p>
             {part.metrics && (
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground mt-1.5 font-mono text-[0.625rem] tracking-wider tabular-nums">
                 {formatVolume(quote.billableVolumeCm3)} ·{' '}
-                {part.metrics.triangleCount.toLocaleString()} triangles
+                {part.metrics.triangleCount.toLocaleString('pl-PL')} triangles
                 {quote.pieceCount != null && quote.plates != null && (
                   <>
                     {' '}
@@ -37,24 +40,19 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
               </p>
             )}
           </div>
-          <div className="text-right">
+          <div className="shrink-0 text-right" aria-live="polite">
             {quote.blocked ? (
-              <p className="text-destructive text-sm font-medium">
+              <p className="text-destructive text-sm font-bold">
                 Not printable
               </p>
             ) : (
               <>
-                <div className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
+                <div className="text-primary-text font-mono text-[clamp(1.375rem,3.5vw,1.75rem)] font-bold tracking-tight whitespace-nowrap tabular-nums">
                   {formatPln(quote.unitPricePln)}
                 </div>
                 <p className="text-muted-foreground text-xs">
                   per part
-                  {discount > 0 && (
-                    <span className="text-primary">
-                      {' '}
-                      · {formatPercent(discount)} off
-                    </span>
-                  )}
+                  {discount > 0 && <> · {formatPercent(discount)} off</>}
                 </p>
                 {part.config.quantity > 1 && (
                   <p className="text-muted-foreground text-xs tabular-nums">
@@ -71,8 +69,12 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-6">
-        <ConfigPanel config={part.config} onChange={onConfigChange} />
+      <CardContent className="space-y-5 border-t pt-5">
+        <ConfigPanel
+          config={part.config}
+          onChange={onConfigChange}
+          quote={quote}
+        />
         {!quote.blocked && (
           <PriceBreakTable
             priceBreaks={quote.priceBreaks}

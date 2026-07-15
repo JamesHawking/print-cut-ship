@@ -237,10 +237,16 @@ type PartQuote struct {
 	PieceCount *int `json:"pieceCount,omitempty"`
 
 	// Plates Present only for multi-piece 3MF parts
-	Plates       *int         `json:"plates,omitempty"`
-	PriceBreaks  []PriceBreak `json:"priceBreaks"`
-	UnitBasePln  float64      `json:"unitBasePln"`
-	UnitPricePln float64      `json:"unitPricePln"`
+	Plates      *int         `json:"plates,omitempty"`
+	PriceBreaks []PriceBreak `json:"priceBreaks"`
+
+	// PrintHours Estimated print time in hours
+	PrintHours   float64 `json:"printHours"`
+	UnitBasePln  float64 `json:"unitBasePln"`
+	UnitPricePln float64 `json:"unitPricePln"`
+
+	// WeightG Estimated print weight (shell + infill model)
+	WeightG float64 `json:"weightG"`
 }
 
 // PieceMetrics defines model for PieceMetrics.
