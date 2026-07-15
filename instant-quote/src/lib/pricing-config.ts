@@ -95,14 +95,18 @@ export const PRICING = {
   },
   // FDM material/time model. mapi-tech's slicer weighs walls + solid top/bottom
   // plus infilled interior; lacking a slicer we approximate that as a solid
-  // shell (surface area × thickness) plus infill of the remaining interior,
-  // and estimate print hours from the resulting weight. shellThicknessMm 0.9
-  // calibrates the reference part (tests/test_object.step) to within 0.5% of
-  // mapi-tech's 33.67 zł. See references/mapi-tech-pricing.md.
+  // shell (surface area × thickness) plus infill of the remaining interior.
+  // Print time uses separate throughputs for the two: perimeter walls extrude
+  // slowly, sparse infill fast. Rates are solved from two mapi-tech anchors —
+  // tests/test_object.step (chunky, PETG, 33.67 zł) and Basket.3mf (thin-walled
+  // ribbed, PLA, 21.64 zł) — reproducing both within 0.5%. A single global
+  // 12 g/h matched the first anchor but underpriced wall-heavy parts by ~27%.
+  // See references/mapi-tech-pricing.md.
   fdm: {
     infillFraction: 0.2, // mapi-tech "Standard 20%" default
     shellThicknessMm: 0.9,
-    gramsPerPrintHour: 12,
+    shellGramsPerPrintHour: 8,
+    infillGramsPerPrintHour: 18,
   },
   // Quantity discount applied to unit price. [quantity, discountFraction].
   discountTiers: [

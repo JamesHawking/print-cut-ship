@@ -31,8 +31,10 @@ export function HowWePriceDialog() {
             interior, converted to grams with the material’s density. We charge
             the material’s per-kg rate (PLA {PRICING.processes.pla.plnPerKg}{' '}
             zł/kg up to Iglidur {PRICING.processes.iglidur.plnPerKg} zł/kg),
-            then add machine time at {PRICING.fdm.gramsPerPrintHour} g/h × the
-            machine’s hourly rate.
+            then add machine time — walls print at{' '}
+            {PRICING.fdm.shellGramsPerPrintHour} g/h, infill at{' '}
+            {PRICING.fdm.infillGramsPerPrintHour} g/h — × the machine’s hourly
+            rate.
           </p>
           <p>
             <strong>Quantity</strong> earns a per-unit discount, from 5% at 5

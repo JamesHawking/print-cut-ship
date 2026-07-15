@@ -31,28 +31,31 @@ const cfg = (o: Partial<PartConfig> = {}): PartConfig => ({
 })
 
 describe('FDM pricing (shell + 20% infill weight × rate + machine time)', () => {
-  it('PLA 100 cm³ / 100 cm² = 6.80 zł', () => {
-    // eff 27.2 cm³ × 1.25 = 34 g; material 34×50/1000 = 1.70;
-    // print 34/12 = 2.8333 h × 1.8 = 5.10; total 6.80
+  it('PLA 100 cm³ / 100 cm² = 6.51 zł', () => {
+    // shell 11.25 g + infill 22.75 g = 34 g; material 34×50/1000 = 1.70;
+    // print 11.25/8 + 22.75/18 = 2.6701 h × 1.8 = 4.8063; total 6.5063 → 6.51
     const q = computePartQuote(metrics(), cfg())
-    expect(q.unitPricePln).toBe(6.8)
-    expect(q.lineTotalPln).toBe(6.8)
+    expect(q.unitPricePln).toBe(6.51)
+    expect(q.lineTotalPln).toBe(6.51)
   })
-  it('PETG 100 cm³ / 100 cm² = 8.55 zł (factor 1.2, 2.25 zł/h)', () => {
-    // eff 27.2 × 1.27 = 34.544 g; material 34.544×50×1.2/1000 = 2.0726;
-    // print 34.544/12 × 2.25 = 6.477; total 8.5496 → 8.55
+  it('PETG 100 cm³ / 100 cm² = 8.18 zł (factor 1.2, 2.25 zł/h)', () => {
+    // shell 11.43 g + infill 23.114 g = 34.544 g; material 34.544×50×1.2/1000
+    // = 2.0726; print 11.43/8 + 23.114/18 = 2.7129 h × 2.25 = 6.1039;
+    // total 8.1766 → 8.18
     const q = computePartQuote(metrics(), cfg({ process: 'petg' }))
-    expect(q.unitPricePln).toBe(8.55)
+    expect(q.unitPricePln).toBe(8.18)
   })
-  it('PA12-CF 100 cm³ / 100 cm² = 29.13 zł (factor 2.0, 3.5 zł/h)', () => {
-    // eff 27.2 × 1.08 = 29.376 g; material 29.376×350×2/1000 = 20.5632;
-    // print 29.376/12 = 2.448 h × 3.5 = 8.568; total 29.1312 → 29.13
+  it('PA12-CF 100 cm³ / 100 cm² = 28.64 zł (factor 2.0, 3.5 zł/h)', () => {
+    // shell 9.72 g + infill 19.656 g = 29.376 g; material 29.376×350×2/1000
+    // = 20.5632; print 9.72/8 + 19.656/18 = 2.307 h × 3.5 = 8.0745;
+    // total 28.6377 → 28.64
     const q = computePartQuote(metrics(), cfg({ process: 'pa12_cf' }))
-    expect(q.unitPricePln).toBe(29.13)
+    expect(q.unitPricePln).toBe(28.64)
   })
   it('thin part (shell ≥ volume) is billed fully solid', () => {
     // shell min(2, 100×0.09) = 2 cm³ → eff 2 cm³, no infill discount:
-    // 2×1.25 = 2.5 g; material 0.125; print 2.5/12×1.8 = 0.375; total 0.50 → floor 1.50
+    // 2×1.25 = 2.5 g; material 0.125; print 2.5/8×1.8 = 0.5625;
+    // total 0.6875 → floor 1.50
     const q = computePartQuote(
       metrics({ volumeCm3: 2, surfaceAreaCm2: 100 }),
       cfg(),
@@ -64,8 +67,9 @@ describe('FDM pricing (shell + 20% infill weight × rate + machine time)', () =>
 describe('minimum part price floor', () => {
   it('small PETG part floors to 1.50 zł (mapi 20 mm cube anchor)', () => {
     // mapi's widget slices a 20 mm PETG cube to a raw ≈1.21 zł, floored to
-    // 1.50. Our model: shell min(8, 24×0.09 = 2.16) → eff 3.328 cm³ →
-    // 4.2266 g → material 0.2536 + machine 0.7925 = 1.05 → floor 1.50.
+    // 1.50. Our model: shell min(8, 24×0.09 = 2.16) → shell 2.7432 g +
+    // infill 1.4834 g → material 0.2536 + machine 0.9569 = raw 1.21 (matches
+    // mapi's raw price) → floor 1.50.
     const q = computePartQuote(
       metrics({
         volumeCm3: 8,
@@ -75,6 +79,26 @@ describe('minimum part price floor', () => {
       cfg({ process: 'petg' }),
     )
     expect(q.unitPricePln).toBe(1.5)
+  })
+})
+
+describe('thin-walled anchor (Basket.3mf vs mapi-tech, captured 2026-07-15)', () => {
+  // Basket.3mf: ribbed thin-walled basket, 130×100×50 mm. Both analyzers
+  // agree on volume (mapi 63 495.92 mm³, our parser 63.50 cm³; SA 702.58 cm²).
+  // mapi quoted 21.64 zł/part at PLA / 0.4 mm / 20% / Standard. Nearly all
+  // of this part is slow perimeter shell — the case the single 12 g/h rate
+  // underpriced by 27%.
+  it('PLA part prices within 1% of mapi 21.64 zł', () => {
+    const q = computePartQuote(
+      metrics({
+        volumeCm3: 63.5,
+        surfaceAreaCm2: 702.58,
+        bboxMm: { x: 130, y: 100, z: 50 },
+        triangleCount: 21596,
+      }),
+      cfg(),
+    )
+    expect(Math.abs(q.unitPricePln - 21.64) / 21.64).toBeLessThan(0.01)
   })
 })
 
@@ -101,13 +125,13 @@ describe('quantity discount interpolation', () => {
 
 describe('lead-time multiplier (mapi-tech)', () => {
   it('economy = base × 0.90', () => {
-    // PLA base 6.80 → 6.12
+    // PLA base 6.5063 → 5.86
     const q = computePartQuote(metrics(), cfg({ leadTime: 'economy' }))
-    expect(q.unitPricePln).toBe(6.12)
+    expect(q.unitPricePln).toBe(5.86)
   })
   it('express = base × 1.30', () => {
     const q = computePartQuote(metrics(), cfg({ leadTime: 'express' }))
-    expect(q.unitPricePln).toBe(8.84)
+    expect(q.unitPricePln).toBe(8.46)
   })
 })
 

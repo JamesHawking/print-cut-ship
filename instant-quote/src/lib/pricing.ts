@@ -89,8 +89,9 @@ export function interpolateDiscount(quantity: number): number {
  * FDM model (mapi-tech): weight approximates a slicer's walls + solid
  * top/bottom as a shell (surface area × thickness, clamped to the part
  * volume) plus infill of the remaining interior; material cost from that
- * weight × per-material rate and factor, plus machine time estimated from
- * the same weight.
+ * weight × per-material rate and factor. Print time books the shell and
+ * infill grams at their own throughputs — perimeters extrude far slower
+ * than sparse infill, which is what makes thin-walled parts expensive.
  */
 function unitBasePrice(
   proc: ProcessDef,
@@ -101,11 +102,14 @@ function unitBasePrice(
     volumeCm3,
     surfaceAreaCm2 * (PRICING.fdm.shellThicknessMm / 10),
   )
-  const effectiveVolCm3 =
-    shellVolCm3 + PRICING.fdm.infillFraction * (volumeCm3 - shellVolCm3)
-  const weightG = effectiveVolCm3 * proc.densityGCm3
+  const infillVolCm3 = PRICING.fdm.infillFraction * (volumeCm3 - shellVolCm3)
+  const shellG = shellVolCm3 * proc.densityGCm3
+  const infillG = infillVolCm3 * proc.densityGCm3
+  const weightG = shellG + infillG
   const material = (weightG * proc.plnPerKg * proc.factor) / 1000
-  const printH = weightG / PRICING.fdm.gramsPerPrintHour
+  const printH =
+    shellG / PRICING.fdm.shellGramsPerPrintHour +
+    infillG / PRICING.fdm.infillGramsPerPrintHour
   const machine = printH * proc.plnPerHour
   return {
     total: material + machine,
