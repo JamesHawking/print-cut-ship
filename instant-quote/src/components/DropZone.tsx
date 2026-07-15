@@ -159,7 +159,7 @@ export function DropZone({
         </span>
         {/* full-cover armed overlay while a file is dragged over the zone */}
         {dragging && (
-          <div className="bg-primary-tint border-primary pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3.5 rounded-lg border-2">
+          <div className="bg-primary-tint border-primary animate-in fade-in pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3.5 rounded-lg border-2 duration-150 ease-out">
             <span className="border-primary/70 pointer-events-none absolute inset-3.5 rounded border border-dashed" />
             <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.2em] uppercase">
               {strings.dropzone.intakeArmed}

@@ -23,7 +23,9 @@ export function ViewerFrame({
   const ext = (part.fileName.split('.').pop() ?? '').toUpperCase()
   const metrics = part.metrics
   return (
-    <div className="bg-card overflow-hidden rounded-lg border">
+    // Mounts when a part finishes parsing — settle in instead of snapping
+    // (fade only under reduced motion).
+    <div className="bg-card animate-in fade-in zoom-in-[0.98] motion-reduce:zoom-in-100 overflow-hidden rounded-lg border duration-200 ease-out">
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <span className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
           Part {String(index + 1).padStart(2, '0')} · Preview

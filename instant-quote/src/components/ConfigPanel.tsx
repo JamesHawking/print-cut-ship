@@ -123,7 +123,8 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
                 aria-pressed={active}
                 onClick={() => onChange({ quantity: q })}
                 className={cn(
-                  'min-w-[52px] cursor-pointer rounded-md border px-3 py-1.5 text-center font-mono transition-colors',
+                  // Near-imperceptible press acknowledgment — felt, not seen.
+                  'min-w-[52px] cursor-pointer rounded-md border px-3 py-1.5 text-center font-mono transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
                   'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                   active
                     ? 'border-foreground bg-foreground text-background'
@@ -173,7 +174,7 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
                 key={lt.id}
                 htmlFor={`lead-${lt.id}`}
                 className={cn(
-                  'flex cursor-pointer items-center justify-between gap-3 rounded-md border px-3.5 py-3 transition-colors',
+                  'flex cursor-pointer items-center justify-between gap-3 rounded-md border px-3.5 py-3 transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
                   active
                     ? 'border-foreground bg-secondary/50'
                     : 'border-border bg-card hover:bg-muted/50',

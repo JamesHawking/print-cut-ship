@@ -16,7 +16,9 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
   const discount = quote.discountFraction
 
   return (
-    <Card>
+    // Mounts when the skeleton hands over — settle in instead of snapping
+    // (fade only under reduced motion).
+    <Card className="animate-in fade-in zoom-in-[0.98] motion-reduce:zoom-in-100 duration-200 ease-out">
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <div className="min-w-0 flex-1 basis-44">

@@ -183,3 +183,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Success-check overshoot — the one deliberate bounce in the app
+   (order-received dialog). Everything else settles without spring. */
+@theme {
+  --animate-check-pop: check-pop 400ms cubic-bezier(0, 0, 0.2, 1) 80ms both;
+
+  @keyframes check-pop {
+    0% {
+      transform: scale(0.8);
+    }
+    60% {
+      transform: scale(1.04);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+}

@@ -99,8 +99,11 @@ export function OrderDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         {quoteId ? (
-          <div className="space-y-4 py-2 text-center">
-            <span className="border-primary text-primary-text mx-auto flex size-12 items-center justify-center rounded-full border-[2.5px]">
+          // The one high-emotion moment in the app: the block settles in and
+          // the check lands with a slight overshoot (crossfade only under
+          // reduced motion).
+          <div className="animate-in fade-in zoom-in-95 motion-reduce:zoom-in-100 space-y-4 py-2 text-center duration-300 ease-out">
+            <span className="border-primary text-primary-text animate-check-pop mx-auto flex size-12 items-center justify-center rounded-full border-[2.5px] motion-reduce:animate-none">
               <CheckCircle2 className="size-6" />
             </span>
             <div>

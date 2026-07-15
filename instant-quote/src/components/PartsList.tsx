@@ -48,6 +48,9 @@ export function PartsList({
               }}
               className={cn(
                 'flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors',
+                // Rows mount once per added part (keyed by id) — bridge the
+                // appearance; slide is dropped under reduced motion.
+                'animate-in fade-in slide-in-from-bottom-1 motion-reduce:slide-in-from-bottom-0 duration-200 ease-out',
                 'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                 selected
                   ? 'border-foreground bg-secondary/50'
