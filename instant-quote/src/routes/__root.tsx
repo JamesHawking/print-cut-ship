@@ -18,14 +18,20 @@ import '@fontsource-variable/martian-mono'
 import appCss from '../styles.css?url'
 import { DEFAULT_LOCALE, isLocale } from '@/lib/i18n'
 
-// Localized title/description/hreflang live on the $locale layout route.
+// Localized per-page meta lives on the $locale routes (seoHead); the root
+// supplies globals plus a brand-token title fallback so no document — error
+// states included — ever renders titleless.
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { title: 'MICRO_FACTORY' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'apple-touch-icon', href: '/logo192.png' },
+    ],
   }),
   shellComponent: RootDocument,
 })

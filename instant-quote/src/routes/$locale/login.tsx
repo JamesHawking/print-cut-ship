@@ -5,9 +5,29 @@ import { OrderAccessShell } from '@/components/OrderAccessShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getSessionEmail, setSessionEmail } from '@/lib/session'
-import { useLocale, useStrings } from '@/lib/i18n'
+import {
+  DEFAULT_LOCALE,
+  getStrings,
+  isLocale,
+  useLocale,
+  useStrings,
+} from '@/lib/i18n'
+import { seoHead } from '@/lib/seo'
 
-export const Route = createFileRoute('/$locale/login')({ component: Login })
+export const Route = createFileRoute('/$locale/login')({
+  head: ({ params, match }) => {
+    const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE
+    const s = getStrings(locale)
+    return seoHead({
+      locale,
+      path: match.pathname,
+      title: s.meta.login.title,
+      description: s.meta.login.description,
+      noindex: true,
+    })
+  },
+  component: Login,
+})
 
 const EMAIL_RE = /.+@.+\..+/
 

@@ -30,6 +30,20 @@ export const en = {
     title: 'Instant 3D printing quote — upload, price, order',
     description:
       'Upload an STL, 3MF, OBJ or STEP file and get an instant price. Made in the EU, ships D+1/D+2 to Germany. No account needed.',
+    quote: {
+      title: 'Your quote — MICRO_FACTORY',
+      description:
+        'Pick material, quantity and lead time — the price updates live.',
+    },
+    login: {
+      title: 'Track your order — MICRO_FACTORY',
+      description:
+        'Access your orders with a one-time code — no account, no password.',
+    },
+    orders: {
+      title: 'Your orders — MICRO_FACTORY',
+      description: 'Quote and order history linked to your email address.',
+    },
   },
   hero: {
     wordmark: 'MICRO_FACTORY',

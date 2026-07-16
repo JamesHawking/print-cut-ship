@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { detectLocale, parseAcceptLanguage, parseLocaleCookie } from './detect'
-import { localizedPath } from './head'
+import { localizedPath } from '@/lib/seo'
 
 describe('parseAcceptLanguage', () => {
   test('matches base languages and regional tags', () => {

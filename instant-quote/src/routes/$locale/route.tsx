@@ -1,17 +1,19 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import {
+  DEFAULT_LOCALE,
   getStrings,
   isLocale,
   LocaleProvider,
   setActiveLocale,
   type Locale,
 } from '@/lib/i18n'
-import { hreflangLinks } from '@/lib/i18n/head'
+import { jsonLd, organizationJsonLd, webSiteJsonLd } from '@/lib/seo'
 
 /**
  * Locale segment layout (/pl/*, /en/*): validates the prefix, provides the
- * locale to the tree, and owns the localized title/description + hreflang
- * alternates. Invalid prefixes bounce to `/`, which re-detects.
+ * locale to the tree, and owns the site-wide JSON-LD. Page-level meta
+ * (title/canonical/OG/hreflang) lives on each child route via seoHead().
+ * Invalid prefixes bounce to `/`, which re-detects.
  */
 export const Route = createFileRoute('/$locale')({
   params: {
@@ -23,14 +25,14 @@ export const Route = createFileRoute('/$locale')({
     // Client event handlers outside the render tree read this store.
     setActiveLocale(params.locale)
   },
-  head: ({ params, match }) => {
-    const s = getStrings(isLocale(params.locale) ? params.locale : 'pl')
+  head: ({ params }) => {
+    const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE
+    const s = getStrings(locale)
     return {
       meta: [
-        { title: s.meta.title },
-        { name: 'description', content: s.meta.description },
+        jsonLd(organizationJsonLd()),
+        jsonLd(webSiteJsonLd(locale, s.meta.description)),
       ],
-      links: hreflangLinks(match.pathname),
     }
   },
   component: LocaleLayout,

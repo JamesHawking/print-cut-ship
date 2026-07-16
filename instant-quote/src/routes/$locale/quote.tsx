@@ -26,9 +26,27 @@ import { MAX_PARTS } from '@/lib/upload'
 import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
 import { track } from '@/lib/funnel'
 import { formatWarsawClock } from '@/lib/clock'
-import { useLocale, useStrings } from '@/lib/i18n'
+import {
+  DEFAULT_LOCALE,
+  getStrings,
+  isLocale,
+  useLocale,
+  useStrings,
+} from '@/lib/i18n'
+import { seoHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/$locale/quote')({
+  head: ({ params, match }) => {
+    const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE
+    const s = getStrings(locale)
+    return seoHead({
+      locale,
+      path: match.pathname,
+      title: s.meta.quote.title,
+      description: s.meta.quote.description,
+      noindex: true,
+    })
+  },
   component: QuoteWorkspace,
 })
 

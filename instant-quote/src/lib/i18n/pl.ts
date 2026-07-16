@@ -41,6 +41,21 @@ export const pl = {
     title: 'Natychmiastowa wycena druku 3D — wgraj, wyceń, zamów',
     description:
       'Wgraj plik STL, 3MF, OBJ lub STEP i otrzymaj cenę od ręki. Produkcja w UE, wysyłka D+1/D+2 do Niemiec. Bez zakładania konta.',
+    quote: {
+      title: 'Twoja wycena — MICRO_FACTORY',
+      description:
+        'Skonfiguruj materiał, ilość i termin — cena aktualizuje się na żywo.',
+    },
+    login: {
+      title: 'Śledź zamówienie — MICRO_FACTORY',
+      description:
+        'Dostęp do zamówień jednorazowym kodem — bez konta i bez hasła.',
+    },
+    orders: {
+      title: 'Twoje zamówienia — MICRO_FACTORY',
+      description:
+        'Historia wycen i zamówień powiązanych z twoim adresem e-mail.',
+    },
   },
   hero: {
     wordmark: 'MICRO_FACTORY',

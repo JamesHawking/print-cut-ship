@@ -7,10 +7,30 @@ import { api } from '@/lib/api/client'
 import { clearSessionEmail, getSessionEmail } from '@/lib/session'
 import { formatPlacedDate, formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { useLocale, useStrings } from '@/lib/i18n'
+import {
+  DEFAULT_LOCALE,
+  getStrings,
+  isLocale,
+  useLocale,
+  useStrings,
+} from '@/lib/i18n'
+import { seoHead } from '@/lib/seo'
 import type { components } from '@/lib/api/schema'
 
-export const Route = createFileRoute('/$locale/orders')({ component: Orders })
+export const Route = createFileRoute('/$locale/orders')({
+  head: ({ params, match }) => {
+    const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE
+    const s = getStrings(locale)
+    return seoHead({
+      locale,
+      path: match.pathname,
+      title: s.meta.orders.title,
+      description: s.meta.orders.description,
+      noindex: true,
+    })
+  },
+  component: Orders,
+})
 
 type OrderSummary = components['schemas']['OrderSummary']
 
