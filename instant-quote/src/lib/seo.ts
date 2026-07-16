@@ -22,18 +22,27 @@ export function localizedPath(pathname: string, locale: Locale): string {
   return pathname.replace(/^\/(pl|en)(?=\/|$)/, `/${locale}`)
 }
 
-/** rel=alternate for every locale plus x-default (→ the default locale). */
-export function hreflangLinks(pathname: string) {
+/**
+ * rel=alternate for every locale plus x-default (→ the default locale).
+ * Pages with localized slugs (e.g. /pl/materialy vs /en/materials) pass
+ * explicit per-locale `alternates`; otherwise the /pl|/en prefix is swapped.
+ */
+export function hreflangLinks(
+  pathname: string,
+  alternates?: Record<Locale, string>,
+) {
+  const pathFor = (locale: Locale) =>
+    alternates?.[locale] ?? localizedPath(pathname, locale)
   return [
     ...LOCALES.map((locale) => ({
       rel: 'alternate',
       hrefLang: locale,
-      href: `${SITE_URL}${localizedPath(pathname, locale)}`,
+      href: `${SITE_URL}${pathFor(locale)}`,
     })),
     {
       rel: 'alternate',
       hrefLang: 'x-default',
-      href: `${SITE_URL}${localizedPath(pathname, DEFAULT_LOCALE)}`,
+      href: `${SITE_URL}${pathFor(DEFAULT_LOCALE)}`,
     },
   ]
 }
@@ -46,6 +55,8 @@ export interface SeoOptions {
   description: string
   /** Absolute or site-relative OG image; defaults to the branded card. */
   image?: string
+  /** Explicit per-locale paths for localized slugs (hreflang + x-default). */
+  alternates?: Record<Locale, string>
   /** Transactional app screens: emit robots noindex, skip canonical/OG/hreflang. */
   noindex?: boolean
 }
@@ -61,6 +72,7 @@ export function seoHead({
   title,
   description,
   image = '/og.png',
+  alternates,
   noindex,
 }: SeoOptions): {
   meta: Array<Record<string, string>>
@@ -97,7 +109,10 @@ export function seoHead({
       { name: 'twitter:description', content: description },
       { name: 'twitter:image', content: imageUrl },
     ],
-    links: [{ rel: 'canonical', href: url }, ...hreflangLinks(path)],
+    links: [
+      { rel: 'canonical', href: url },
+      ...hreflangLinks(path, alternates),
+    ],
   }
 }
 
@@ -140,7 +155,38 @@ interface BreadcrumbListSchema {
   }>
 }
 
-type JsonLdSchema = OrganizationSchema | WebSiteSchema | BreadcrumbListSchema
+interface ProductSchema {
+  '@context': 'https://schema.org'
+  '@type': 'Product'
+  name: string
+  description: string
+  image: string
+  brand: { '@type': 'Brand'; name: string }
+  offers: {
+    '@type': 'Offer'
+    price: number
+    priceCurrency: 'PLN'
+    availability: 'https://schema.org/InStock'
+    url: string
+  }
+}
+
+interface FAQPageSchema {
+  '@context': 'https://schema.org'
+  '@type': 'FAQPage'
+  mainEntity: Array<{
+    '@type': 'Question'
+    name: string
+    acceptedAnswer: { '@type': 'Answer'; text: string }
+  }>
+}
+
+type JsonLdSchema =
+  | OrganizationSchema
+  | WebSiteSchema
+  | BreadcrumbListSchema
+  | ProductSchema
+  | FAQPageSchema
 
 /** Wraps a schema for a head() meta array entry. */
 export function jsonLd(schema: JsonLdSchema): Record<string, JsonLdSchema> {
@@ -171,7 +217,49 @@ export function webSiteJsonLd(
   }
 }
 
-/** For later content pages (prompt 02+); pairs with the visual breadcrumb. */
+/**
+ * Material landing pages: the service offering as a Product with a live
+ * engine price (gross PLN, the qty-1 bracket reference part).
+ */
+export function productJsonLd(opts: {
+  name: string
+  description: string
+  path: string
+  pricePln: number
+  image?: string
+}): ProductSchema {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: opts.name,
+    description: opts.description,
+    image: `${SITE_URL}${opts.image ?? '/og.png'}`,
+    brand: { '@type': 'Brand', name: SITE_NAME },
+    offers: {
+      '@type': 'Offer',
+      price: opts.pricePln,
+      priceCurrency: 'PLN',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE_URL}${opts.path}`,
+    },
+  }
+}
+
+export function faqPageJsonLd(
+  faq: Array<{ q: string; a: string }>,
+): FAQPageSchema {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  }
+}
+
+/** Pairs with the visual breadcrumb on content pages. */
 export function breadcrumbJsonLd(
   items: BreadcrumbItem[],
 ): BreadcrumbListSchema {

@@ -192,6 +192,52 @@ export const pl = {
     meta: 'UE · FDM · PLN · 23% VAT',
     cutoff: 'zamówienia do 14:00',
   },
+  // Material landing pages — UI chrome only; long-form prose lives in
+  // src/content/materials/{pl,en}.ts.
+  materialsPages: {
+    breadcrumbHome: 'Start',
+    breadcrumbMaterials: 'Materiały',
+    indexTitle: 'Materiały do druku 3D — ceny i właściwości | MICRO_FACTORY',
+    indexDescription:
+      'Siedem materiałów FDM od prototypu po część użytkową: właściwości, ograniczenia projektowe i ceny liczone przez silnik wyceny.',
+    indexHeading: 'Materiały do druku 3D',
+    indexIntro:
+      'Każdy materiał drukujemy na tych samych maszynach i wyceniamy tym samym silnikiem co formularz wyceny. Wybierz materiał, aby zobaczyć właściwości, wskazówki projektowe i ceny referencyjne.',
+    priceFrom: (price: string) => `od ${price}`,
+    comingSoon: 'Strona wkrótce',
+    propertiesTitle: 'Właściwości',
+    propertyLabels: {
+      tensile: 'Wytrzymałość na rozciąganie',
+      hdt: 'Odporność termiczna (HDT)',
+      uv: 'Odporność UV',
+      layerAdhesion: 'Adhezja międzywarstwowa',
+      minWall: 'Min. grubość ścianki',
+      tolerance: 'Tolerancja wymiarowa',
+      density: 'Gęstość',
+      rate: 'Stawka materiałowa',
+    },
+    ratings: {
+      excellent: 'znakomita',
+      good: 'dobra',
+      moderate: 'umiarkowana',
+      low: 'niska',
+    },
+    pricesTitle: 'Ceny referencyjne',
+    pricesNote:
+      'Ceny na żywo — liczy je ten sam silnik co twoją wycenę. Brutto, z 23% VAT, termin standardowy.',
+    priceHeaderPart: 'Część referencyjna',
+    priceHeaderQty: (n: number) => `${n} szt.`,
+    partNames: {
+      bracket: 'Wspornik',
+      enclosure: 'Obudowa',
+      housing: 'Korpus',
+    },
+    useCasesTitle: 'Zastosowania',
+    guidelinesTitle: 'Wskazówki projektowe',
+    faqTitle: 'Częste pytania',
+    compareTitle: 'Porównaj z',
+    pricingLink: 'Jak liczymy ceny →',
+  },
   // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
   cta: {
     headline: 'Masz część pod ręką?',

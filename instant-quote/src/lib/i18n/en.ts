@@ -181,6 +181,52 @@ export const en = {
     meta: 'EU · FDM · PLN · 23% VAT',
     cutoff: '14:00 cutoff',
   },
+  // Material landing pages — UI chrome only; long-form prose lives in
+  // src/content/materials/{pl,en}.ts.
+  materialsPages: {
+    breadcrumbHome: 'Home',
+    breadcrumbMaterials: 'Materials',
+    indexTitle: '3D printing materials — prices & properties | MICRO_FACTORY',
+    indexDescription:
+      'Seven FDM materials from prototype to end-use: properties, design limits, and prices computed by the quoting engine.',
+    indexHeading: '3D printing materials',
+    indexIntro:
+      'Every material prints on the same machines and is priced by the same engine as the quote form. Pick a material for properties, design guidance, and reference prices.',
+    priceFrom: (price: string) => `from ${price}`,
+    comingSoon: 'Page coming soon',
+    propertiesTitle: 'Properties',
+    propertyLabels: {
+      tensile: 'Tensile strength',
+      hdt: 'Heat deflection (HDT)',
+      uv: 'UV resistance',
+      layerAdhesion: 'Layer adhesion',
+      minWall: 'Min wall thickness',
+      tolerance: 'Dimensional tolerance',
+      density: 'Density',
+      rate: 'Material rate',
+    },
+    ratings: {
+      excellent: 'excellent',
+      good: 'good',
+      moderate: 'moderate',
+      low: 'low',
+    },
+    pricesTitle: 'Reference prices',
+    pricesNote:
+      'Live prices — calculated by the same engine as your quote. Gross incl. 23% VAT, standard lead time.',
+    priceHeaderPart: 'Reference part',
+    priceHeaderQty: (n: number) => `Qty ${n}`,
+    partNames: {
+      bracket: 'Bracket',
+      enclosure: 'Enclosure',
+      housing: 'Housing',
+    },
+    useCasesTitle: 'Use cases',
+    guidelinesTitle: 'Design guidelines',
+    faqTitle: 'FAQ',
+    compareTitle: 'Compare with',
+    pricingLink: 'How we price →',
+  },
   // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
   cta: {
     headline: 'Have a part in hand?',

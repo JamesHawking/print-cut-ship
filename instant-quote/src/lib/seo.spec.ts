@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import {
   breadcrumbJsonLd,
+  faqPageJsonLd,
   hreflangLinks,
   jsonLd,
   localizedPath,
   organizationJsonLd,
+  productJsonLd,
   seoHead,
   SITE_URL,
   webSiteJsonLd,
@@ -84,6 +86,37 @@ describe('hreflang path swapping', () => {
   })
 })
 
+describe('localized-slug alternates', () => {
+  test('explicit alternates override the prefix swap', () => {
+    const links = hreflangLinks('/pl/materialy/asa', {
+      pl: '/pl/materialy/asa',
+      en: '/en/materials/asa',
+    })
+    expect(links.find((l) => l.hrefLang === 'en')?.href).toBe(
+      `${SITE_URL}/en/materials/asa`,
+    )
+    expect(links.find((l) => l.hrefLang === 'x-default')?.href).toBe(
+      `${SITE_URL}/pl/materialy/asa`,
+    )
+  })
+  test('seoHead threads alternates through', () => {
+    const head = seoHead({
+      locale: 'en',
+      path: '/en/materials/asa',
+      title: 'T',
+      description: 'D',
+      alternates: { pl: '/pl/materialy/asa', en: '/en/materials/asa' },
+    })
+    const pl = head.links.find(
+      (l) => l.rel === 'alternate' && l.hrefLang === 'pl',
+    )
+    expect(pl?.href).toBe(`${SITE_URL}/pl/materialy/asa`)
+    expect(head.links.find((l) => l.rel === 'canonical')?.href).toBe(
+      `${SITE_URL}/en/materials/asa`,
+    )
+  })
+})
+
 describe('JSON-LD builders', () => {
   test('jsonLd wraps for the head() script:ld+json meta entry', () => {
     const entry = jsonLd(organizationJsonLd())
@@ -94,6 +127,26 @@ describe('JSON-LD builders', () => {
     const site = webSiteJsonLd('en', 'desc')
     expect(site.url).toBe(`${SITE_URL}/en`)
     expect(site.inLanguage).toBe('en')
+  })
+  test('product carries a PLN offer at the page URL', () => {
+    const p = productJsonLd({
+      name: 'ASA 3D printing',
+      description: 'd',
+      path: '/en/materials/asa',
+      pricePln: 6.2,
+    })
+    expect(p.offers).toEqual({
+      '@type': 'Offer',
+      price: 6.2,
+      priceCurrency: 'PLN',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE_URL}/en/materials/asa`,
+    })
+  })
+  test('faqPage maps q/a pairs', () => {
+    const f = faqPageJsonLd([{ q: 'Q1?', a: 'A1.' }])
+    expect(f.mainEntity[0].name).toBe('Q1?')
+    expect(f.mainEntity[0].acceptedAnswer.text).toBe('A1.')
   })
   test('breadcrumbs are positioned and absolute', () => {
     const bc = breadcrumbJsonLd([
