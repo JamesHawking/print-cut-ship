@@ -14,7 +14,8 @@
     "lint": "oxlint --type-aware",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check-strings": "bun scripts/check-strings.ts"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.2.8",

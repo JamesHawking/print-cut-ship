@@ -5,6 +5,7 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useCatalog } from '@/hooks/useApi'
+import { useStrings } from '@/lib/i18n'
 import type { DfmFlag } from '@/lib/api/client'
 
 // Severity-coded mono chips: blocking = filled red, warning = panel
@@ -16,6 +17,7 @@ const CHIP: Record<DfmFlag['severity'], string> = {
 }
 
 export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
+  const strings = useStrings()
   const catalog = useCatalog()
   if (flags.length === 0) return null
   const labelOf = (id: string) =>
@@ -25,7 +27,9 @@ export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
       {flags.map((flag) => {
         const suggestion =
           flag.suggestedProcesses && flag.suggestedProcesses.length > 0
-            ? ` Try: ${flag.suggestedProcesses.map(labelOf).join(', ')}.`
+            ? strings.dfm.suggestion(
+                flag.suggestedProcesses.map(labelOf).join(', '),
+              )
             : ''
         return (
           <Tooltip key={flag.code}>
@@ -36,7 +40,7 @@ export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
                   CHIP[flag.severity],
                 )}
               >
-                {label(flag.code)}
+                {strings.dfm.labels[flag.code]}
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
@@ -48,19 +52,4 @@ export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
       })}
     </div>
   )
-}
-
-function label(code: DfmFlag['code']): string {
-  switch (code) {
-    case 'exceeds_build_volume':
-      return 'Too large'
-    case 'small_feature':
-      return 'Thin feature'
-    case 'min_volume_billed':
-      return 'Min. volume'
-    case 'geometry_approximated':
-      return 'Geometry approximated'
-    case 'multi_plate':
-      return 'Multi-plate'
-  }
 }

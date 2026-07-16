@@ -3,6 +3,7 @@ import { ConfigPanel } from './ConfigPanel'
 import { PriceBreakTable } from './PriceBreakTable'
 import { DfmBadges } from './DfmBadges'
 import { formatPln, formatPercent, formatVolume } from '@/lib/format'
+import { useStrings } from '@/lib/i18n'
 import type { Part } from '@/hooks/useParts'
 import type { PartConfig, PartQuote } from '@/lib/api/client'
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function QuoteCard({ part, quote, onConfigChange }: Props) {
+  const strings = useStrings()
   const discount = quote.discountFraction
 
   return (
@@ -31,12 +33,15 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
             {part.metrics && (
               <p className="text-muted-foreground mt-1.5 font-mono text-[0.625rem] tracking-wider tabular-nums">
                 {formatVolume(quote.billableVolumeCm3)} ·{' '}
-                {part.metrics.triangleCount.toLocaleString('pl-PL')} triangles
+                {strings.quote.metaTriangles(
+                  part.metrics.triangleCount,
+                  part.metrics.triangleCount.toLocaleString('pl-PL'),
+                )}
                 {quote.pieceCount != null && quote.plates != null && (
                   <>
                     {' '}
-                    · {quote.pieceCount} parts · {quote.plates}{' '}
-                    {quote.plates === 1 ? 'plate' : 'plates'}
+                    · {strings.quote.metaPieces(quote.pieceCount)} ·{' '}
+                    {strings.quote.metaPlates(quote.plates)}
                   </>
                 )}
               </p>
@@ -45,7 +50,7 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
           <div className="shrink-0 text-right" aria-live="polite">
             {quote.blocked ? (
               <p className="text-destructive text-sm font-bold">
-                Not printable
+                {strings.quote.notPrintable}
               </p>
             ) : (
               <>
@@ -53,12 +58,17 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
                   {formatPln(quote.unitPricePln)}
                 </div>
                 <p className="text-muted-foreground text-xs">
-                  per part
-                  {discount > 0 && <> · {formatPercent(discount)} off</>}
+                  {strings.quote.unitPrice}
+                  {discount > 0 && (
+                    <> · {strings.quote.discountOff(formatPercent(discount))}</>
+                  )}
                 </p>
                 {part.config.quantity > 1 && (
                   <p className="text-muted-foreground text-xs tabular-nums">
-                    {formatPln(quote.lineTotalPln)} for {part.config.quantity}
+                    {strings.quote.lineTotalFor(
+                      formatPln(quote.lineTotalPln),
+                      part.config.quantity,
+                    )}
                   </p>
                 )}
               </>

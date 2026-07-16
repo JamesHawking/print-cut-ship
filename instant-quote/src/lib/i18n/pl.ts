@@ -14,6 +14,14 @@ export type MaterialFamily = 'standard' | 'engineering' | 'specialty'
 
 type OrderStatus = 'submitted' | 'expired' | 'ordered'
 
+// Mirrors the OpenAPI DfmFlag.code enum (backend/api/openapi.yaml).
+type DfmCode =
+  | 'exceeds_build_volume'
+  | 'small_feature'
+  | 'min_volume_billed'
+  | 'geometry_approximated'
+  | 'multi_plate'
+
 export const pl = {
   meta: {
     title: 'Natychmiastowa wycena druku 3D — wgraj, wyceń, zamów',
@@ -33,6 +41,8 @@ export const pl = {
     privacy:
       'Prywatność — pliki służą wyłącznie do przygotowania wyceny i są usuwane automatycznie, jeśli nie zamówisz',
     figCaption: 'Zautomatyzowana linia — druk · odbiór · pakowanie · wysyłka',
+    figAlt:
+      'Zautomatyzowana linia produkcyjna: część jest drukowana w 3D, przenoszona przez ramię robota i pakowana do wysyłki.',
     figNo: 'Rys. 01',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
@@ -191,6 +201,80 @@ export const pl = {
     breakdownTitle: 'Rozbicie ceny',
     howWePrice: 'Jak wyceniamy',
     shippingNote: 'Wysyłka D+1 do PL/DE, D+2 do reszty UE',
+    notPrintable: 'Nie do wydrukowania',
+    discountOff: (pct: string) => `${pct} taniej`,
+    lineTotalFor: (total: string, qty: number) => `${total} za ${qty} szt.`,
+    metaTriangles: (count: number, formatted: string) =>
+      `${formatted} ${plPlural(count, 'trójkąt', 'trójkąty', 'trójkątów')}`,
+    metaPieces: (count: number) =>
+      `${count} ${plPlural(count, 'element', 'elementy', 'elementów')}`,
+    metaPlates: (count: number) =>
+      `${count} ${plPlural(count, 'płyta', 'płyty', 'płyt')}`,
+  },
+  priceBreak: {
+    qty: 'Szt.',
+    unitPrice: 'Cena jedn.',
+    discount: 'Rabat',
+  },
+  viewer: {
+    partPreview: (n: string) => `Część ${n} · Podgląd`,
+    boundingBox: 'Gabaryt',
+    billableVolume: 'Objętość rozliczeniowa',
+    triangles: 'Trójkąty',
+  },
+  partsList: {
+    reading: 'Wczytywanie…',
+    manualQuote: 'Wycena ręczna',
+    failed: 'Błąd',
+    remove: (fileName: string) => `Usuń ${fileName}`,
+  },
+  dfm: {
+    labels: {
+      exceeds_build_volume: 'Za duża',
+      small_feature: 'Cienki element',
+      min_volume_billed: 'Min. objętość',
+      geometry_approximated: 'Geometria przybliżona',
+      multi_plate: 'Wiele płyt',
+    } satisfies Record<DfmCode, string>,
+    suggestion: (processes: string) => ` Wypróbuj: ${processes}.`,
+  },
+  orderPanel: {
+    otherParts: (n: number) => `Pozostałe części — ${n}`,
+    minOrderTopUp: 'Wyrównanie do minimum',
+    orderFee: 'Opłata za zamówienie',
+    shipping: 'Wysyłka',
+    free: 'Gratis',
+    totalExVat: 'Suma netto',
+    totalIncVat: 'Suma brutto',
+    includesVat: (pct: number) => `Zawiera VAT (${pct}% PL)`,
+    freeShippingApplied: 'Zastosowano darmową wysyłkę',
+  },
+  howWePrice: {
+    subtitle: 'Żadnej ukrytej matematyki. Każda wycena powstaje z tych liczb.',
+    weightPara: (v: {
+      shellMm: number
+      infillPct: number
+      cheapest: string
+      priciest: string
+      shellGh: number
+      infillGh: number
+    }) =>
+      `wyceniamy według wagi i czasu maszynowego. Wagę wydruku szacujemy jak slicer: pełna powłoka ${v.shellMm} mm na powierzchni części plus ${v.infillPct}% wypełnienia wnętrza, przeliczone na gramy według gęstości materiału. Naliczamy stawkę za kilogram (${v.cheapest} do ${v.priciest}), a potem czas maszynowy — ściany drukują się ${v.shellGh} g/h, wypełnienie ${v.infillGh} g/h — × stawka godzinowa maszyny.`,
+    weightLead: 'Materiały FDM',
+    quantityLead: 'Ilość',
+    quantityPara: ' daje rabat od sztuki, od 5% przy 5 szt. do 28% przy 50. ',
+    leadTimeLead: 'Termin',
+    leadTimePara: (v: { economyPct: number; expressPct: number }) =>
+      ` koryguje cenę: Ekonomiczny −${v.economyPct}%, Standardowy baza, Ekspres +${v.expressPct}%.`,
+    feesPara: (v: {
+      minPart: number
+      minOrder: number
+      orderFee: number
+      shippingFlat: number
+      freeThreshold: number
+      vatPct: number
+    }) =>
+      `Każda część kosztuje co najmniej ${v.minPart} zł, a zamówienia poniżej ${v.minOrder} zł są wyrównywane do minimum ${v.minOrder} zł. Każde zamówienie ma stałą opłatę ${v.orderFee} zł. Wysyłka kosztuje ${v.shippingFlat} zł, darmowa powyżej ${v.freeThreshold} zł. Wszystkie ceny zawierają ${v.vatPct}% VAT (PL).`,
   },
   config: {
     process: 'Technologia i materiał',
@@ -200,6 +284,11 @@ export const pl = {
     standard: 'Standardowy',
     express: 'Ekspres',
     warsawCutoff: 'Czas Europe/Warsaw · zamówienia tego samego dnia do 14:00',
+    warsawTz: 'Europe/Warsaw',
+    ships: (date: string) => `Wysyłka ${date}`,
+    base: 'baza',
+    printMeta: (grams: string, hours: string) =>
+      `~${grams} g · ${hours} h druku`,
   },
   step: {
     title: 'Ten STEP wymaga szybkiej ręcznej weryfikacji',
@@ -217,6 +306,8 @@ export const pl = {
     successTitle: 'Zamówienie przyjęte',
     successBody: 'Wysłaliśmy potwierdzenie e-mailem. Numer twojej wyceny to',
     orderTotal: 'Suma zamówienia',
+    done: 'Gotowe',
+    failed: 'Nie udało się złożyć zamówienia. Spróbuj ponownie.',
   },
   login: {
     kicker: 'Dostęp_do_zamówień',

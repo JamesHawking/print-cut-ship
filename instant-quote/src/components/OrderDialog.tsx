@@ -86,7 +86,7 @@ export function OrderDialog({
       })
       toast.success(strings.order.successTitle)
     } catch {
-      toast.error('Could not place the order. Please try again.')
+      toast.error(strings.order.failed)
     } finally {
       setSubmitting(false)
     }
@@ -121,7 +121,7 @@ export function OrderDialog({
               onClick={() => handleOpenChange(false)}
               className="w-full font-bold"
             >
-              Done
+              {strings.order.done}
             </Button>
           </div>
         ) : (
@@ -150,7 +150,7 @@ export function OrderDialog({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder={strings.login.emailPlaceholder}
                 />
               </div>
               <div className="space-y-2">

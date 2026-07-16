@@ -67,7 +67,7 @@ export function StepManualCard({ part }: { part: Part }) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
+                placeholder={strings.login.emailPlaceholder}
               />
             </div>
             <Button type="submit" disabled={submitting || !email}>

@@ -18,9 +18,9 @@ export function PriceBreakTable({
       </p>
       <div className="overflow-hidden rounded-md border">
         <div className="bg-secondary text-muted-foreground grid grid-cols-3 gap-3 border-b px-3.5 py-2 font-mono text-[0.5625rem] tracking-[0.14em] uppercase">
-          <span>Qty</span>
-          <span className="text-right">Unit price</span>
-          <span className="text-right">Discount</span>
+          <span>{strings.priceBreak.qty}</span>
+          <span className="text-right">{strings.priceBreak.unitPrice}</span>
+          <span className="text-right">{strings.priceBreak.discount}</span>
         </div>
         {priceBreaks.map((row, i) => {
           const active = row.quantity === activeQuantity

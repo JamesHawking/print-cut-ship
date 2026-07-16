@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { CornerMarks } from './DropZone'
 import { formatDims, formatVolume } from '@/lib/format'
+import { useStrings } from '@/lib/i18n'
 import type { Part } from '@/hooks/useParts'
 import type { PartQuote } from '@/lib/api/client'
 
@@ -20,6 +21,7 @@ export function ViewerFrame({
   quote: PartQuote | null
   children: ReactNode
 }) {
+  const strings = useStrings()
   const ext = (part.fileName.split('.').pop() ?? '').toUpperCase()
   const metrics = part.metrics
   return (
@@ -28,7 +30,7 @@ export function ViewerFrame({
     <div className="bg-card animate-in fade-in zoom-in-[0.98] motion-reduce:zoom-in-100 overflow-hidden rounded-lg border duration-200 ease-out">
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <span className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
-          Part {String(index + 1).padStart(2, '0')} · Preview
+          {strings.viewer.partPreview(String(index + 1).padStart(2, '0'))}
         </span>
         <span className="rounded border px-1.5 py-0.5 font-mono text-[0.625rem] font-bold tracking-wider">
           {ext}
@@ -45,7 +47,7 @@ export function ViewerFrame({
               {formatDims(metrics.bboxMm)}
             </dt>
             <dd className="text-muted-foreground mt-2 font-mono text-[0.5625rem] tracking-wider uppercase">
-              Bounding box
+              {strings.viewer.boundingBox}
             </dd>
           </div>
           <div className="bg-card px-4 py-3">
@@ -53,7 +55,7 @@ export function ViewerFrame({
               {formatVolume(quote?.billableVolumeCm3 ?? metrics.volumeCm3)}
             </dt>
             <dd className="text-muted-foreground mt-2 font-mono text-[0.5625rem] tracking-wider uppercase">
-              Billable volume
+              {strings.viewer.billableVolume}
             </dd>
           </div>
           <div className="bg-card px-4 py-3">
@@ -61,7 +63,7 @@ export function ViewerFrame({
               {metrics.triangleCount.toLocaleString('pl-PL')}
             </dt>
             <dd className="text-muted-foreground mt-2 font-mono text-[0.5625rem] tracking-wider uppercase">
-              Triangles
+              {strings.viewer.triangles}
             </dd>
           </div>
         </dl>

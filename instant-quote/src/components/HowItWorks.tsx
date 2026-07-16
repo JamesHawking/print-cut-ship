@@ -41,7 +41,7 @@ function FactoryFigure() {
         src="/factory-line.webp"
         width={1412}
         height={765}
-        alt="Automated production line: a part is 3D-printed, moved by a robot arm, then packed for shipping."
+        alt={strings.hero.figAlt}
         className="block h-auto w-full"
       />
       <figcaption className="from-foreground/55 text-background absolute inset-x-0 bottom-0 flex justify-between gap-4 bg-gradient-to-t to-transparent px-6 py-3.5 font-mono text-[0.65rem] tracking-[0.16em] uppercase">

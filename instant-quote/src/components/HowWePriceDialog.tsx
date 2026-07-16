@@ -20,10 +20,8 @@ export function HowWePriceDialog() {
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>How we price</DialogTitle>
-          <DialogDescription>
-            No hidden math. Every quote is built from these numbers.
-          </DialogDescription>
+          <DialogTitle>{strings.quote.howWePrice}</DialogTitle>
+          <DialogDescription>{strings.howWePrice.subtitle}</DialogDescription>
         </DialogHeader>
         {catalog && <PricingCopy catalog={catalog} />}
       </DialogContent>
@@ -36,6 +34,8 @@ function PricingCopy({
 }: {
   catalog: NonNullable<ReturnType<typeof useCatalog>>
 }) {
+  const strings = useStrings()
+  const s = strings.howWePrice
   const byId = (id: string) => catalog.processes.find((p) => p.id === id)
   const leadTime = (id: string) => catalog.leadTimes.find((l) => l.id === id)
   const cheapest = byId('pla')
@@ -46,29 +46,34 @@ function PricingCopy({
   return (
     <div className="space-y-3 text-sm">
       <p>
-        <strong>FDM materials</strong> are priced by weight and machine time. We
-        estimate print weight like a slicer would: a solid{' '}
-        {catalog.fdm.shellThicknessMm} mm shell over your part’s surface plus{' '}
-        {Math.round(catalog.fdm.infillFraction * 100)}% infill of the interior,
-        converted to grams with the material’s density. We charge the material’s
-        per-kg rate ({cheapest?.label} {cheapest?.plnPerKg} zł/kg up to{' '}
-        {priciest?.label} {priciest?.plnPerKg} zł/kg), then add machine time —
-        walls print at {catalog.fdm.shellGramsPerPrintHour} g/h, infill at{' '}
-        {catalog.fdm.infillGramsPerPrintHour} g/h — × the machine’s hourly rate.
+        <strong>{s.weightLead}</strong>
+        {s.weightPara({
+          shellMm: catalog.fdm.shellThicknessMm,
+          infillPct: Math.round(catalog.fdm.infillFraction * 100),
+          cheapest: `${cheapest?.label} ${cheapest?.plnPerKg} zł/kg`,
+          priciest: `${priciest?.label} ${priciest?.plnPerKg} zł/kg`,
+          shellGh: catalog.fdm.shellGramsPerPrintHour,
+          infillGh: catalog.fdm.infillGramsPerPrintHour,
+        })}
       </p>
       <p>
-        <strong>Quantity</strong> earns a per-unit discount, from 5% at 5 units
-        up to 28% at 50. <strong>Lead time</strong> adjusts the price: Economy −
-        {economy ? Math.round((1 - economy.mult) * 100) : 10}%, Standard base,
-        Express +{express ? Math.round((express.mult - 1) * 100) : 30}%.
+        <strong>{s.quantityLead}</strong>
+        {s.quantityPara}
+        <strong>{s.leadTimeLead}</strong>
+        {s.leadTimePara({
+          economyPct: economy ? Math.round((1 - economy.mult) * 100) : 10,
+          expressPct: express ? Math.round((express.mult - 1) * 100) : 30,
+        })}
       </p>
       <p>
-        Every part is billed at least {catalog.minPartPricePln} zł, and orders
-        under {catalog.minOrderPln} zł are topped up to the{' '}
-        {catalog.minOrderPln} zł minimum. Each order adds a flat{' '}
-        {catalog.orderFeePln} zł fee. Shipping is {catalog.shippingFlatPln} zł
-        flat, free above {catalog.freeShippingThresholdPln} zł. All prices
-        include {Math.round(catalog.vatRate * 100)}% VAT (PL).
+        {s.feesPara({
+          minPart: catalog.minPartPricePln,
+          minOrder: catalog.minOrderPln,
+          orderFee: catalog.orderFeePln,
+          shippingFlat: catalog.shippingFlatPln,
+          freeThreshold: catalog.freeShippingThresholdPln,
+          vatPct: Math.round(catalog.vatRate * 100),
+        })}
       </p>
     </div>
   )

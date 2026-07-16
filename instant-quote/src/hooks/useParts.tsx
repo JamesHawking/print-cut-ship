@@ -225,10 +225,16 @@ export function PartsProvider({ children }: { children: ReactNode }) {
             })
         })
         .catch((err: unknown) => {
-          const message =
-            err instanceof Error ? err.message : strings.errors.parseFailed
-          dispatch({ type: 'failed', id, code: 'parse', message })
-          track('parse_failed', { fileName: file.name, message })
+          // Worker errors are English dev prose — display the dictionary
+          // copy, keep the raw detail for analytics only.
+          const detail = err instanceof Error ? err.message : String(err)
+          dispatch({
+            type: 'failed',
+            id,
+            code: 'parse',
+            message: strings.errors.parseFailed,
+          })
+          track('parse_failed', { fileName: file.name, message: detail })
           toast.error(strings.errors.corrupt, { description: file.name })
         })
     }

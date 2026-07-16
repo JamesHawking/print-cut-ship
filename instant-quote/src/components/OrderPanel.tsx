@@ -38,7 +38,7 @@ export function OrderPanel({
     }
     if (orderableCount > 1) {
       rows.push({
-        label: `Other parts — ${orderableCount - 1}`,
+        label: strings.orderPanel.otherParts(orderableCount - 1),
         value: formatPln(
           Math.round(
             (totals.partsSubtotalPln - breakdownQuote.lineTotalPln) * 100,
@@ -48,14 +48,19 @@ export function OrderPanel({
     }
     if (totals.minOrderApplied) {
       rows.push({
-        label: 'Minimum-order top-up',
+        label: strings.orderPanel.minOrderTopUp,
         value: formatPln(totals.minOrderTopUpPln),
       })
     }
-    rows.push({ label: 'Order fee', value: formatPln(totals.orderFeePln) })
     rows.push({
-      label: 'Shipping',
-      value: totals.freeShipping ? 'Free' : formatPln(totals.shippingPln),
+      label: strings.orderPanel.orderFee,
+      value: formatPln(totals.orderFeePln),
+    })
+    rows.push({
+      label: strings.orderPanel.shipping,
+      value: totals.freeShipping
+        ? strings.orderPanel.free
+        : formatPln(totals.shippingPln),
     })
   }
 
@@ -100,7 +105,9 @@ export function OrderPanel({
               ))}
               <div className="mt-1 flex items-baseline justify-between gap-4 border-t pt-2.5">
                 <dt className="text-[0.8125rem] font-bold">
-                  {pricesExVat ? 'Total ex VAT' : 'Total incl. VAT'}
+                  {pricesExVat
+                    ? strings.orderPanel.totalExVat
+                    : strings.orderPanel.totalIncVat}
                 </dt>
                 <dd className="font-mono text-[0.8125rem] font-bold whitespace-nowrap tabular-nums">
                   {formatPln(displayTotal)}
@@ -108,8 +115,9 @@ export function OrderPanel({
               </div>
               <div className="text-muted-foreground flex items-baseline justify-between gap-4">
                 <dt className="text-[0.71875rem]">
-                  Includes VAT ({Math.round((catalog?.vatRate ?? 0.23) * 100)}%
-                  PL)
+                  {strings.orderPanel.includesVat(
+                    Math.round((catalog?.vatRate ?? 0.23) * 100),
+                  )}
                 </dt>
                 <dd className="font-mono text-[0.6875rem] whitespace-nowrap tabular-nums">
                   {formatPln(totals.vatPln)}
@@ -138,7 +146,7 @@ export function OrderPanel({
         )}
         <p className="text-muted-foreground text-xs">
           {totals.freeShipping
-            ? 'Free shipping applied'
+            ? strings.orderPanel.freeShippingApplied
             : strings.quote.shippingNote}
         </p>
 

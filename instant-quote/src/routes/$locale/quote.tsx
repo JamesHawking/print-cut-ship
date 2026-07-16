@@ -205,7 +205,7 @@ function QuoteWorkspace() {
                       className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2"
                       onClick={() => void priceQuery.refetch()}
                     >
-                      Retry
+                      {strings.orders.retry}
                     </button>
                   </CardContent>
                 </Card>
@@ -256,7 +256,7 @@ function QuoteWorkspace() {
           )}
 
           <p className="text-muted-foreground text-center font-mono text-[0.625rem] tracking-[0.16em] uppercase tabular-nums">
-            Europe/Warsaw {formatWarsawClock(now)} ·{' '}
+            {strings.config.warsawTz} {formatWarsawClock(now)} ·{' '}
             {strings.config.warsawCutoff}
           </p>
         </div>

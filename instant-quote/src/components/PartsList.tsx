@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { formatPln } from '@/lib/format'
 import { useCatalog } from '@/hooks/useApi'
+import { useStrings } from '@/lib/i18n'
 import type { Part } from '@/hooks/useParts'
 import type { PartQuote } from '@/lib/api/client'
 
@@ -21,6 +22,7 @@ export function PartsList({
   onSelect,
   onRemove,
 }: Props) {
+  const strings = useStrings()
   const catalog = useCatalog()
   const processLabel = (id: string) =>
     catalog?.processes.find((p) => p.id === id)?.label ?? id
@@ -76,11 +78,11 @@ export function PartsList({
                 </span>
                 <span className="text-muted-foreground mt-1 block truncate font-mono text-[0.59375rem] tracking-wider uppercase tabular-nums">
                   {part.status === 'parsing'
-                    ? 'Reading…'
+                    ? strings.partsList.reading
                     : part.status === 'error'
                       ? part.kind === 'step'
-                        ? 'Manual quote'
-                        : 'Failed'
+                        ? strings.partsList.manualQuote
+                        : strings.partsList.failed
                       : `${processLabel(part.config.process)} · ×${part.config.quantity}`}
                 </span>
               </span>
@@ -95,7 +97,7 @@ export function PartsList({
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-destructive size-7 shrink-0"
-                aria-label={`Remove ${part.fileName}`}
+                aria-label={strings.partsList.remove(part.fileName)}
                 onClick={(e) => {
                   e.stopPropagation()
                   onRemove(part.id)

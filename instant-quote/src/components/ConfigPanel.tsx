@@ -100,8 +100,11 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
         {process && quote && !quote.blocked && (
           <p className="text-muted-foreground font-mono text-[0.625rem] tracking-wider tabular-nums">
             {num2.format(process.densityGCm3)} g/cm³ · {process.plnPerKg} zł/kg
-            · ~{num.format(Math.round(quote.weightG))} g ·{' '}
-            {num1.format(quote.printHours)} h print
+            ·{' '}
+            {strings.config.printMeta(
+              num.format(Math.round(quote.weightG)),
+              num1.format(quote.printHours),
+            )}
           </p>
         )}
       </div>
@@ -189,14 +192,14 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
                     </div>
                     {ship && (
                       <div className="text-muted-foreground mt-0.5 text-[0.6875rem]">
-                        Ships {ship.label}
+                        {strings.config.ships(ship.label)}
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="text-muted-foreground font-mono text-[0.6875rem] tabular-nums">
                   {delta === 0
-                    ? 'base'
+                    ? strings.config.base
                     : delta > 0
                       ? `+${delta}%`
                       : `${delta}%`}

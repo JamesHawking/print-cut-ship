@@ -7,6 +7,14 @@ import { enPlural } from './plural'
 
 type OrderStatus = 'submitted' | 'expired' | 'ordered'
 
+// Mirrors the OpenAPI DfmFlag.code enum (backend/api/openapi.yaml).
+type DfmCode =
+  | 'exceeds_build_volume'
+  | 'small_feature'
+  | 'min_volume_billed'
+  | 'geometry_approximated'
+  | 'multi_plate'
+
 export const en = {
   meta: {
     title: 'Instant 3D printing quote — upload, price, order',
@@ -26,6 +34,8 @@ export const en = {
     privacy:
       'Private — files are used only to prepare your quote and auto-deleted if you don’t order',
     figCaption: 'Automated line — print · pick · pack · ship',
+    figAlt:
+      'Automated production line: a part is 3D-printed, moved by a robot arm, then packed for shipping.',
     figNo: 'Fig. 01',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
@@ -183,6 +193,81 @@ export const en = {
     breakdownTitle: 'Price breakdown',
     howWePrice: 'How we price',
     shippingNote: 'Ships D+1 to PL/DE, D+2 to the rest of the EU',
+    notPrintable: 'Not printable',
+    discountOff: (pct: string) => `${pct} off`,
+    lineTotalFor: (total: string, qty: number) => `${total} for ${qty}`,
+    metaTriangles: (count: number, formatted: string) =>
+      `${formatted} ${enPlural(count, 'triangle', 'triangles')}`,
+    metaPieces: (count: number) =>
+      `${count} ${enPlural(count, 'part', 'parts')}`,
+    metaPlates: (count: number) =>
+      `${count} ${enPlural(count, 'plate', 'plates')}`,
+  },
+  priceBreak: {
+    qty: 'Qty',
+    unitPrice: 'Unit price',
+    discount: 'Discount',
+  },
+  viewer: {
+    partPreview: (n: string) => `Part ${n} · Preview`,
+    boundingBox: 'Bounding box',
+    billableVolume: 'Billable volume',
+    triangles: 'Triangles',
+  },
+  partsList: {
+    reading: 'Reading…',
+    manualQuote: 'Manual quote',
+    failed: 'Failed',
+    remove: (fileName: string) => `Remove ${fileName}`,
+  },
+  dfm: {
+    labels: {
+      exceeds_build_volume: 'Too large',
+      small_feature: 'Thin feature',
+      min_volume_billed: 'Min. volume',
+      geometry_approximated: 'Geometry approximated',
+      multi_plate: 'Multi-plate',
+    } satisfies Record<DfmCode, string>,
+    suggestion: (processes: string) => ` Try: ${processes}.`,
+  },
+  orderPanel: {
+    otherParts: (n: number) => `Other parts — ${n}`,
+    minOrderTopUp: 'Minimum-order top-up',
+    orderFee: 'Order fee',
+    shipping: 'Shipping',
+    free: 'Free',
+    totalExVat: 'Total ex VAT',
+    totalIncVat: 'Total incl. VAT',
+    includesVat: (pct: number) => `Includes VAT (${pct}% PL)`,
+    freeShippingApplied: 'Free shipping applied',
+  },
+  howWePrice: {
+    subtitle: 'No hidden math. Every quote is built from these numbers.',
+    weightPara: (v: {
+      shellMm: number
+      infillPct: number
+      cheapest: string
+      priciest: string
+      shellGh: number
+      infillGh: number
+    }) =>
+      ` are priced by weight and machine time. We estimate print weight like a slicer would: a solid ${v.shellMm} mm shell over your part’s surface plus ${v.infillPct}% infill of the interior, converted to grams with the material’s density. We charge the material’s per-kg rate (${v.cheapest} up to ${v.priciest}), then add machine time — walls print at ${v.shellGh} g/h, infill at ${v.infillGh} g/h — × the machine’s hourly rate.`,
+    weightLead: 'FDM materials',
+    quantityLead: 'Quantity',
+    quantityPara:
+      ' earns a per-unit discount, from 5% at 5 units up to 28% at 50. ',
+    leadTimeLead: 'Lead time',
+    leadTimePara: (v: { economyPct: number; expressPct: number }) =>
+      ` adjusts the price: Economy −${v.economyPct}%, Standard base, Express +${v.expressPct}%.`,
+    feesPara: (v: {
+      minPart: number
+      minOrder: number
+      orderFee: number
+      shippingFlat: number
+      freeThreshold: number
+      vatPct: number
+    }) =>
+      `Every part is billed at least ${v.minPart} zł, and orders under ${v.minOrder} zł are topped up to the ${v.minOrder} zł minimum. Each order adds a flat ${v.orderFee} zł fee. Shipping is ${v.shippingFlat} zł flat, free above ${v.freeThreshold} zł. All prices include ${v.vatPct}% VAT (PL).`,
   },
   config: {
     process: 'Process & material',
@@ -192,6 +277,11 @@ export const en = {
     standard: 'Standard',
     express: 'Express',
     warsawCutoff: 'Times in Europe/Warsaw · 14:00 same-day cutoff',
+    warsawTz: 'Europe/Warsaw',
+    ships: (date: string) => `Ships ${date}`,
+    base: 'base',
+    printMeta: (grams: string, hours: string) =>
+      `~${grams} g · ${hours} h print`,
   },
   step: {
     title: 'This STEP needs a quick manual check',
@@ -209,6 +299,8 @@ export const en = {
     successTitle: 'Order received',
     successBody: 'We emailed a confirmation. Your quote reference is',
     orderTotal: 'Order total',
+    done: 'Done',
+    failed: 'Could not place the order. Please try again.',
   },
   login: {
     kicker: 'Order_access',
