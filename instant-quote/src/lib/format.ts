@@ -102,6 +102,15 @@ export function formatShipDate(
   }).format(new Date(Date.UTC(d.y, d.m - 1, d.d)))
 }
 
+/** Localized weekday name for an ISO date (pricing-page ship examples). */
+export function formatWeekday(isoDate: string, locale: Locale): string {
+  return dateFmt(locale, {
+    key: 'weekday',
+    weekday: 'long',
+    timeZone: 'UTC',
+  }).format(new Date(`${isoDate.slice(0, 10)}T00:00:00Z`))
+}
+
 /**
  * Order-row "Placed" date (day + short month), pinned to the shop's Warsaw
  * business calendar — the viewer's local zone must not shift the day.

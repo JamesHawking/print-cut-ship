@@ -228,6 +228,33 @@ export const en = {
     pricingLink: 'How we price →',
     allMaterialsLink: 'All materials →',
   },
+  // Pricing page — UI chrome only; prose in src/content/pricing.
+  pricingPage: {
+    breadcrumb: 'Pricing',
+    sliderTitle: 'Quick estimate by volume',
+    sliderLabel: (volume: string) => `Part volume: ${volume} cm³`,
+    sliderNote:
+      'Unit price, standard lead time, idealized cube geometry — quote your real part through the form.',
+    formulaTitle: 'The formula',
+    headerFactor: 'factor',
+    rateCardTitle: 'Rates & reference prices',
+    rateCardVolumeHeader: (volume: number) => `${volume} cm³`,
+    discountsTitle: 'Quantity discounts',
+    headerDiscount: 'Discount',
+    headerLine: 'Line total',
+    discountExampleLabel: (part: string) =>
+      `Worked example: ${part} 60 cm³, PETG`,
+    leadTimesTitle: 'Lead times',
+    headerMultiplier: 'Multiplier',
+    orderedLabel: (weekday: string, time: string) =>
+      `Ordered: ${weekday}, ${time}`,
+    shipsLabel: (lead: string, weekday: string) => `${lead} → ships ${weekday}`,
+    minimumsTitle: 'Minimums & shipping',
+    minOrderExampleTitle: 'When the minimum binds',
+    noHiddenTitle: 'No hidden costs',
+    comparisonTitle: 'An honest comparison',
+    faqTitle: 'Pricing FAQ',
+  },
   // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
   cta: {
     headline: 'Have a part in hand?',

@@ -1,13 +1,11 @@
 // URL identity for the material landing pages (seo_prompts/02): the section
-// word is localized (plan 08 §6 — localized slugs for content pages only);
-// material slugs are technical names, identical in both locales.
+// word is localized (registered in src/content/sections.ts); material slugs
+// are technical names, identical in both locales.
 
 import type { Locale } from '@/lib/i18n'
+import { SECTIONS, sectionAlternates, sectionPath } from '@/content/sections'
 
-export const MATERIALS_SECTION: Record<Locale, string> = {
-  pl: 'materialy',
-  en: 'materials',
-}
+export const MATERIALS_SECTION: Record<Locale, string> = SECTIONS.materials
 
 /** Materials with a published landing page (mirrors cmd/api reference-prices). */
 export const PUBLISHED_MATERIALS = [
@@ -27,13 +25,8 @@ export function materialIdForSlug(slug: MaterialSlug): PublishedMaterialId {
   return PUBLISHED_MATERIALS.find((m) => m.slug === slug)!.id
 }
 
-/** The localized section word another locale's URL used, if any. */
-export function isAnyMaterialsSection(section: string): boolean {
-  return Object.values(MATERIALS_SECTION).includes(section)
-}
-
 export function materialsIndexPath(locale: Locale): string {
-  return `/${locale}/${MATERIALS_SECTION[locale]}`
+  return sectionPath(locale, 'materials')
 }
 
 export function materialPath(locale: Locale, slug: MaterialSlug): string {
@@ -42,7 +35,7 @@ export function materialPath(locale: Locale, slug: MaterialSlug): string {
 
 /** Per-locale alternates for seoHead/sitemap (localized section word). */
 export function materialsIndexAlternates(): Record<Locale, string> {
-  return { pl: materialsIndexPath('pl'), en: materialsIndexPath('en') }
+  return sectionAlternates('materials')
 }
 
 export function materialAlternates(slug: MaterialSlug): Record<Locale, string> {

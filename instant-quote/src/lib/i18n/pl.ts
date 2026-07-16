@@ -239,6 +239,33 @@ export const pl = {
     pricingLink: 'Jak liczymy ceny →',
     allMaterialsLink: 'Wszystkie materiały →',
   },
+  // Pricing page (cennik) — UI chrome only; prose in src/content/pricing.
+  pricingPage: {
+    breadcrumb: 'Cennik',
+    sliderTitle: 'Szybka wycena według objętości',
+    sliderLabel: (volume: string) => `Objętość części: ${volume} cm³`,
+    sliderNote:
+      'Cena za sztukę, termin standardowy, geometria sześcianu — realną część wyceń przez formularz.',
+    formulaTitle: 'Wzór',
+    headerFactor: 'współczynnik',
+    rateCardTitle: 'Stawki i ceny referencyjne',
+    rateCardVolumeHeader: (volume: number) => `${volume} cm³`,
+    discountsTitle: 'Rabaty ilościowe',
+    headerDiscount: 'Rabat',
+    headerLine: 'Wartość pozycji',
+    discountExampleLabel: (part: string) => `Przykład: ${part} 60 cm³, PETG`,
+    leadTimesTitle: 'Terminy realizacji',
+    headerMultiplier: 'Mnożnik',
+    orderedLabel: (weekday: string, time: string) =>
+      `Zamówienie: ${weekday}, ${time}`,
+    shipsLabel: (lead: string, weekday: string) =>
+      `${lead} → wysyłka ${weekday}`,
+    minimumsTitle: 'Minima i wysyłka',
+    minOrderExampleTitle: 'Kiedy minimum ma znaczenie',
+    noHiddenTitle: 'Bez ukrytych kosztów',
+    comparisonTitle: 'Uczciwe porównanie',
+    faqTitle: 'Częste pytania o ceny',
+  },
   // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
   cta: {
     headline: 'Masz część pod ręką?',

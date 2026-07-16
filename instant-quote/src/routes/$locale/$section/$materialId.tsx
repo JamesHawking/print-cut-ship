@@ -8,6 +8,7 @@ import {
   productJsonLd,
   seoHead,
 } from '@/lib/seo'
+import { sectionKeyFor } from '@/content/sections'
 import { materialsCopy } from '@/content/materials/copy'
 import { referenceUnitPrice } from '@/content/materials/prices'
 import {
@@ -21,6 +22,13 @@ import { MATERIALS } from '@/lib/catalog-static'
 
 export const Route = createFileRoute('/$locale/$section/$materialId')({
   beforeLoad: ({ params }) => {
+    // Detail pages exist only under the materials section (/pl/cennik/x 404s).
+    if (
+      isLocale(params.locale) &&
+      sectionKeyFor(params.locale, params.section) !== 'materials'
+    ) {
+      throw notFound()
+    }
     if (!isMaterialSlug(params.materialId)) throw notFound()
   },
   head: ({ params }) => {
