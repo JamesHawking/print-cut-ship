@@ -7,16 +7,28 @@ import { DEFAULT_LOCALE, isLocale, type Locale } from './types'
 export const LOCALE_COOKIE = 'locale'
 
 /**
- * First supported base language in header order. Entries are conventionally
- * ordered by preference; with two locales, q-value sorting adds nothing.
+ * Highest-q supported base language. Order alone carries no meaning in
+ * RFC 9110 — a proxy or API client may legally send a lower-q entry first —
+ * so entries are sorted by quality (stable, preserving order within equal q).
  */
 export function parseAcceptLanguage(
   header: string | null | undefined,
 ): Locale | null {
   if (!header) return null
-  for (const part of header.split(',')) {
-    const base = part.split(';')[0].trim().toLowerCase().split('-')[0]
-    if (isLocale(base)) return base
+  const candidates = header
+    .split(',')
+    .map((part) => {
+      const [tag, ...params] = part.trim().split(';')
+      const qParam = params.map((p) => p.trim()).find((p) => p.startsWith('q='))
+      const q = qParam ? Number.parseFloat(qParam.slice(2)) : 1
+      return {
+        base: tag.trim().toLowerCase().split('-')[0],
+        q: Number.isNaN(q) ? 0 : q,
+      }
+    })
+    .sort((a, b) => b.q - a.q)
+  for (const c of candidates) {
+    if (isLocale(c.base)) return c.base
   }
   return null
 }

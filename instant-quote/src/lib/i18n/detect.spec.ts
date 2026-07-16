@@ -8,8 +8,13 @@ describe('parseAcceptLanguage', () => {
     expect(parseAcceptLanguage('pl-PL,pl;q=0.9,en;q=0.8')).toBe('pl')
     expect(parseAcceptLanguage('en-US,en;q=0.9')).toBe('en')
   })
-  test('first supported language wins over later entries', () => {
+  test('highest q wins regardless of entry order', () => {
     expect(parseAcceptLanguage('de-DE,en;q=0.8,pl;q=0.7')).toBe('en')
+    expect(parseAcceptLanguage('en-US;q=0.5, pl;q=0.9')).toBe('pl')
+    // Equal q: header order breaks the tie (stable sort).
+    expect(parseAcceptLanguage('en;q=0.8, pl;q=0.8')).toBe('en')
+    // No q means q=1.
+    expect(parseAcceptLanguage('en;q=0.9, pl')).toBe('pl')
   })
   test('unsupported or garbage input yields null', () => {
     expect(parseAcceptLanguage('de-DE,fr;q=0.8')).toBeNull()

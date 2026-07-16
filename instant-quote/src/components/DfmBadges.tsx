@@ -45,7 +45,7 @@ export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
                   CHIP[flag.severity],
                 )}
               >
-                {strings.dfm.labels[flag.code] ?? flag.code}
+                {strings.dfm.labels[flag.code] ?? strings.dfm.unknownLabel}
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">

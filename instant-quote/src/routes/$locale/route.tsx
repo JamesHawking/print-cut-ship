@@ -22,8 +22,10 @@ export const Route = createFileRoute('/$locale')({
   },
   beforeLoad: ({ params }) => {
     if (!isLocale(params.locale)) throw redirect({ to: '/', replace: true })
-    // Client event handlers outside the render tree read this store.
-    setActiveLocale(params.locale)
+    // Client event handlers outside the render tree read this store. Never
+    // set it during SSR: beforeLoad also runs server-side, where concurrent
+    // /pl and /en requests would race on the module global.
+    if (typeof document !== 'undefined') setActiveLocale(params.locale)
   },
   head: ({ params }) => {
     const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE

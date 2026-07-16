@@ -8,31 +8,24 @@
 // before launch; schedule alongside plan 09's lawyer pass (Plans/08-i18n.md §6).
 
 import type { components } from '@/lib/api/schema'
+import { formatDecimal } from '@/lib/format'
 import { plPlural } from './plural'
 
 /** Stable family key — identical across locales (used for dot colors). */
 export type MaterialFamily = 'standard' | 'engineering' | 'specialty'
 
-type OrderStatus = 'submitted' | 'expired' | 'ordered'
-
-// Mirrors the OpenAPI DfmFlag.code enum (backend/api/openapi.yaml).
-type DfmCode =
-  | 'exceeds_build_volume'
-  | 'small_feature'
-  | 'min_volume_billed'
-  | 'geometry_approximated'
-  | 'multi_plate'
-
-// Generated from the contract — adding a backend code without copy here is a
-// compile error (localization contract, Plans/08-i18n.md).
+// All three derived from the generated contract — a new backend code or
+// status without copy here is a compile error (localization contract,
+// Plans/08-i18n.md).
+type OrderStatus = components['schemas']['OrderSummary']['status']
+type DfmCode = components['schemas']['DfmFlag']['code']
 type ApiErrorCode = components['schemas']['ApiErrorCode']
 
 type Params = Record<string, unknown>
 
-/** Polish decimal comma for param values embedded in copy. */
+/** Polish number formatting for param values embedded in copy. */
 const num = (v: unknown): string => {
-  if (typeof v === 'number')
-    return String(Math.round(v * 100) / 100).replace('.', ',')
+  if (typeof v === 'number') return formatDecimal(v, 'pl', 2)
   return typeof v === 'string' ? v : '—'
 }
 
@@ -224,7 +217,6 @@ export const pl = {
   quote: {
     parsingTitle: 'Mierzymy twoją część…',
     unitPrice: 'za sztukę',
-    lineTotal: 'suma pozycji',
     orderButton: (price: string) => `Zamów za ${price}`,
     minOrderHint: (min: string) =>
       `Minimalne zamówienie ${min} — doliczono wyrównanie`,
@@ -284,6 +276,7 @@ export const pl = {
         `${num(p.pieces)} elem. mieści się na ${num(p.plates)} płytach roboczych — ${num(p.extraFeePln)} zł za każdą dodatkową płytę.`,
     } satisfies Record<DfmCode, (p: Params) => string>,
     unknown: 'Sprawdź szczegóły części.',
+    unknownLabel: 'Uwaga',
     suggestion: (processes: string) => ` Wypróbuj: ${processes}.`,
   },
   breakdown: {

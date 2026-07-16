@@ -36,6 +36,10 @@ describe('formatPlacedDate', () => {
     expect(formatPlacedDate('2026-07-16T10:00:00Z', 'en')).toBe('16 Jul')
     expect(formatPlacedDate('2026-07-16T10:00:00Z', 'pl')).toBe('16 lip')
   })
+  test('pinned to the Warsaw business day, not the viewer zone', () => {
+    // 23:00 UTC = 01:00 next day in Warsaw (CEST) — the shop's calendar wins.
+    expect(formatPlacedDate('2026-07-15T23:00:00Z', 'en')).toBe('16 Jul')
+  })
 })
 
 describe('decimal separators', () => {

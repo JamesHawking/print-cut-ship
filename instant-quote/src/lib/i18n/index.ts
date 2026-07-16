@@ -24,7 +24,12 @@ export function getStrings(locale: Locale): Dictionary {
 
 let activeLocale: Locale = DEFAULT_LOCALE
 
-/** Client-side only — set on $locale route match; see invariant above. */
+/**
+ * Set on $locale route match, guarded to the client there (beforeLoad also
+ * runs during SSR, where a module global would race across concurrent
+ * requests). On the server this store keeps DEFAULT_LOCALE and must never
+ * feed a render — render paths use useStrings()/useLocale().
+ */
 export function setActiveLocale(locale: Locale): void {
   activeLocale = locale
 }

@@ -2,26 +2,20 @@
 // Adding a key to one locale without the other is a compile error.
 
 import type { components } from '@/lib/api/schema'
+import { formatDecimal } from '@/lib/format'
 import type { Dictionary } from './types'
 import type { MaterialFamily } from './pl'
 import { enPlural } from './plural'
 
-type OrderStatus = 'submitted' | 'expired' | 'ordered'
-
-// Mirrors the OpenAPI DfmFlag.code enum (backend/api/openapi.yaml).
-type DfmCode =
-  | 'exceeds_build_volume'
-  | 'small_feature'
-  | 'min_volume_billed'
-  | 'geometry_approximated'
-  | 'multi_plate'
-
+// Derived from the generated contract, like pl.ts.
+type OrderStatus = components['schemas']['OrderSummary']['status']
+type DfmCode = components['schemas']['DfmFlag']['code']
 type ApiErrorCode = components['schemas']['ApiErrorCode']
 
 type Params = Record<string, unknown>
 
 const num = (v: unknown): string => {
-  if (typeof v === 'number') return String(Math.round(v * 100) / 100)
+  if (typeof v === 'number') return formatDecimal(v, 'en', 2)
   return typeof v === 'string' ? v : '—'
 }
 
@@ -212,7 +206,6 @@ export const en = {
   quote: {
     parsingTitle: 'Measuring your part…',
     unitPrice: 'per part',
-    lineTotal: 'line total',
     orderButton: (price: string) => `Order for ${price}`,
     minOrderHint: (min: string) => `Minimum order ${min} — top-up applied`,
     exVat: 'Prices ex VAT',
@@ -271,6 +264,7 @@ export const en = {
         `${num(p.pieces)} pieces pack onto ${num(p.plates)} build plates — ${num(p.extraFeePln)} zł per extra plate.`,
     } satisfies Record<DfmCode, (p: Params) => string>,
     unknown: 'Check the part details.',
+    unknownLabel: 'Notice',
     suggestion: (processes: string) => ` Try: ${processes}.`,
   },
   breakdown: {

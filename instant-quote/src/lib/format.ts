@@ -102,11 +102,15 @@ export function formatShipDate(
   }).format(new Date(Date.UTC(d.y, d.m - 1, d.d)))
 }
 
-/** Order-row "Placed" date (day + short month). */
+/**
+ * Order-row "Placed" date (day + short month), pinned to the shop's Warsaw
+ * business calendar — the viewer's local zone must not shift the day.
+ */
 export function formatPlacedDate(iso: string, locale: Locale): string {
   return dateFmt(locale, {
     key: 'placed',
     day: 'numeric',
     month: 'short',
+    timeZone: 'Europe/Warsaw',
   }).format(new Date(iso))
 }
