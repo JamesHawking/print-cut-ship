@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
+import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
 import { formatPln } from '@/lib/format'
 import {
   api,
@@ -48,6 +49,7 @@ export function OrderDialog({
   pricesExVat,
 }: Props) {
   const strings = useStrings()
+  const locale = useLocale()
   const [email, setEmail] = useState('')
   const [country, setCountry] = useState<string>('PL')
   const [submitting, setSubmitting] = useState(false)
@@ -75,9 +77,12 @@ export function OrderDialog({
             leadTime: part.config.leadTime,
           })),
           clientGrossTotalPln: totals.grossTotalPln,
+          // Persisted with the quote — downstream emails/invoices render in
+          // the language the customer ordered in (plans 05/06).
+          locale,
         },
       })
-      if (!res.data) throw new Error('order failed')
+      if (!res.data) throw new ApiRequestError(res.error)
       setQuoteId(res.data.quoteId)
       track('order_submitted', {
         quoteId: res.data.quoteId,
@@ -85,8 +90,8 @@ export function OrderDialog({
         parts: parts.length,
       })
       toast.success(strings.order.successTitle)
-    } catch {
-      toast.error(strings.order.failed)
+    } catch (err) {
+      toast.error(apiErrorMessage(err, strings, strings.order.failed))
     } finally {
       setSubmitting(false)
     }

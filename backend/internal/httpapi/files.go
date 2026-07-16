@@ -33,24 +33,24 @@ func (s *server) CreateFileUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !sha256Re.MatchString(req.Sha256) {
-		badRequest(w, "sha256 must be 64 lowercase hex chars")
+		badRequest(w, InvalidHash, "sha256 must be 64 lowercase hex chars", nil)
 		return
 	}
 	if req.FileName == "" {
-		badRequest(w, "fileName is required")
+		badRequest(w, MissingFileName, "fileName is required", nil)
 		return
 	}
 	if !fileKinds[string(req.Kind)] {
-		badRequest(w, "unsupported kind")
+		badRequest(w, UnsupportedKind, "unsupported kind", nil)
 		return
 	}
 	if req.SizeBytes < 1 || req.SizeBytes > makerworld.MaxFileBytes {
-		badRequest(w, "sizeBytes out of range")
+		badRequest(w, FileSizeRange, "sizeBytes out of range", nil)
 		return
 	}
 	if s.cfg.Store == nil || s.cfg.Storage == nil {
 		s.cfg.Logger.Warn("storage not configured; cannot reserve upload")
-		writeJSON(w, http.StatusServiceUnavailable, ApiError{Error: "storage unavailable"})
+		apiError(w, http.StatusServiceUnavailable, StorageUnavailable, "storage unavailable", nil)
 		return
 	}
 	ctx := r.Context()
@@ -61,7 +61,7 @@ func (s *server) CreateFileUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		s.cfg.Logger.Error("dedup lookup failed", "err", err)
-		writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to reserve upload"})
+		internalError(w, "failed to reserve upload")
 		return
 	}
 
@@ -75,14 +75,14 @@ func (s *server) CreateFileUpload(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		s.cfg.Logger.Error("reserve file failed", "err", err)
-		writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to reserve upload"})
+		internalError(w, "failed to reserve upload")
 		return
 	}
 
 	url, err := s.cfg.Storage.PresignPut(ctx, storage.Key(req.Sha256, string(req.Kind)), presignTTL)
 	if err != nil {
 		s.cfg.Logger.Error("presign failed", "err", err)
-		writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to reserve upload"})
+		internalError(w, "failed to reserve upload")
 		return
 	}
 	writeJSON(w, http.StatusOK, CreateFileResponse{FileId: fileID, UploadUrl: &url, AlreadyStored: false})
@@ -94,7 +94,7 @@ func (s *server) CreateFileUpload(w http.ResponseWriter, r *http.Request) {
 func (s *server) ConfirmFileUpload(w http.ResponseWriter, r *http.Request, fileID openapi_types.UUID) {
 	if s.cfg.Store == nil || s.cfg.Storage == nil {
 		s.cfg.Logger.Warn("storage not configured; cannot confirm upload")
-		writeJSON(w, http.StatusServiceUnavailable, ApiError{Error: "storage unavailable"})
+		apiError(w, http.StatusServiceUnavailable, StorageUnavailable, "storage unavailable", nil)
 		return
 	}
 	ctx := r.Context()
@@ -102,11 +102,11 @@ func (s *server) ConfirmFileUpload(w http.ResponseWriter, r *http.Request, fileI
 	file, err := s.cfg.Store.GetFileByID(ctx, fileID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			writeJSON(w, http.StatusNotFound, ApiError{Error: "file not found"})
+			apiError(w, http.StatusNotFound, FileNotFound, "file not found", nil)
 			return
 		}
 		s.cfg.Logger.Error("file lookup failed", "err", err)
-		writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to confirm upload"})
+		internalError(w, "failed to confirm upload")
 		return
 	}
 	if file.StorageKey != nil {
@@ -114,7 +114,7 @@ func (s *server) ConfirmFileUpload(w http.ResponseWriter, r *http.Request, fileI
 		return
 	}
 	if file.Hash == nil {
-		badRequest(w, "file has no hash")
+		badRequest(w, FileMissingHash, "file has no hash", nil)
 		return
 	}
 
@@ -122,20 +122,20 @@ func (s *server) ConfirmFileUpload(w http.ResponseWriter, r *http.Request, fileI
 	size, ok, err := s.cfg.Storage.Stat(ctx, key)
 	if err != nil {
 		s.cfg.Logger.Error("stat failed", "err", err, "key", key)
-		writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to confirm upload"})
+		internalError(w, "failed to confirm upload")
 		return
 	}
 	if !ok {
-		badRequest(w, "uploaded object not found")
+		badRequest(w, UploadObjectMissing, "uploaded object not found", nil)
 		return
 	}
 	if size != file.FileSizeBytes {
-		badRequest(w, "uploaded size does not match")
+		badRequest(w, UploadSizeMismatch, "uploaded size does not match", nil)
 		return
 	}
 	if err := s.cfg.Store.SetFileStorageKey(ctx, store.SetFileStorageKeyParams{ID: fileID, StorageKey: &key}); err != nil {
 		s.cfg.Logger.Error("confirm write failed", "err", err)
-		writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to confirm upload"})
+		internalError(w, "failed to confirm upload")
 		return
 	}
 	writeJSON(w, http.StatusOK, ConfirmFileResponse{FileId: fileID, Stored: true})

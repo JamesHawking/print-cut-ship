@@ -1,6 +1,7 @@
 // English dictionary — must satisfy the Dictionary type inferred from pl.ts.
 // Adding a key to one locale without the other is a compile error.
 
+import type { components } from '@/lib/api/schema'
 import type { Dictionary } from './types'
 import type { MaterialFamily } from './pl'
 import { enPlural } from './plural'
@@ -14,6 +15,15 @@ type DfmCode =
   | 'min_volume_billed'
   | 'geometry_approximated'
   | 'multi_plate'
+
+type ApiErrorCode = components['schemas']['ApiErrorCode']
+
+type Params = Record<string, unknown>
+
+const num = (v: unknown): string => {
+  if (typeof v === 'number') return String(Math.round(v * 100) / 100)
+  return typeof v === 'string' ? v : '—'
+}
 
 export const en = {
   meta: {
@@ -228,8 +238,63 @@ export const en = {
       geometry_approximated: 'Geometry approximated',
       multi_plate: 'Multi-plate',
     } satisfies Record<DfmCode, string>,
+    messages: {
+      exceeds_build_volume: (p: Params) =>
+        p.piece
+          ? `A piece exceeds the ${num(p.x)}×${num(p.y)}×${num(p.z)} mm build plate.`
+          : `Part exceeds the ${num(p.x)}×${num(p.y)}×${num(p.z)} mm build volume.`,
+      small_feature: (p: Params) =>
+        `Smallest dimension is ${num(p.minDimMm)} mm — thin features may not survive printing.`,
+      min_volume_billed: (p: Params) =>
+        `Under 1 cm³ — billed at the ${num(p.minCm3)} cm³ minimum.`,
+      geometry_approximated: () =>
+        'Mesh is not watertight — volume estimated from its convex hull. Final price may change.',
+      multi_plate: (p: Params) =>
+        `${num(p.pieces)} pieces pack onto ${num(p.plates)} build plates — ${num(p.extraFeePln)} zł per extra plate.`,
+    } satisfies Record<DfmCode, (p: Params) => string>,
+    unknown: 'Check the part details.',
     suggestion: (processes: string) => ` Try: ${processes}.`,
   },
+  breakdown: {
+    material: 'Material',
+    machine: 'Machine time',
+    finishing: 'Finishing',
+    plates: (n: number) => `Extra plates (${n})`,
+  },
+  apiError: {
+    invalid_body: 'The request was malformed. Refresh and try again.',
+    parts_count: (p: Params) =>
+      `A quote can contain 1–${num(p.max ?? 5)} parts.`,
+    unknown_process:
+      'The selected material is no longer available. Refresh and re-quote.',
+    unknown_lead_time:
+      'The selected lead time is no longer available. Refresh and re-quote.',
+    quantity_range: (p: Params) =>
+      `Quantity must be between 1 and ${num(p.max ?? 100)}.`,
+    invalid_metrics: 'The part geometry looks invalid. Re-upload the file.',
+    invalid_email: 'That doesn’t look like an email address.',
+    unsupported_country: 'We don’t ship to that country yet.',
+    missing_file_fields:
+      'The request was incomplete. Re-add the file and try again.',
+    quote_file_invalid:
+      'A file in this quote is no longer stored. Re-upload it and try again.',
+    missing_file_name: 'The file name is missing. Re-add the file.',
+    invalid_file_size: 'The file size is invalid. Re-add the file.',
+    invalid_design_id: 'That MakerWorld model link is invalid.',
+    invalid_profile_id: 'That MakerWorld print profile is invalid.',
+    invalid_hash: 'The file could not be verified. Re-add it.',
+    unsupported_kind: 'Unsupported format. We accept STL, 3MF, OBJ, and STEP.',
+    file_size_range: 'The file has an invalid size (max 100 MB).',
+    file_not_found: 'The file was not found. Re-add it.',
+    file_missing_hash: 'The file could not be verified. Re-add it.',
+    upload_object_missing: 'The upload never reached storage. Try again.',
+    upload_size_mismatch:
+      'The uploaded file has a different size than declared. Try again.',
+    storage_unavailable:
+      'File storage is temporarily unavailable. Try again shortly.',
+    internal: 'Something went wrong on our side. Try again.',
+  } satisfies Record<ApiErrorCode, string | ((p: Params) => string)>,
+  apiErrorGeneric: 'Something went wrong. Check your connection and try again.',
   orderPanel: {
     otherParts: (n: number) => `Other parts — ${n}`,
     minOrderTopUp: 'Minimum-order top-up',

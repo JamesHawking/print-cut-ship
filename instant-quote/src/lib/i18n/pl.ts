@@ -7,6 +7,7 @@
 // TODO(launch): machine-drafted Polish — native-speaker review required
 // before launch; schedule alongside plan 09's lawyer pass (Plans/08-i18n.md §6).
 
+import type { components } from '@/lib/api/schema'
 import { plPlural } from './plural'
 
 /** Stable family key — identical across locales (used for dot colors). */
@@ -21,6 +22,19 @@ type DfmCode =
   | 'min_volume_billed'
   | 'geometry_approximated'
   | 'multi_plate'
+
+// Generated from the contract — adding a backend code without copy here is a
+// compile error (localization contract, Plans/08-i18n.md).
+type ApiErrorCode = components['schemas']['ApiErrorCode']
+
+type Params = Record<string, unknown>
+
+/** Polish decimal comma for param values embedded in copy. */
+const num = (v: unknown): string => {
+  if (typeof v === 'number')
+    return String(Math.round(v * 100) / 100).replace('.', ',')
+  return typeof v === 'string' ? v : '—'
+}
 
 export const pl = {
   meta: {
@@ -236,8 +250,67 @@ export const pl = {
       geometry_approximated: 'Geometria przybliżona',
       multi_plate: 'Wiele płyt',
     } satisfies Record<DfmCode, string>,
+    messages: {
+      exceeds_build_volume: (p: Params) =>
+        p.piece
+          ? `Element przekracza płytę roboczą ${num(p.x)}×${num(p.y)}×${num(p.z)} mm.`
+          : `Część przekracza obszar roboczy ${num(p.x)}×${num(p.y)}×${num(p.z)} mm.`,
+      small_feature: (p: Params) =>
+        `Najmniejszy wymiar to ${num(p.minDimMm)} mm — cienkie elementy mogą nie przetrwać druku.`,
+      min_volume_billed: (p: Params) =>
+        `Poniżej 1 cm³ — naliczamy minimum ${num(p.minCm3)} cm³.`,
+      geometry_approximated: () =>
+        'Siatka nie jest szczelna — objętość oszacowana z otoczki wypukłej. Ostateczna cena może się zmienić.',
+      multi_plate: (p: Params) =>
+        `${num(p.pieces)} elem. mieści się na ${num(p.plates)} płytach roboczych — ${num(p.extraFeePln)} zł za każdą dodatkową płytę.`,
+    } satisfies Record<DfmCode, (p: Params) => string>,
+    unknown: 'Sprawdź szczegóły części.',
     suggestion: (processes: string) => ` Wypróbuj: ${processes}.`,
   },
+  breakdown: {
+    material: 'Materiał',
+    machine: 'Czas maszynowy',
+    finishing: 'Wykończenie',
+    plates: (n: number) => `Dodatkowe płyty (${n})`,
+  },
+  apiError: {
+    invalid_body:
+      'Żądanie było nieprawidłowe. Odśwież stronę i spróbuj ponownie.',
+    parts_count: (p: Params) =>
+      `Wycena może zawierać od 1 do ${num(p.max ?? 5)} części.`,
+    unknown_process:
+      'Wybrany materiał nie jest już dostępny. Odśwież i wyceń ponownie.',
+    unknown_lead_time:
+      'Wybrany termin nie jest już dostępny. Odśwież i wyceń ponownie.',
+    quantity_range: (p: Params) =>
+      `Ilość musi mieścić się w zakresie 1–${num(p.max ?? 100)}.`,
+    invalid_metrics:
+      'Geometria części wygląda na nieprawidłową. Wgraj plik ponownie.',
+    invalid_email: 'To nie wygląda na adres e-mail.',
+    unsupported_country: 'Nie wysyłamy jeszcze do tego kraju.',
+    missing_file_fields:
+      'Żądanie było niekompletne. Dodaj plik ponownie i spróbuj jeszcze raz.',
+    quote_file_invalid:
+      'Jeden z plików tej wyceny nie jest już przechowywany. Wgraj go ponownie.',
+    missing_file_name: 'Brakuje nazwy pliku. Dodaj plik ponownie.',
+    invalid_file_size: 'Nieprawidłowy rozmiar pliku. Dodaj plik ponownie.',
+    invalid_design_id: 'Nieprawidłowy link do modelu MakerWorld.',
+    invalid_profile_id: 'Nieprawidłowy profil modelu MakerWorld.',
+    invalid_hash: 'Nie udało się zweryfikować pliku. Dodaj go ponownie.',
+    unsupported_kind:
+      'Nieobsługiwany format. Przyjmujemy STL, 3MF, OBJ i STEP.',
+    file_size_range: 'Plik ma nieprawidłowy rozmiar (maks. 100 MB).',
+    file_not_found: 'Nie znaleziono pliku. Dodaj go ponownie.',
+    file_missing_hash: 'Nie udało się zweryfikować pliku. Dodaj go ponownie.',
+    upload_object_missing:
+      'Przesyłanie pliku nie dotarło do magazynu. Spróbuj ponownie.',
+    upload_size_mismatch:
+      'Przesłany plik ma inny rozmiar niż zgłoszono. Spróbuj ponownie.',
+    storage_unavailable:
+      'Magazyn plików jest chwilowo niedostępny. Spróbuj za moment.',
+    internal: 'Coś poszło nie tak po naszej stronie. Spróbuj ponownie.',
+  } satisfies Record<ApiErrorCode, string | ((p: Params) => string)>,
+  apiErrorGeneric: 'Coś poszło nie tak. Sprawdź połączenie i spróbuj ponownie.',
   orderPanel: {
     otherParts: (n: number) => `Pozostałe części — ${n}`,
     minOrderTopUp: 'Wyrównanie do minimum',

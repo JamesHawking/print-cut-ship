@@ -25,6 +25,48 @@ describe('dictionary parity', () => {
   })
 })
 
+describe('dfm and api-error rendering', () => {
+  const dfmParams: Record<string, Record<string, unknown>> = {
+    exceeds_build_volume: { x: 340, y: 320, z: 340 },
+    small_feature: { minDimMm: 0.5 },
+    min_volume_billed: { minCm3: 1 },
+    geometry_approximated: {},
+    multi_plate: { pieces: 8, plates: 3, extraFeePln: 10 },
+  }
+
+  test('every DFM code renders a message with its params in both locales', () => {
+    for (const dict of [pl, en]) {
+      for (const [code, params] of Object.entries(dfmParams)) {
+        const msg =
+          dict.dfm.messages[code as keyof typeof dict.dfm.messages](params)
+        expect(msg.length).toBeGreaterThan(10)
+        expect(
+          dict.dfm.labels[code as keyof typeof dict.dfm.labels],
+        ).toBeTruthy()
+      }
+    }
+    // Params interpolate (PL uses a decimal comma).
+    expect(pl.dfm.messages.small_feature({ minDimMm: 0.5 })).toContain('0,5')
+    expect(en.dfm.messages.small_feature({ minDimMm: 0.5 })).toContain('0.5')
+    expect(
+      en.dfm.messages.exceeds_build_volume({ x: 340, y: 320, z: 340 }),
+    ).toContain('340×320×340')
+    expect(
+      en.dfm.messages.exceeds_build_volume({ x: 1, y: 1, z: 1, piece: true }),
+    ).toContain('piece')
+  })
+
+  test('every API error code has copy in both locales', () => {
+    for (const dict of [pl, en]) {
+      for (const entry of Object.values(dict.apiError)) {
+        const text = typeof entry === 'function' ? entry({ max: 5 }) : entry
+        expect(text.length).toBeGreaterThan(5)
+      }
+    }
+    expect(en.apiError.parts_count({ max: 5 })).toContain('5')
+  })
+})
+
 describe('plPlural', () => {
   const czesc = (n: number) => plPlural(n, 'część', 'części', 'części')
   test.each([

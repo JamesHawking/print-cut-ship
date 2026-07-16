@@ -31,6 +31,11 @@ export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
                 flag.suggestedProcesses.map(labelOf).join(', '),
               )
             : ''
+        // Copy renders from code+params; flag.message is debug-only.
+        // TODO(plan 11): Sentry breadcrumb when an unknown code falls through.
+        const message =
+          strings.dfm.messages[flag.code]?.(flag.params ?? {}) ??
+          strings.dfm.unknown
         return (
           <Tooltip key={flag.code}>
             <TooltipTrigger asChild>
@@ -40,11 +45,11 @@ export function DfmBadges({ flags }: { flags: DfmFlag[] }) {
                   CHIP[flag.severity],
                 )}
               >
-                {strings.dfm.labels[flag.code]}
+                {strings.dfm.labels[flag.code] ?? flag.code}
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              {flag.message}
+              {message}
               {suggestion}
             </TooltipContent>
           </Tooltip>

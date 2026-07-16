@@ -23,6 +23,7 @@ import {
   type PartQuote,
 } from '@/lib/api/client'
 import { MAX_PARTS } from '@/lib/upload'
+import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
 import { track } from '@/lib/funnel'
 import { formatWarsawClock } from '@/lib/clock'
 import { useLocale, useStrings } from '@/lib/i18n'
@@ -93,7 +94,7 @@ function QuoteWorkspace() {
           })),
         },
       })
-      if (!res.data) throw new Error(strings.errors.priceFailed)
+      if (!res.data) throw new ApiRequestError(res.error)
       return res.data
     },
     enabled: readyParts.length > 0,
@@ -198,7 +199,11 @@ function QuoteWorkspace() {
                 <Card>
                   <CardContent className="space-y-3 pt-6">
                     <p className="text-destructive text-sm">
-                      {strings.errors.priceFailed}
+                      {apiErrorMessage(
+                        priceQuery.error,
+                        strings,
+                        strings.errors.priceFailed,
+                      )}
                     </p>
                     <button
                       type="button"

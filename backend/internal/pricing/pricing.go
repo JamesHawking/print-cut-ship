@@ -33,15 +33,20 @@ type PartConfig struct {
 }
 
 type DfmFlag struct {
-	Code               string   `json:"code"`
-	Severity           string   `json:"severity"`
-	Message            string   `json:"message"`
-	SuggestedProcesses []string `json:"suggestedProcesses,omitempty"`
+	Code     string `json:"code"`
+	Severity string `json:"severity"`
+	// Message is English debug prose; clients localize from Code+Params
+	// (Plans/08-i18n.md localization contract).
+	Message            string         `json:"message"`
+	Params             map[string]any `json:"params,omitempty"`
+	SuggestedProcesses []string       `json:"suggestedProcesses,omitempty"`
 }
 
 type BreakdownLine struct {
-	Key       string  `json:"key"`
+	Key string `json:"key"`
+	// Label is English debug prose; clients localize from Key (+Count).
 	Label     string  `json:"label"`
+	Count     int     `json:"count,omitempty"`
 	AmountPln float64 `json:"amountPln"`
 }
 
@@ -173,6 +178,7 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 			Code:     "min_volume_billed",
 			Severity: "info",
 			Message:  fmt.Sprintf("Under 1 cm³ — billed at the %s cm³ minimum.", fmtNum(c.MinBillableVolumeCm3)),
+			Params:   map[string]any{"minCm3": c.MinBillableVolumeCm3},
 		})
 	}
 
@@ -192,6 +198,7 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 			Code:     "small_feature",
 			Severity: "warn",
 			Message:  fmt.Sprintf("Smallest dimension is %s mm — thin features may not survive printing.", strconv.FormatFloat(minDim, 'f', 2, 64)),
+			Params:   map[string]any{"minDimMm": minDim},
 		})
 	}
 
@@ -220,6 +227,10 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 				Severity: "block",
 				Message: fmt.Sprintf("A piece exceeds the %s×%s×%s mm build plate.",
 					fmtNum(proc.Build.X), fmtNum(proc.Build.Y), fmtNum(proc.Build.Z)),
+				Params: map[string]any{
+					"x": proc.Build.X, "y": proc.Build.Y, "z": proc.Build.Z,
+					"piece": true,
+				},
 				SuggestedProcesses: alternatives,
 			})
 		} else if plates > 1 {
@@ -228,6 +239,10 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 				Severity: "info",
 				Message: fmt.Sprintf("%d pieces pack onto %d build plates — %s zł per extra plate.",
 					len(pieces), plates, fmtNum(c.ExtraPlateFeePln)),
+				Params: map[string]any{
+					"pieces": len(pieces), "plates": plates,
+					"extraFeePln": c.ExtraPlateFeePln,
+				},
 			})
 		}
 	} else {
@@ -239,6 +254,9 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 				Severity: "block",
 				Message: fmt.Sprintf("Part exceeds the %s×%s×%s mm build volume.",
 					fmtNum(proc.Build.X), fmtNum(proc.Build.Y), fmtNum(proc.Build.Z)),
+				Params: map[string]any{
+					"x": proc.Build.X, "y": proc.Build.Y, "z": proc.Build.Z,
+				},
 				SuggestedProcesses: alternatives,
 			})
 		}
@@ -253,6 +271,7 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 		baseLines = append(baseLines, BreakdownLine{
 			Key:       "plates",
 			Label:     fmt.Sprintf("Extra plates (%d)", plates-1),
+			Count:     plates - 1,
 			AmountPln: plateFeePln,
 		})
 	}

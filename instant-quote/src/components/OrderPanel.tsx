@@ -34,7 +34,14 @@ export function OrderPanel({
   const rows: Array<{ label: string; value: string }> = []
   if (breakdownQuote) {
     for (const line of breakdownQuote.breakdown) {
-      rows.push({ label: line.label, value: formatPln(line.amountPln) })
+      // Labels render from the stable key (+count); line.label is debug-only.
+      rows.push({
+        label:
+          line.key === 'plates'
+            ? strings.breakdown.plates(line.count ?? 0)
+            : strings.breakdown[line.key],
+        value: formatPln(line.amountPln),
+      })
     }
     if (orderableCount > 1) {
       rows.push({

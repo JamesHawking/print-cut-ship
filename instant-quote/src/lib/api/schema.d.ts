@@ -237,13 +237,21 @@ export interface components {
         | 'multi_plate'
       /** @enum {string} */
       severity: 'block' | 'warn' | 'info'
-      message: string
+      /** @description English debug prose; the frontend renders from code+params. */
+      message?: string
+      /** @description Structured values for localized rendering, e.g. {"x": 340}. */
+      params?: {
+        [key: string]: unknown
+      }
       suggestedProcesses?: components['schemas']['ProcessId'][]
     }
     BreakdownLine: {
       /** @enum {string} */
       key: 'material' | 'machine' | 'finishing' | 'plates'
-      label: string
+      /** @description English debug prose; the frontend renders from key (+count). */
+      label?: string
+      /** @description Extra-plate count; only set for key=plates. */
+      count?: number
       /** Format: double */
       amountPln: number
     }
@@ -374,7 +382,7 @@ export interface components {
       leadTime: components['schemas']['LeadTimeId']
       date: components['schemas']['CalDate']
       dispatchStartsToday: boolean
-      /** @description e.g. "Thu, 16 Jul" */
+      /** @description e.g. "Thu 16 Jul" (canonical engine label; UI formats the date per locale) */
       label: string
     }
     ShipDatesResponse: {
@@ -403,6 +411,12 @@ export interface components {
        * @description The gross total the client displayed, for mismatch telemetry. The server's own computation is authoritative.
        */
       clientGrossTotalPln?: number
+      /**
+       * @description UI locale at submit time; persisted for downstream emails and invoices (plans 05/06 read it).
+       * @default pl
+       * @enum {string}
+       */
+      locale: 'pl' | 'en'
     }
     SubmitQuoteResponse: {
       /** @description e.g. "Q-1A2B3C4D" */
@@ -473,8 +487,42 @@ export interface components {
       stored: boolean
     }
     ApiError: {
+      code: components['schemas']['ApiErrorCode']
+      /** @description English debug prose; never displayed to users. */
       error: string
+      /** @description Structured values for localized rendering, e.g. {"max": 5}. */
+      params?: {
+        [key: string]: unknown
+      }
     }
+    /**
+     * @description Machine code the frontend dictionary maps to localized copy.
+     * @enum {string}
+     */
+    ApiErrorCode:
+      | 'invalid_body'
+      | 'parts_count'
+      | 'unknown_process'
+      | 'unknown_lead_time'
+      | 'quantity_range'
+      | 'invalid_metrics'
+      | 'invalid_email'
+      | 'unsupported_country'
+      | 'missing_file_fields'
+      | 'quote_file_invalid'
+      | 'missing_file_name'
+      | 'invalid_file_size'
+      | 'invalid_design_id'
+      | 'invalid_profile_id'
+      | 'invalid_hash'
+      | 'unsupported_kind'
+      | 'file_size_range'
+      | 'file_not_found'
+      | 'file_missing_hash'
+      | 'upload_object_missing'
+      | 'upload_size_mismatch'
+      | 'storage_unavailable'
+      | 'internal'
   }
   responses: {
     /** @description Invalid request payload */

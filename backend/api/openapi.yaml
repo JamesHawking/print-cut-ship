@@ -292,7 +292,7 @@ components:
 
     DfmFlag:
       type: object
-      required: [code, severity, message]
+      required: [code, severity]
       properties:
         code:
           type: string
@@ -304,6 +304,11 @@ components:
           enum: [block, warn, info]
         message:
           type: string
+          description: English debug prose; the frontend renders from code+params.
+        params:
+          type: object
+          additionalProperties: true
+          description: 'Structured values for localized rendering, e.g. {"x": 340}.'
         suggestedProcesses:
           type: array
           items:
@@ -311,13 +316,17 @@ components:
 
     BreakdownLine:
       type: object
-      required: [key, label, amountPln]
+      required: [key, amountPln]
       properties:
         key:
           type: string
           enum: [material, machine, finishing, plates]
         label:
           type: string
+          description: English debug prose; the frontend renders from key (+count).
+        count:
+          type: integer
+          description: Extra-plate count; only set for key=plates.
         amountPln:
           type: number
           format: double
@@ -491,7 +500,7 @@ components:
         dispatchStartsToday: { type: boolean }
         label:
           type: string
-          description: e.g. "Thu, 16 Jul"
+          description: e.g. "Thu 16 Jul" (canonical engine label; UI formats the date per locale)
 
     ShipDatesResponse:
       type: object
@@ -550,6 +559,13 @@ components:
           description: >-
             The gross total the client displayed, for mismatch telemetry.
             The server's own computation is authoritative.
+        locale:
+          type: string
+          enum: [pl, en]
+          default: pl
+          description: >-
+            UI locale at submit time; persisted for downstream emails and
+            invoices (plans 05/06 read it).
 
     SubmitQuoteResponse:
       type: object
@@ -685,7 +701,42 @@ components:
 
     ApiError:
       type: object
-      required: [error]
+      required: [code, error]
       properties:
+        code:
+          $ref: '#/components/schemas/ApiErrorCode'
         error:
           type: string
+          description: English debug prose; never displayed to users.
+        params:
+          type: object
+          additionalProperties: true
+          description: 'Structured values for localized rendering, e.g. {"max": 5}.'
+
+    ApiErrorCode:
+      type: string
+      description: Machine code the frontend dictionary maps to localized copy.
+      enum:
+        - invalid_body
+        - parts_count
+        - unknown_process
+        - unknown_lead_time
+        - quantity_range
+        - invalid_metrics
+        - invalid_email
+        - unsupported_country
+        - missing_file_fields
+        - quote_file_invalid
+        - missing_file_name
+        - invalid_file_size
+        - invalid_design_id
+        - invalid_profile_id
+        - invalid_hash
+        - unsupported_kind
+        - file_size_range
+        - file_not_found
+        - file_missing_hash
+        - upload_object_missing
+        - upload_size_mismatch
+        - storage_unavailable
+        - internal

@@ -39,14 +39,29 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-func badRequest(w http.ResponseWriter, msg string) {
-	writeJSON(w, http.StatusBadRequest, ApiError{Error: msg})
+// apiError writes the localization-contract error envelope: a machine code
+// (+ structured params) the frontend dictionary maps to copy, plus English
+// debug prose that is never displayed (Plans/08-i18n.md).
+func apiError(w http.ResponseWriter, status int, code ApiErrorCode, msg string, params map[string]any) {
+	e := ApiError{Code: code, Error: msg}
+	if len(params) > 0 {
+		e.Params = &params
+	}
+	writeJSON(w, status, e)
+}
+
+func badRequest(w http.ResponseWriter, code ApiErrorCode, msg string, params map[string]any) {
+	apiError(w, http.StatusBadRequest, code, msg, params)
+}
+
+func internalError(w http.ResponseWriter, msg string) {
+	apiError(w, http.StatusInternalServerError, Internal, msg, nil)
 }
 
 func decodeBody(w http.ResponseWriter, r *http.Request, v any) bool {
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	if err := dec.Decode(v); err != nil {
-		badRequest(w, "invalid JSON body")
+		badRequest(w, InvalidBody, "invalid JSON body", nil)
 		return false
 	}
 	return true
@@ -113,15 +128,26 @@ func fromDomainQuote(q pricing.PartQuote) PartQuote {
 		Plates:             q.Plates,
 	}
 	for _, l := range q.Breakdown {
-		out.Breakdown = append(out.Breakdown, BreakdownLine{
-			Key: BreakdownLineKey(l.Key), Label: l.Label, AmountPln: l.AmountPln,
-		})
+		label := l.Label
+		line := BreakdownLine{
+			Key: BreakdownLineKey(l.Key), Label: &label, AmountPln: l.AmountPln,
+		}
+		if l.Count > 0 {
+			count := l.Count
+			line.Count = &count
+		}
+		out.Breakdown = append(out.Breakdown, line)
 	}
 	for _, f := range q.DfmFlags {
+		msg := f.Message
 		gen := DfmFlag{
 			Code:     DfmFlagCode(f.Code),
 			Severity: DfmFlagSeverity(f.Severity),
-			Message:  f.Message,
+			Message:  &msg,
+		}
+		if len(f.Params) > 0 {
+			params := f.Params
+			gen.Params = &params
 		}
 		if len(f.SuggestedProcesses) > 0 {
 			ids := make([]ProcessId, 0, len(f.SuggestedProcesses))
@@ -156,22 +182,36 @@ func fromDomainTotals(t pricing.OrderTotals) OrderTotals {
 	}
 }
 
+// validationError carries the code+params envelope for a rejected field;
+// nil means valid.
+type validationError struct {
+	code   ApiErrorCode
+	msg    string
+	params map[string]any
+}
+
 // validatePart checks the shared metrics/config fields of price and quote
 // submissions, mirroring the original Zod schemas.
-func validatePart(metrics MeshMetrics, process ProcessId, quantity int, lead LeadTimeId) string {
+func validatePart(metrics MeshMetrics, process ProcessId, quantity int, lead LeadTimeId) *validationError {
 	if _, ok := priceCfg.Process(string(process)); !ok {
-		return fmt.Sprintf("unknown process %q", process)
+		return &validationError{UnknownProcess,
+			fmt.Sprintf("unknown process %q", process),
+			map[string]any{"process": string(process)}}
 	}
 	if _, ok := priceCfg.LeadTime(string(lead)); !ok {
-		return fmt.Sprintf("unknown leadTime %q", lead)
+		return &validationError{UnknownLeadTime,
+			fmt.Sprintf("unknown leadTime %q", lead),
+			map[string]any{"leadTime": string(lead)}}
 	}
 	if quantity < 1 || quantity > pricing.MaxQuantity {
-		return fmt.Sprintf("quantity must be 1-%d", pricing.MaxQuantity)
+		return &validationError{QuantityRange,
+			fmt.Sprintf("quantity must be 1-%d", pricing.MaxQuantity),
+			map[string]any{"max": pricing.MaxQuantity}}
 	}
 	if metrics.VolumeCm3 < 0 || metrics.SurfaceAreaCm2 < 0 {
-		return "metrics must be non-negative"
+		return &validationError{InvalidMetrics, "metrics must be non-negative", nil}
 	}
-	return ""
+	return nil
 }
 
 func priceParts(parts []SubmitQuotePart) ([]pricing.PartQuote, pricing.OrderTotals) {
@@ -194,14 +234,16 @@ func (s *server) Price(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(req.Parts) < 1 || len(req.Parts) > pricing.MaxParts {
-		badRequest(w, fmt.Sprintf("parts must contain 1-%d items", pricing.MaxParts))
+		badRequest(w, PartsCount,
+			fmt.Sprintf("parts must contain 1-%d items", pricing.MaxParts),
+			map[string]any{"max": pricing.MaxParts})
 		return
 	}
 	quotes := make([]PartQuote, 0, len(req.Parts))
 	domainQuotes := make([]pricing.PartQuote, 0, len(req.Parts))
 	for _, p := range req.Parts {
-		if msg := validatePart(p.Metrics, p.Process, p.Quantity, p.LeadTime); msg != "" {
-			badRequest(w, msg)
+		if v := validatePart(p.Metrics, p.Process, p.Quantity, p.LeadTime); v != nil {
+			badRequest(w, v.code, v.msg, v.params)
 			return
 		}
 		q := priceCfg.ComputePartQuote(toDomainMetrics(p.Metrics), pricing.PartConfig{
@@ -284,24 +326,28 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !validEmail(string(req.Email)) {
-		badRequest(w, "invalid email")
+		badRequest(w, InvalidEmail, "invalid email", nil)
 		return
 	}
 	if !euCountries[req.Country] {
-		badRequest(w, fmt.Sprintf("unsupported country %q", req.Country))
+		badRequest(w, UnsupportedCountry,
+			fmt.Sprintf("unsupported country %q", req.Country),
+			map[string]any{"country": string(req.Country)})
 		return
 	}
 	if len(req.Parts) < 1 || len(req.Parts) > pricing.MaxParts {
-		badRequest(w, fmt.Sprintf("parts must contain 1-%d items", pricing.MaxParts))
+		badRequest(w, PartsCount,
+			fmt.Sprintf("parts must contain 1-%d items", pricing.MaxParts),
+			map[string]any{"max": pricing.MaxParts})
 		return
 	}
 	for _, p := range req.Parts {
 		if p.FileName == "" || p.Hash == "" {
-			badRequest(w, "fileName and hash are required")
+			badRequest(w, MissingFileFields, "fileName and hash are required", nil)
 			return
 		}
-		if msg := validatePart(p.Metrics, p.Process, p.Quantity, p.LeadTime); msg != "" {
-			badRequest(w, msg)
+		if v := validatePart(p.Metrics, p.Process, p.Quantity, p.LeadTime); v != nil {
+			badRequest(w, v.code, v.msg, v.params)
 			return
 		}
 	}
@@ -326,11 +372,11 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 	if s.cfg.Store != nil {
 		if err := s.persistQuote(r.Context(), req, quoteID, partQuotes, totals); err != nil {
 			if errors.Is(err, errQuoteFileInvalid) {
-				badRequest(w, err.Error())
+				badRequest(w, QuoteFileInvalid, err.Error(), nil)
 				return
 			}
 			s.cfg.Logger.Error("persist quote failed", "quoteId", quoteID, "err", err)
-			writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to persist quote"})
+			internalError(w, "failed to persist quote")
 			return
 		}
 	} else {
@@ -350,7 +396,7 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 func (s *server) ListOrders(w http.ResponseWriter, r *http.Request, params ListOrdersParams) {
 	email := string(params.Email)
 	if !validEmail(email) {
-		badRequest(w, "invalid email")
+		badRequest(w, InvalidEmail, "invalid email", nil)
 		return
 	}
 	orders := []OrderSummary{}
@@ -362,7 +408,7 @@ func (s *server) ListOrders(w http.ResponseWriter, r *http.Request, params ListO
 	rows, err := s.cfg.Store.ListQuotesByEmail(r.Context(), &email)
 	if err != nil {
 		s.cfg.Logger.Error("list orders failed", "err", err)
-		writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to list orders"})
+		internalError(w, "failed to list orders")
 		return
 	}
 	for _, q := range rows {
@@ -472,15 +518,15 @@ func (s *server) SubmitStepQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !validEmail(string(req.Email)) {
-		badRequest(w, "invalid email")
+		badRequest(w, InvalidEmail, "invalid email", nil)
 		return
 	}
 	if req.FileName == "" {
-		badRequest(w, "fileName is required")
+		badRequest(w, MissingFileName, "fileName is required", nil)
 		return
 	}
 	if req.FileSize < 0 {
-		badRequest(w, "fileSize must be non-negative")
+		badRequest(w, InvalidFileSize, "fileSize must be non-negative", nil)
 		return
 	}
 	requestID := makeID("STEP")
@@ -495,7 +541,7 @@ func (s *server) SubmitStepQuote(w http.ResponseWriter, r *http.Request) {
 			FileSizeBytes: int64(req.FileSize),
 		}); err != nil {
 			s.cfg.Logger.Error("persist step request failed", "requestId", requestID, "err", err)
-			writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to persist step request"})
+			internalError(w, "failed to persist step request")
 			return
 		}
 	} else {
@@ -520,11 +566,11 @@ func (s *server) FetchMakerworldModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.DesignId < 1 {
-		badRequest(w, "designId must be positive")
+		badRequest(w, InvalidDesignId, "designId must be positive", nil)
 		return
 	}
 	if req.ProfileId != nil && *req.ProfileId < 1 {
-		badRequest(w, "profileId must be positive")
+		badRequest(w, InvalidProfileId, "profileId must be positive", nil)
 		return
 	}
 	if s.cfg.BambuCloudToken == "" {

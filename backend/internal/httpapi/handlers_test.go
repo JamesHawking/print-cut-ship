@@ -158,20 +158,66 @@ func TestSubmitQuoteEndpoint(t *testing.T) {
 		}
 	})
 
-	bad := map[string]string{
-		"invalid email":   fmt.Sprintf(`{"email": "nope", "country": "PL", "parts": [%s]}`, quotePart),
-		"invalid country": fmt.Sprintf(`{"email": "jan@example.com", "country": "US", "parts": [%s]}`, quotePart),
-		"empty parts":     `{"email": "jan@example.com", "country": "PL", "parts": []}`,
-		"missing hash": fmt.Sprintf(`{"email": "jan@example.com", "country": "PL", "parts": [%s]}`,
-			strings.Replace(quotePart, `"hash": "abc123"`, `"hash": ""`, 1)),
+	// Each rejection carries a stable machine code + params — the frontend
+	// dictionary owns the human copy (Plans/08-i18n.md localization contract).
+	bad := map[string]struct {
+		body string
+		code ApiErrorCode
+	}{
+		// The generated Email type runs mail.ParseAddress at decode time, so a
+		// bad email in a JSON body surfaces as invalid_body; the handler's own
+		// invalid_email fires on query-param binding (see TestListOrders400).
+		"invalid email": {fmt.Sprintf(`{"email": "nope", "country": "PL", "parts": [%s]}`, quotePart), InvalidBody},
+		"invalid country": {fmt.Sprintf(`{"email": "jan@example.com", "country": "US", "parts": [%s]}`, quotePart),
+			UnsupportedCountry},
+		"empty parts": {`{"email": "jan@example.com", "country": "PL", "parts": []}`, PartsCount},
+		"missing hash": {fmt.Sprintf(`{"email": "jan@example.com", "country": "PL", "parts": [%s]}`,
+			strings.Replace(quotePart, `"hash": "abc123"`, `"hash": ""`, 1)), MissingFileFields},
 	}
-	for name, body := range bad {
+	for name, tc := range bad {
 		t.Run("400 on "+name, func(t *testing.T) {
-			if rec := doJSON(t, h, http.MethodPost, "/api/v1/quotes", body); rec.Code != http.StatusBadRequest {
-				t.Errorf("status %d, want 400", rec.Code)
+			rec := doJSON(t, h, http.MethodPost, "/api/v1/quotes", tc.body)
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("status %d, want 400", rec.Code)
+			}
+			var e ApiError
+			if err := json.Unmarshal(rec.Body.Bytes(), &e); err != nil {
+				t.Fatal(err)
+			}
+			if e.Code != tc.code {
+				t.Errorf("code %q, want %q", e.Code, tc.code)
+			}
+			if e.Error == "" {
+				t.Error("debug prose missing")
 			}
 		})
 	}
+
+	t.Run("invalid_email on the orders query param", func(t *testing.T) {
+		rec := doJSON(t, h, http.MethodGet, "/api/v1/orders?email=nope", "")
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status %d, want 400", rec.Code)
+		}
+		var e ApiError
+		if err := json.Unmarshal(rec.Body.Bytes(), &e); err != nil {
+			t.Fatal(err)
+		}
+		if e.Code != InvalidEmail {
+			t.Errorf("code %q, want %q", e.Code, InvalidEmail)
+		}
+	})
+
+	t.Run("parts_count carries the max param", func(t *testing.T) {
+		rec := doJSON(t, h, http.MethodPost, "/api/v1/quotes",
+			`{"email": "jan@example.com", "country": "PL", "parts": []}`)
+		var e ApiError
+		if err := json.Unmarshal(rec.Body.Bytes(), &e); err != nil {
+			t.Fatal(err)
+		}
+		if e.Params == nil || (*e.Params)["max"] != float64(5) {
+			t.Errorf("params = %v, want max=5", e.Params)
+		}
+	})
 }
 
 func TestStepQuoteEndpoint(t *testing.T) {

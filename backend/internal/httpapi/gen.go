@@ -13,6 +13,33 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ApiErrorCode.
+const (
+	FileMissingHash     ApiErrorCode = "file_missing_hash"
+	FileNotFound        ApiErrorCode = "file_not_found"
+	FileSizeRange       ApiErrorCode = "file_size_range"
+	Internal            ApiErrorCode = "internal"
+	InvalidBody         ApiErrorCode = "invalid_body"
+	InvalidDesignId     ApiErrorCode = "invalid_design_id"
+	InvalidEmail        ApiErrorCode = "invalid_email"
+	InvalidFileSize     ApiErrorCode = "invalid_file_size"
+	InvalidHash         ApiErrorCode = "invalid_hash"
+	InvalidMetrics      ApiErrorCode = "invalid_metrics"
+	InvalidProfileId    ApiErrorCode = "invalid_profile_id"
+	MissingFileFields   ApiErrorCode = "missing_file_fields"
+	MissingFileName     ApiErrorCode = "missing_file_name"
+	PartsCount          ApiErrorCode = "parts_count"
+	QuantityRange       ApiErrorCode = "quantity_range"
+	QuoteFileInvalid    ApiErrorCode = "quote_file_invalid"
+	StorageUnavailable  ApiErrorCode = "storage_unavailable"
+	UnknownLeadTime     ApiErrorCode = "unknown_lead_time"
+	UnknownProcess      ApiErrorCode = "unknown_process"
+	UnsupportedCountry  ApiErrorCode = "unsupported_country"
+	UnsupportedKind     ApiErrorCode = "unsupported_kind"
+	UploadObjectMissing ApiErrorCode = "upload_object_missing"
+	UploadSizeMismatch  ApiErrorCode = "upload_size_mismatch"
+)
+
 // Defines values for BreakdownLineKey.
 const (
 	Finishing BreakdownLineKey = "finishing"
@@ -109,16 +136,37 @@ const (
 	Pla     ProcessId = "pla"
 )
 
+// Defines values for SubmitQuoteRequestLocale.
+const (
+	En SubmitQuoteRequestLocale = "en"
+	Pl SubmitQuoteRequestLocale = "pl"
+)
+
 // ApiError defines model for ApiError.
 type ApiError struct {
+	// Code Machine code the frontend dictionary maps to localized copy.
+	Code ApiErrorCode `json:"code"`
+
+	// Error English debug prose; never displayed to users.
 	Error string `json:"error"`
+
+	// Params Structured values for localized rendering, e.g. {"max": 5}.
+	Params *map[string]interface{} `json:"params,omitempty"`
 }
+
+// ApiErrorCode Machine code the frontend dictionary maps to localized copy.
+type ApiErrorCode string
 
 // BreakdownLine defines model for BreakdownLine.
 type BreakdownLine struct {
-	AmountPln float64          `json:"amountPln"`
-	Key       BreakdownLineKey `json:"key"`
-	Label     string           `json:"label"`
+	AmountPln float64 `json:"amountPln"`
+
+	// Count Extra-plate count; only set for key=plates.
+	Count *int             `json:"count,omitempty"`
+	Key   BreakdownLineKey `json:"key"`
+
+	// Label English debug prose; the frontend renders from key (+count).
+	Label *string `json:"label,omitempty"`
 }
 
 // BreakdownLineKey defines model for BreakdownLine.Key.
@@ -196,10 +244,15 @@ type CreateFileResponse struct {
 
 // DfmFlag defines model for DfmFlag.
 type DfmFlag struct {
-	Code               DfmFlagCode     `json:"code"`
-	Message            string          `json:"message"`
-	Severity           DfmFlagSeverity `json:"severity"`
-	SuggestedProcesses *[]ProcessId    `json:"suggestedProcesses,omitempty"`
+	Code DfmFlagCode `json:"code"`
+
+	// Message English debug prose; the frontend renders from code+params.
+	Message *string `json:"message,omitempty"`
+
+	// Params Structured values for localized rendering, e.g. {"x": 340}.
+	Params             *map[string]interface{} `json:"params,omitempty"`
+	Severity           DfmFlagSeverity         `json:"severity"`
+	SuggestedProcesses *[]ProcessId            `json:"suggestedProcesses,omitempty"`
 }
 
 // DfmFlagCode defines model for DfmFlag.Code.
@@ -356,7 +409,7 @@ type ShipDate struct {
 	Date                CalDate `json:"date"`
 	DispatchStartsToday bool    `json:"dispatchStartsToday"`
 
-	// Label e.g. "Thu, 16 Jul"
+	// Label e.g. "Thu 16 Jul" (canonical engine label; UI formats the date per locale)
 	Label    string     `json:"label"`
 	LeadTime LeadTimeId `json:"leadTime"`
 }
@@ -401,8 +454,14 @@ type SubmitQuoteRequest struct {
 	// Country Supported EU shipping destinations
 	Country EuCountry           `json:"country"`
 	Email   openapi_types.Email `json:"email"`
-	Parts   []SubmitQuotePart   `json:"parts"`
+
+	// Locale UI locale at submit time; persisted for downstream emails and invoices (plans 05/06 read it).
+	Locale *SubmitQuoteRequestLocale `json:"locale,omitempty"`
+	Parts  []SubmitQuotePart         `json:"parts"`
 }
+
+// SubmitQuoteRequestLocale UI locale at submit time; persisted for downstream emails and invoices (plans 05/06 read it).
+type SubmitQuoteRequestLocale string
 
 // SubmitQuoteResponse defines model for SubmitQuoteResponse.
 type SubmitQuoteResponse struct {
