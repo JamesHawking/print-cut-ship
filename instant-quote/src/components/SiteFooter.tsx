@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 import { formatWarsawClock } from '@/lib/clock'
 
 export function SiteFooter() {
   const strings = useStrings()
+  const locale = useLocale()
   const { ctaHeading, ctaButton, note, meta, cutoff } = strings.footer
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -30,7 +31,11 @@ export function SiteFooter() {
           <span className="text-foreground font-bold">
             {strings.hero.wordmark}
           </span>
-          <Link to="/login" className="hover:text-foreground transition-colors">
+          <Link
+            to="/$locale/login"
+            params={{ locale }}
+            className="hover:text-foreground transition-colors"
+          >
             {strings.nav.trackOrder}
           </Link>
           <span>{meta}</span>

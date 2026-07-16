@@ -11,7 +11,7 @@
 import { createContext, useContext } from 'react'
 import { pl } from './pl'
 import { en } from './en'
-import type { Dictionary, Locale } from './types'
+import { DEFAULT_LOCALE, type Dictionary, type Locale } from './types'
 
 export { LOCALES, DEFAULT_LOCALE, isLocale } from './types'
 export type { Dictionary, Locale } from './types'
@@ -22,9 +22,7 @@ export function getStrings(locale: Locale): Dictionary {
   return DICTIONARIES[locale]
 }
 
-// TODO(Phase B): locale routing takes over and flips this default to
-// DEFAULT_LOCALE ('pl'). Until then the site stays English.
-let activeLocale: Locale = 'en'
+let activeLocale: Locale = DEFAULT_LOCALE
 
 /** Client-side only — set on $locale route match; see invariant above. */
 export function setActiveLocale(locale: Locale): void {

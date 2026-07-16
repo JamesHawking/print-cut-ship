@@ -7,10 +7,10 @@ import { api } from '@/lib/api/client'
 import { clearSessionEmail, getSessionEmail } from '@/lib/session'
 import { formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 import type { components } from '@/lib/api/schema'
 
-export const Route = createFileRoute('/orders')({ component: Orders })
+export const Route = createFileRoute('/$locale/orders')({ component: Orders })
 
 type OrderSummary = components['schemas']['OrderSummary']
 
@@ -24,13 +24,15 @@ const ACTIVE_STATUSES = new Set(['submitted', 'ordered'])
 
 function Orders() {
   const s = useStrings().orders
+  const locale = useLocale()
   const navigate = useNavigate()
   const email = getSessionEmail()
 
   // Not signed in — the login page owns this screen's access.
   useEffect(() => {
-    if (!email) void navigate({ to: '/login', replace: true })
-  }, [email, navigate])
+    if (!email)
+      void navigate({ to: '/$locale/login', params: { locale }, replace: true })
+  }, [email, navigate, locale])
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['orders', email],
@@ -85,7 +87,8 @@ function Orders() {
 
       <div className="flex items-center gap-5 font-mono text-[0.6rem] tracking-[0.14em] uppercase">
         <Link
-          to="/"
+          to="/$locale"
+          params={{ locale }}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
           {s.newQuote}
@@ -94,7 +97,7 @@ function Orders() {
           type="button"
           onClick={() => {
             clearSessionEmail()
-            void navigate({ to: '/login' })
+            void navigate({ to: '/$locale/login', params: { locale } })
           }}
           className="text-muted-foreground hover:text-foreground cursor-pointer underline underline-offset-4 transition-colors"
         >

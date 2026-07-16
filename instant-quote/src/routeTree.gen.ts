@@ -9,24 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as QuoteRouteImport } from './routes/quote'
-import { Route as OrdersRouteImport } from './routes/orders'
-import { Route as LoginRouteImport } from './routes/login'
+import { Route as LocaleRouteRouteImport } from './routes/$locale/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LocaleIndexRouteImport } from './routes/$locale/index'
+import { Route as LocaleQuoteRouteImport } from './routes/$locale/quote'
+import { Route as LocaleOrdersRouteImport } from './routes/$locale/orders'
+import { Route as LocaleLoginRouteImport } from './routes/$locale/login'
 
-const QuoteRoute = QuoteRouteImport.update({
-  id: '/quote',
-  path: '/quote',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrdersRoute = OrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const LocaleRouteRoute = LocaleRouteRouteImport.update({
+  id: '/$locale',
+  path: '/$locale',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,62 +26,84 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocaleIndexRoute = LocaleIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LocaleRouteRoute,
+} as any)
+const LocaleQuoteRoute = LocaleQuoteRouteImport.update({
+  id: '/quote',
+  path: '/quote',
+  getParentRoute: () => LocaleRouteRoute,
+} as any)
+const LocaleOrdersRoute = LocaleOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => LocaleRouteRoute,
+} as any)
+const LocaleLoginRoute = LocaleLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => LocaleRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/orders': typeof OrdersRoute
-  '/quote': typeof QuoteRoute
+  '/$locale': typeof LocaleRouteRouteWithChildren
+  '/$locale/login': typeof LocaleLoginRoute
+  '/$locale/orders': typeof LocaleOrdersRoute
+  '/$locale/quote': typeof LocaleQuoteRoute
+  '/$locale/': typeof LocaleIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/orders': typeof OrdersRoute
-  '/quote': typeof QuoteRoute
+  '/$locale/login': typeof LocaleLoginRoute
+  '/$locale/orders': typeof LocaleOrdersRoute
+  '/$locale/quote': typeof LocaleQuoteRoute
+  '/$locale': typeof LocaleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/orders': typeof OrdersRoute
-  '/quote': typeof QuoteRoute
+  '/$locale': typeof LocaleRouteRouteWithChildren
+  '/$locale/login': typeof LocaleLoginRoute
+  '/$locale/orders': typeof LocaleOrdersRoute
+  '/$locale/quote': typeof LocaleQuoteRoute
+  '/$locale/': typeof LocaleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/orders' | '/quote'
+  fullPaths:
+    | '/'
+    | '/$locale'
+    | '/$locale/login'
+    | '/$locale/orders'
+    | '/$locale/quote'
+    | '/$locale/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/orders' | '/quote'
-  id: '__root__' | '/' | '/login' | '/orders' | '/quote'
+  to: '/' | '/$locale/login' | '/$locale/orders' | '/$locale/quote' | '/$locale'
+  id:
+    | '__root__'
+    | '/'
+    | '/$locale'
+    | '/$locale/login'
+    | '/$locale/orders'
+    | '/$locale/quote'
+    | '/$locale/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  LoginRoute: typeof LoginRoute
-  OrdersRoute: typeof OrdersRoute
-  QuoteRoute: typeof QuoteRoute
+  LocaleRouteRoute: typeof LocaleRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/quote': {
-      id: '/quote'
-      path: '/quote'
-      fullPath: '/quote'
-      preLoaderRoute: typeof QuoteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/orders': {
-      id: '/orders'
-      path: '/orders'
-      fullPath: '/orders'
-      preLoaderRoute: typeof OrdersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/$locale': {
+      id: '/$locale'
+      path: '/$locale'
+      fullPath: '/$locale'
+      preLoaderRoute: typeof LocaleRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -99,14 +113,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$locale/': {
+      id: '/$locale/'
+      path: '/'
+      fullPath: '/$locale/'
+      preLoaderRoute: typeof LocaleIndexRouteImport
+      parentRoute: typeof LocaleRouteRoute
+    }
+    '/$locale/quote': {
+      id: '/$locale/quote'
+      path: '/quote'
+      fullPath: '/$locale/quote'
+      preLoaderRoute: typeof LocaleQuoteRouteImport
+      parentRoute: typeof LocaleRouteRoute
+    }
+    '/$locale/orders': {
+      id: '/$locale/orders'
+      path: '/orders'
+      fullPath: '/$locale/orders'
+      preLoaderRoute: typeof LocaleOrdersRouteImport
+      parentRoute: typeof LocaleRouteRoute
+    }
+    '/$locale/login': {
+      id: '/$locale/login'
+      path: '/login'
+      fullPath: '/$locale/login'
+      preLoaderRoute: typeof LocaleLoginRouteImport
+      parentRoute: typeof LocaleRouteRoute
+    }
   }
 }
 
+interface LocaleRouteRouteChildren {
+  LocaleLoginRoute: typeof LocaleLoginRoute
+  LocaleOrdersRoute: typeof LocaleOrdersRoute
+  LocaleQuoteRoute: typeof LocaleQuoteRoute
+  LocaleIndexRoute: typeof LocaleIndexRoute
+}
+
+const LocaleRouteRouteChildren: LocaleRouteRouteChildren = {
+  LocaleLoginRoute: LocaleLoginRoute,
+  LocaleOrdersRoute: LocaleOrdersRoute,
+  LocaleQuoteRoute: LocaleQuoteRoute,
+  LocaleIndexRoute: LocaleIndexRoute,
+}
+
+const LocaleRouteRouteWithChildren = LocaleRouteRoute._addFileChildren(
+  LocaleRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LoginRoute: LoginRoute,
-  OrdersRoute: OrdersRoute,
-  QuoteRoute: QuoteRoute,
+  LocaleRouteRoute: LocaleRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

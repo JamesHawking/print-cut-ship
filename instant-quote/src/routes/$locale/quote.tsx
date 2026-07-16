@@ -25,12 +25,15 @@ import {
 import { MAX_PARTS } from '@/lib/upload'
 import { track } from '@/lib/funnel'
 import { formatWarsawClock } from '@/lib/clock'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 
-export const Route = createFileRoute('/quote')({ component: QuoteWorkspace })
+export const Route = createFileRoute('/$locale/quote')({
+  component: QuoteWorkspace,
+})
 
 function QuoteWorkspace() {
   const strings = useStrings()
+  const locale = useLocale()
   const {
     parts,
     handleFiles,
@@ -53,8 +56,9 @@ function QuoteWorkspace() {
   // Parts live in memory only — a refresh or deep link lands here empty, and
   // an upload whose every file was rejected does too. Bounce to the landing.
   useEffect(() => {
-    if (parts.length === 0) void navigate({ to: '/', replace: true })
-  }, [parts.length, navigate])
+    if (parts.length === 0)
+      void navigate({ to: '/$locale', params: { locale }, replace: true })
+  }, [parts.length, navigate, locale])
 
   useEffect(() => {
     window.scrollTo(0, 0)

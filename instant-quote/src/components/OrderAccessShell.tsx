@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 import { formatWarsawClock } from '@/lib/clock'
+import { LocaleSwitcher } from './SiteHeader'
 
 /**
  * Shared frame for the order-access screens (/login, /orders), from
@@ -11,6 +12,7 @@ import { formatWarsawClock } from '@/lib/clock'
  */
 export function OrderAccessShell({ children }: { children: ReactNode }) {
   const strings = useStrings()
+  const locale = useLocale()
   const s = strings.login
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -29,17 +31,22 @@ export function OrderAccessShell({ children }: { children: ReactNode }) {
       <header className="border-b">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 font-mono text-xs tracking-widest uppercase sm:px-6">
           <Link
-            to="/"
+            to="/$locale"
+            params={{ locale }}
             className="text-foreground hover:text-foreground font-bold"
           >
             {strings.hero.wordmark}
           </Link>
-          <Link
-            to="/"
-            className="bg-card hover:bg-secondary text-foreground rounded-md border px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
-          >
-            {strings.nav.newQuote}
-          </Link>
+          <span className="flex items-center gap-4 sm:gap-6">
+            <LocaleSwitcher />
+            <Link
+              to="/$locale"
+              params={{ locale }}
+              className="bg-card hover:bg-secondary text-foreground rounded-md border px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
+            >
+              {strings.nav.newQuote}
+            </Link>
+          </span>
         </div>
       </header>
 

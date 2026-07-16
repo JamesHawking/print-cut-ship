@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Menu, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useParts } from '@/hooks/useParts'
-import { useStrings } from '@/lib/i18n'
+import { LOCALES, useLocale, useStrings, type Locale } from '@/lib/i18n'
+import { setLocaleCookie } from '@/lib/i18n/detect'
 
 /**
  * Sticky site-wide header (design-handoff header bar, made navigational).
@@ -14,6 +16,7 @@ import { useStrings } from '@/lib/i18n'
  */
 export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
   const strings = useStrings()
+  const locale = useLocale()
   const { parts, clear } = useParts()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -22,7 +25,8 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
     <header className="bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 font-mono text-xs tracking-widest uppercase sm:px-6">
         <Link
-          to="/"
+          to="/$locale"
+          params={{ locale }}
           className="text-foreground hover:text-foreground font-bold"
         >
           {strings.hero.wordmark}
@@ -50,14 +54,17 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
                 {strings.nav.pricing}
               </a>
               <Link
-                to="/login"
+                to="/$locale/login"
+                params={{ locale }}
                 className="bg-card hover:bg-secondary text-foreground rounded-md border px-3 py-1.5 transition-colors"
               >
                 {strings.nav.trackOrder}
               </Link>
+              <LocaleSwitcher />
               {parts.length > 0 ? (
                 <Link
-                  to="/quote"
+                  to="/$locale/quote"
+                  params={{ locale }}
                   className="text-primary-text hover:text-foreground font-bold whitespace-nowrap transition-colors"
                 >
                   {strings.nav.resume(parts.length)}
@@ -72,7 +79,8 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
             <div className="flex items-center gap-3 md:hidden">
               {parts.length > 0 && (
                 <Link
-                  to="/quote"
+                  to="/$locale/quote"
+                  params={{ locale }}
                   className="text-primary-text hover:text-foreground font-bold whitespace-nowrap transition-colors"
                 >
                   {strings.nav.resume(parts.length)}
@@ -98,11 +106,12 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
             <span className="text-muted-foreground hidden sm:inline">
               {strings.hero.status}
             </span>
+            <LocaleSwitcher />
             <button
               type="button"
               onClick={() => {
                 clear()
-                void navigate({ to: '/' })
+                void navigate({ to: '/$locale', params: { locale } })
               }}
               className="bg-card hover:bg-secondary cursor-pointer rounded-md border px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
             >
@@ -133,14 +142,64 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
             </a>
           ))}
           <Link
-            to="/login"
+            to="/$locale/login"
+            params={{ locale }}
             onClick={() => setMenuOpen(false)}
             className="bg-primary text-primary-foreground mt-3.5 block rounded-[7px] px-2 py-[15px] text-center font-bold"
           >
             {strings.nav.trackOrder} →
           </Link>
+          <div className="mt-3.5 flex justify-center">
+            <LocaleSwitcher />
+          </div>
         </div>
       )}
     </header>
+  )
+}
+
+/**
+ * PL | EN segmented switcher — swaps the $locale prefix in place (route and
+ * search preserved) and persists the choice for the `/` redirect. The only
+ * writer of the locale cookie. Also rendered by OrderAccessShell's header.
+ */
+export function LocaleSwitcher() {
+  const locale = useLocale()
+  const navigate = useNavigate()
+
+  function switchTo(next: Locale) {
+    if (next === locale) return
+    setLocaleCookie(next)
+    void navigate({
+      to: '.',
+      params: (prev) => ({ ...prev, locale: next }),
+    })
+  }
+
+  return (
+    <span className="flex items-center gap-1.5">
+      {LOCALES.map((l, i) => (
+        <span key={l} className="flex items-center gap-1.5">
+          {i > 0 && (
+            <span aria-hidden className="text-muted-foreground/50">
+              /
+            </span>
+          )}
+          <button
+            type="button"
+            aria-current={l === locale || undefined}
+            onClick={() => switchTo(l)}
+            className={cn(
+              'cursor-pointer uppercase transition-colors',
+              l === locale
+                ? 'text-foreground font-bold'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {l}
+          </button>
+        </span>
+      ))}
+    </span>
   )
 }

@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import {
+  HeadContent,
+  Scripts,
+  createRootRoute,
+  useParams,
+} from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
@@ -11,21 +16,17 @@ import '@fontsource-variable/archivo'
 import '@fontsource-variable/martian-mono'
 
 import appCss from '../styles.css?url'
-import { getActiveLocale, getStrings } from '@/lib/i18n'
+import { DEFAULT_LOCALE, isLocale } from '@/lib/i18n'
 
+// Localized title/description/hreflang live on the $locale layout route.
 export const Route = createRootRoute({
-  head: () => {
-    const s = getStrings(getActiveLocale())
-    return {
-      meta: [
-        { charSet: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { title: s.meta.title },
-        { name: 'description', content: s.meta.description },
-      ],
-      links: [{ rel: 'stylesheet', href: appCss }],
-    }
-  },
+  head: () => ({
+    meta: [
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+    ],
+    links: [{ rel: 'stylesheet', href: appCss }],
+  }),
   shellComponent: RootDocument,
 })
 
@@ -39,8 +40,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       }),
   )
 
+  const { locale } = useParams({ strict: false })
+
   return (
-    <html lang="en">
+    <html lang={locale && isLocale(locale) ? locale : DEFAULT_LOCALE}>
       <head>
         <HeadContent />
       </head>

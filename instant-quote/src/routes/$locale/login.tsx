@@ -5,14 +5,15 @@ import { OrderAccessShell } from '@/components/OrderAccessShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getSessionEmail, setSessionEmail } from '@/lib/session'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 
-export const Route = createFileRoute('/login')({ component: Login })
+export const Route = createFileRoute('/$locale/login')({ component: Login })
 
 const EMAIL_RE = /.+@.+\..+/
 
 function Login() {
   const s = useStrings().login
+  const locale = useLocale()
   const navigate = useNavigate()
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [email, setEmail] = useState('')
@@ -24,8 +25,13 @@ function Login() {
 
   // Already signed in — straight to the orders page.
   useEffect(() => {
-    if (getSessionEmail()) void navigate({ to: '/orders', replace: true })
-  }, [navigate])
+    if (getSessionEmail())
+      void navigate({
+        to: '/$locale/orders',
+        params: { locale },
+        replace: true,
+      })
+  }, [navigate, locale])
 
   useEffect(() => () => clearTimeout(resentTimer.current), [])
 
@@ -49,7 +55,7 @@ function Login() {
       return
     }
     setSessionEmail(email)
-    void navigate({ to: '/orders' })
+    void navigate({ to: '/$locale/orders', params: { locale } })
   }
 
   function resend() {
