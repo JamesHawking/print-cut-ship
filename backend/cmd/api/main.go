@@ -53,8 +53,13 @@ func main() {
 			logger.Error("sweep failed", "err", err)
 			os.Exit(1)
 		}
+	case "reference-prices":
+		if err := referencePrices(); err != nil {
+			logger.Error("reference-prices failed", "err", err)
+			os.Exit(1)
+		}
 	default:
-		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed|sweep]")
+		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed|sweep|reference-prices]")
 		os.Exit(2)
 	}
 }

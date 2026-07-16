@@ -1,4 +1,4 @@
-.PHONY: run test build gen gen-go gen-ts gen-sqlc migrate seed sweep migrate-new db-up dev-setup
+.PHONY: run test build gen gen-go gen-ts gen-sqlc gen-reference-prices migrate seed sweep migrate-new db-up dev-setup
 
 # Local dev defaults to the docker-compose Postgres, so no external config is
 # needed. Override by exporting DATABASE_URL (prod injects it via Coolify).
@@ -23,7 +23,7 @@ build:
 
 # Regenerate server/type code from api/openapi.yaml (Go) and the TS client
 # types consumed by instant-quote, plus the sqlc data-access layer.
-gen: gen-go gen-ts gen-sqlc
+gen: gen-go gen-ts gen-sqlc gen-reference-prices
 
 gen-go:
 	go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1 \
@@ -38,6 +38,11 @@ gen-ts:
 
 gen-sqlc:
 	go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0 generate
+
+# Reference-part price tables for the material landing pages — computed by
+# the engine, committed to the frontend (drift pinned by cmd/api tests).
+gen-reference-prices:
+	go run ./cmd/api reference-prices > ../instant-quote/src/content/reference-prices.json
 
 # DB lifecycle (reads DATABASE_URL from the environment).
 migrate:
