@@ -98,6 +98,50 @@ func TestSubmitQuotePersists(t *testing.T) {
 	}
 }
 
+func TestListOrdersByEmail(t *testing.T) {
+	st, cfgID := setupTestStore(t)
+	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID}, nil)
+
+	quotePart := strings.Replace(validPart, `"metrics"`,
+		`"fileName": "plate.stl", "hash": "abc123", "metrics"`, 1)
+	for range 2 {
+		body := fmt.Sprintf(`{"email": "jan@example.com", "country": "PL", "parts": [%s]}`, quotePart)
+		if rec := doJSON(t, h, http.MethodPost, "/api/v1/quotes", body); rec.Code != http.StatusOK {
+			t.Fatalf("submit status %d: %s", rec.Code, rec.Body)
+		}
+	}
+
+	rec := doJSON(t, h, http.MethodGet, "/api/v1/orders?email=jan%40example.com", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list status %d: %s", rec.Code, rec.Body)
+	}
+	var res ListOrdersResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Orders) != 2 {
+		t.Fatalf("orders len %d, want 2", len(res.Orders))
+	}
+	o := res.Orders[0]
+	if o.FileName != "plate.stl" || o.PartCount != 1 || o.Status != "submitted" ||
+		o.GrossTotalPln <= 0 || !strings.HasPrefix(o.QuoteId, "Q-") {
+		t.Errorf("order summary wrong: %+v", o)
+	}
+
+	// Someone else's email sees nothing.
+	rec = doJSON(t, h, http.MethodGet, "/api/v1/orders?email=other%40example.com", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list status %d: %s", rec.Code, rec.Body)
+	}
+	res = ListOrdersResponse{}
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Orders) != 0 {
+		t.Errorf("expected empty order list, got %d", len(res.Orders))
+	}
+}
+
 func TestSubmitStepQuotePersists(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID}, nil)

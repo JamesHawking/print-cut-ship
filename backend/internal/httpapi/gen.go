@@ -6,6 +6,7 @@ package httpapi
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
@@ -88,6 +89,13 @@ const (
 	NoInstance     MakerworldErrorCode = "no_instance"
 	TokenMissing   MakerworldErrorCode = "token_missing"
 	TooLarge       MakerworldErrorCode = "too_large"
+)
+
+// Defines values for OrderSummaryStatus.
+const (
+	Expired   OrderSummaryStatus = "expired"
+	Ordered   OrderSummaryStatus = "ordered"
+	Submitted OrderSummaryStatus = "submitted"
 )
 
 // Defines values for ProcessId.
@@ -220,6 +228,11 @@ type FdmModel struct {
 // LeadTimeId defines model for LeadTimeId.
 type LeadTimeId string
 
+// ListOrdersResponse defines model for ListOrdersResponse.
+type ListOrdersResponse struct {
+	Orders []OrderSummary `json:"orders"`
+}
+
 // MakerworldError defines model for MakerworldError.
 type MakerworldError struct {
 	Code MakerworldErrorCode `json:"code"`
@@ -244,6 +257,24 @@ type MeshMetrics struct {
 	UsedHullFallback bool            `json:"usedHullFallback"`
 	VolumeCm3        float64         `json:"volumeCm3"`
 }
+
+// OrderSummary defines model for OrderSummary.
+type OrderSummary struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	// FileName First part's file name
+	FileName      string     `json:"fileName"`
+	GrossTotalPln float64    `json:"grossTotalPln"`
+	LeadTime      LeadTimeId `json:"leadTime"`
+	PartCount     int        `json:"partCount"`
+
+	// QuoteId e.g. "Q-1A2B3C4D"
+	QuoteId string             `json:"quoteId"`
+	Status  OrderSummaryStatus `json:"status"`
+}
+
+// OrderSummaryStatus defines model for OrderSummary.Status.
+type OrderSummaryStatus string
 
 // OrderTotals defines model for OrderTotals.
 type OrderTotals struct {
@@ -390,6 +421,11 @@ type Vec3Mm struct {
 // BadRequest defines model for BadRequest.
 type BadRequest = ApiError
 
+// ListOrdersParams defines parameters for ListOrders.
+type ListOrdersParams struct {
+	Email openapi_types.Email `form:"email" json:"email"`
+}
+
 // CreateFileUploadJSONRequestBody defines body for CreateFileUpload for application/json ContentType.
 type CreateFileUploadJSONRequestBody = CreateFileRequest
 
@@ -419,6 +455,9 @@ type ServerInterface interface {
 	// Download a MakerWorld model's 3MF via Bambu Cloud
 	// (POST /api/v1/makerworld/fetch)
 	FetchMakerworldModel(w http.ResponseWriter, r *http.Request)
+	// List order requests (submitted quotes) for an email. Prototype access control: the login page gates this with a simulated one-time code, so treat the data as non-sensitive until plan 05 adds real auth.
+	// (GET /api/v1/orders)
+	ListOrders(w http.ResponseWriter, r *http.Request, params ListOrdersParams)
 	// Price a set of parts and compute order totals
 	// (POST /api/v1/price)
 	Price(w http.ResponseWriter, r *http.Request)
@@ -458,6 +497,12 @@ func (_ Unimplemented) ConfirmFileUpload(w http.ResponseWriter, r *http.Request,
 // Download a MakerWorld model's 3MF via Bambu Cloud
 // (POST /api/v1/makerworld/fetch)
 func (_ Unimplemented) FetchMakerworldModel(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List order requests (submitted quotes) for an email. Prototype access control: the login page gates this with a simulated one-time code, so treat the data as non-sensitive until plan 05 adds real auth.
+// (GET /api/v1/orders)
+func (_ Unimplemented) ListOrders(w http.ResponseWriter, r *http.Request, params ListOrdersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -552,6 +597,40 @@ func (siw *ServerInterfaceWrapper) FetchMakerworldModel(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.FetchMakerworldModel(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListOrders operation middleware
+func (siw *ServerInterfaceWrapper) ListOrders(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListOrdersParams
+
+	// ------------- Required query parameter "email" -------------
+
+	if paramValue := r.URL.Query().Get("email"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "email"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "email", r.URL.Query(), &params.Email)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "email", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOrders(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -741,6 +820,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/makerworld/fetch", wrapper.FetchMakerworldModel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/orders", wrapper.ListOrders)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/price", wrapper.Price)

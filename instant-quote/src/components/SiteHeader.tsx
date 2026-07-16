@@ -42,6 +42,12 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
             >
               {strings.nav.pricing}
             </a>
+            <Link
+              to="/login"
+              className="bg-card hover:bg-secondary text-foreground hidden rounded-md border px-3 py-1.5 transition-colors sm:inline"
+            >
+              {strings.nav.trackOrder}
+            </Link>
             {parts.length > 0 ? (
               <Link
                 to="/quote"

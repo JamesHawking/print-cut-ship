@@ -72,6 +72,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/orders': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List order requests (submitted quotes) for an email. Prototype access control: the login page gates this with a simulated one-time code, so treat the data as non-sensitive until plan 05 adds real auth. */
+    get: operations['listOrders']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/step-quotes': {
     parameters: {
       query?: never
@@ -392,6 +409,23 @@ export interface components {
       quoteId: string
       totals: components['schemas']['OrderTotals']
     }
+    OrderSummary: {
+      /** @description e.g. "Q-1A2B3C4D" */
+      quoteId: string
+      /** Format: date-time */
+      createdAt: string
+      /** @enum {string} */
+      status: 'submitted' | 'expired' | 'ordered'
+      /** Format: double */
+      grossTotalPln: number
+      partCount: number
+      /** @description First part's file name */
+      fileName: string
+      leadTime: components['schemas']['LeadTimeId']
+    }
+    ListOrdersResponse: {
+      orders: components['schemas']['OrderSummary'][]
+    }
     StepQuoteRequest: {
       /** Format: email */
       email: string
@@ -554,6 +588,29 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubmitQuoteResponse']
+        }
+      }
+      400: components['responses']['BadRequest']
+    }
+  }
+  listOrders: {
+    parameters: {
+      query: {
+        email: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Order requests for the email, newest first */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListOrdersResponse']
         }
       }
       400: components['responses']['BadRequest']

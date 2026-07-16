@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { strings } from '@/lib/strings'
 import { formatWarsawClock } from '@/lib/clock'
 
@@ -28,6 +29,9 @@ export function SiteFooter() {
           <span className="text-foreground font-bold">
             {strings.hero.wordmark}
           </span>
+          <Link to="/login" className="hover:text-foreground transition-colors">
+            {strings.nav.trackOrder}
+          </Link>
           <span>{meta}</span>
           <span className="tabular-nums">
             Europe/Warsaw {formatWarsawClock(now)} · {cutoff}

@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getQuoteByShortID = `-- name: GetQuoteByShortID :one
@@ -187,4 +188,57 @@ func (q *Queries) InsertQuotePart(ctx context.Context, arg InsertQuotePartParams
 		arg.DfmFlags,
 	)
 	return err
+}
+
+const listQuotesByEmail = `-- name: ListQuotesByEmail :many
+SELECT q.short_id, q.status, q.gross_total_grosze, q.created_at,
+       (SELECT count(*) FROM quote_parts p WHERE p.quote_id = q.id)::int AS part_count,
+       (SELECT p.file_name FROM quote_parts p WHERE p.quote_id = q.id
+        ORDER BY p.created_at, p.id LIMIT 1) AS first_file_name,
+       (SELECT p.lead_time FROM quote_parts p WHERE p.quote_id = q.id
+        ORDER BY p.created_at, p.id LIMIT 1) AS first_lead_time
+FROM quotes q
+WHERE q.email = $1
+ORDER BY q.created_at DESC
+LIMIT 50
+`
+
+type ListQuotesByEmailRow struct {
+	ShortID          string
+	Status           string
+	GrossTotalGrosze int32
+	CreatedAt        pgtype.Timestamptz
+	PartCount        int32
+	FirstFileName    string
+	FirstLeadTime    string
+}
+
+// Order history for the prototype /orders page: every persisted quote is an
+// order request. Newest first; part_count/first_* summarize the line items.
+func (q *Queries) ListQuotesByEmail(ctx context.Context, email *string) ([]ListQuotesByEmailRow, error) {
+	rows, err := q.db.Query(ctx, listQuotesByEmail, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListQuotesByEmailRow
+	for rows.Next() {
+		var i ListQuotesByEmailRow
+		if err := rows.Scan(
+			&i.ShortID,
+			&i.Status,
+			&i.GrossTotalGrosze,
+			&i.CreatedAt,
+			&i.PartCount,
+			&i.FirstFileName,
+			&i.FirstLeadTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

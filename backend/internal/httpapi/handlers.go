@@ -343,6 +343,42 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ListOrders returns the order history (persisted quotes) for an email,
+// newest first. Prototype access control: the frontend gates this behind a
+// simulated one-time code, so there is no server-side identity check yet —
+// plan 05 replaces this with real auth.
+func (s *server) ListOrders(w http.ResponseWriter, r *http.Request, params ListOrdersParams) {
+	email := string(params.Email)
+	if !validEmail(email) {
+		badRequest(w, "invalid email")
+		return
+	}
+	orders := []OrderSummary{}
+	if s.cfg.Store == nil {
+		s.cfg.Logger.Warn("store not configured; returning empty order list")
+		writeJSON(w, http.StatusOK, ListOrdersResponse{Orders: orders})
+		return
+	}
+	rows, err := s.cfg.Store.ListQuotesByEmail(r.Context(), &email)
+	if err != nil {
+		s.cfg.Logger.Error("list orders failed", "err", err)
+		writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to list orders"})
+		return
+	}
+	for _, q := range rows {
+		orders = append(orders, OrderSummary{
+			QuoteId:       q.ShortID,
+			CreatedAt:     q.CreatedAt.Time,
+			Status:        OrderSummaryStatus(q.Status),
+			GrossTotalPln: money.FromGrosze(q.GrossTotalGrosze),
+			PartCount:     int(q.PartCount),
+			FileName:      q.FirstFileName,
+			LeadTime:      LeadTimeId(q.FirstLeadTime),
+		})
+	}
+	writeJSON(w, http.StatusOK, ListOrdersResponse{Orders: orders})
+}
+
 // persistQuote writes the server-authored quote and its parts. Money is stored
 // as integer grosze; breakdown/dfmFlags are serialized to jsonb. The quote is
 // attached to the startup-verified pricing-config snapshot (cfg.PricingConfigID,

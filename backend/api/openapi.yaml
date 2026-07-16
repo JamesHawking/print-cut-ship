@@ -72,6 +72,30 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /api/v1/orders:
+    get:
+      operationId: listOrders
+      summary: >-
+        List order requests (submitted quotes) for an email. Prototype access
+        control: the login page gates this with a simulated one-time code, so
+        treat the data as non-sensitive until plan 05 adds real auth.
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Order requests for the email, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOrdersResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /api/v1/step-quotes:
     post:
       operationId: submitStepQuote
@@ -536,6 +560,41 @@ components:
           description: e.g. "Q-1A2B3C4D"
         totals:
           $ref: '#/components/schemas/OrderTotals'
+
+    OrderSummary:
+      type: object
+      required:
+        [quoteId, createdAt, status, grossTotalPln, partCount, fileName,
+         leadTime]
+      properties:
+        quoteId:
+          type: string
+          description: e.g. "Q-1A2B3C4D"
+        createdAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [submitted, expired, ordered]
+        grossTotalPln:
+          type: number
+          format: double
+        partCount:
+          type: integer
+        fileName:
+          type: string
+          description: First part's file name
+        leadTime:
+          $ref: '#/components/schemas/LeadTimeId'
+
+    ListOrdersResponse:
+      type: object
+      required: [orders]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummary'
 
     StepQuoteRequest:
       type: object
