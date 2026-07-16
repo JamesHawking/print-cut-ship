@@ -35,24 +35,32 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
         {variant === 'landing' ? (
           <>
             <nav className="hidden items-center gap-6 md:flex">
-              <a
-                href="#how-it-works"
+              {/* Link+hash instead of plain anchors so the section nav also
+                  works from content pages (/materialy/…). */}
+              <Link
+                to="/$locale"
+                params={{ locale }}
+                hash="how-it-works"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 {strings.nav.howItWorks}
-              </a>
-              <a
-                href="#materials"
+              </Link>
+              <Link
+                to="/$locale"
+                params={{ locale }}
+                hash="materials"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 {strings.nav.materials}
-              </a>
-              <a
-                href="#pricing"
+              </Link>
+              <Link
+                to="/$locale"
+                params={{ locale }}
+                hash="pricing"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 {strings.nav.pricing}
-              </a>
+              </Link>
               <Link
                 to="/$locale/login"
                 params={{ locale }}
@@ -125,13 +133,15 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
       {variant === 'landing' && menuOpen && (
         <div className="animate-in fade-in slide-in-from-top-1.5 border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out md:hidden">
           {[
-            { href: '#how-it-works', label: strings.nav.howItWorks, n: '01' },
-            { href: '#materials', label: strings.nav.materials, n: '02' },
-            { href: '#pricing', label: strings.nav.pricing, n: '03' },
+            { hash: 'how-it-works', label: strings.nav.howItWorks, n: '01' },
+            { hash: 'materials', label: strings.nav.materials, n: '02' },
+            { hash: 'pricing', label: strings.nav.pricing, n: '03' },
           ].map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
+            <Link
+              key={item.hash}
+              to="/$locale"
+              params={{ locale }}
+              hash={item.hash}
               onClick={() => setMenuOpen(false)}
               className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
             >
@@ -139,7 +149,7 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
               <span aria-hidden className="text-primary-text">
                 {item.n}
               </span>
-            </a>
+            </Link>
           ))}
           <Link
             to="/$locale/login"

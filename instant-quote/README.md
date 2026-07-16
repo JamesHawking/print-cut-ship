@@ -153,6 +153,17 @@ placeholder) so prerendered HTML stays hydration-stable.
 referrer, source?}` fires from the router's `onResolved` subscription
 (`src/router.tsx`). Events stay console-only PostHog-shaped (`src/lib/funnel.ts`).
 
+**Material pages** live under the localized `$section` segment
+(`/pl/materialy/*`, `/en/materials/*`; wrong-language sections redirect).
+Adding one: append the slug to `PUBLISHED_MATERIALS`
+(`src/content/materials/slugs.ts`) **and** to `referenceMaterials` in
+`backend/cmd/api/referenceprices.go`, run `make gen-reference-prices`, add
+the material to `MATERIAL_DATA` (`data.ts`) and both copy files (`pl.ts` /
+`en.ts` — the shared `MaterialCopy` type forces parity), and list the new
+paths in `vite.config.ts` `localizedPages` (sitemap + prerender). Prices on
+content pages come ONLY from the generated `reference-prices.json` — never
+call the API from a prerendered page.
+
 ## Intentional fakes (this is a prototype)
 
 These are deliberately stubbed — no backend, no persistence, no payment:

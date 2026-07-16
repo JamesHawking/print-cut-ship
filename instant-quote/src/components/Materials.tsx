@@ -1,6 +1,8 @@
+import { Link } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { formatDecimal } from '@/lib/format'
 import { useLocale, useStrings, type Dictionary } from '@/lib/i18n'
+import { MATERIALS_SECTION } from '@/content/materials/slugs'
 import type { MaterialFamily } from '@/lib/i18n/pl'
 import { MATERIALS, type StaticMaterial } from '@/lib/catalog-static'
 import { SectionHeading } from './SectionHeading'
@@ -29,6 +31,7 @@ type MaterialId = keyof Dictionary['materials']
 
 export function Materials() {
   const strings = useStrings()
+  const locale = useLocale()
   const { n, heading, material, application, density, from, footnote } =
     strings.materialsSection
   return (
@@ -74,6 +77,16 @@ export function Materials() {
                 {strings.materialFamilies[family]}
               </span>
             ))}
+            <Link
+              to="/$locale/$section"
+              params={{
+                locale,
+                section: MATERIALS_SECTION[locale],
+              }}
+              className="text-primary-text hover:text-foreground font-bold transition-colors"
+            >
+              {strings.materialsPages.allMaterialsLink}
+            </Link>
             <span className="md:ml-auto">{footnote}</span>
           </div>
         </div>

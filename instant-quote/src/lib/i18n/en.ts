@@ -226,6 +226,7 @@ export const en = {
     faqTitle: 'FAQ',
     compareTitle: 'Compare with',
     pricingLink: 'How we price →',
+    allMaterialsLink: 'All materials →',
   },
   // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
   cta: {

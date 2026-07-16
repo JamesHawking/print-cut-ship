@@ -13,24 +13,38 @@ const SITE_URL = process.env.VITE_SITE_URL ?? 'https://microfactory.example'
 
 // Indexable public pages: prerendered at build time and listed in
 // sitemap.xml with reciprocal hreflang alternates. App screens
-// (quote/login/orders) are noindex and deliberately absent. Later prompts
-// append their content routes here.
-const alternateRefs = (path: string) => [
-  { href: `${SITE_URL}/pl${path}`, hreflang: 'pl' },
-  { href: `${SITE_URL}/en${path}`, hreflang: 'en' },
-  { href: `${SITE_URL}/pl${path}`, hreflang: 'x-default' },
+// (quote/login/orders) are noindex and deliberately absent. Content sections
+// have LOCALIZED slugs, so each entry names its per-locale paths explicitly
+// (mirrors src/content/materials/slugs.ts). New content routes go here.
+const MATERIAL_SLUGS = ['petg', 'asa', 'pa12-cf']
+const localizedPages: Array<{
+  paths: { pl: string; en: string }
+  priority: number
+}> = [
+  { paths: { pl: '/pl', en: '/en' }, priority: 1 },
+  { paths: { pl: '/pl/materialy', en: '/en/materials' }, priority: 0.8 },
+  ...MATERIAL_SLUGS.map((slug) => ({
+    paths: { pl: `/pl/materialy/${slug}`, en: `/en/materials/${slug}` },
+    priority: 0.9,
+  })),
 ]
-const publicPages = ['/pl', '/en'].map((localeRoot) => ({
-  path: localeRoot,
-  // crawlLinks would drag the linked noindex app screens (login/quote) into
-  // the prerender set AND the sitemap — the page list here is explicit.
-  prerender: { enabled: true, crawlLinks: false },
-  sitemap: {
-    priority: 1,
-    changefreq: 'weekly' as const,
-    alternateRefs: alternateRefs(''),
-  },
-}))
+const publicPages = localizedPages.flatMap(({ paths, priority }) =>
+  (['pl', 'en'] as const).map((locale) => ({
+    path: paths[locale],
+    // crawlLinks would drag the linked noindex app screens (login/quote) into
+    // the prerender set AND the sitemap — the page list here is explicit.
+    prerender: { enabled: true, crawlLinks: false },
+    sitemap: {
+      priority,
+      changefreq: 'weekly' as const,
+      alternateRefs: [
+        { href: `${SITE_URL}${paths.pl}`, hreflang: 'pl' },
+        { href: `${SITE_URL}${paths.en}`, hreflang: 'en' },
+        { href: `${SITE_URL}${paths.pl}`, hreflang: 'x-default' },
+      ],
+    },
+  })),
+)
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },

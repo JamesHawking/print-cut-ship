@@ -237,6 +237,7 @@ export const pl = {
     faqTitle: 'Częste pytania',
     compareTitle: 'Porównaj z',
     pricingLink: 'Jak liczymy ceny →',
+    allMaterialsLink: 'Wszystkie materiały →',
   },
   // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
   cta: {

@@ -3,7 +3,12 @@ import { useLocale, useStrings } from '@/lib/i18n'
 import { useWarsawClock } from '@/hooks/useWarsawClock'
 import { QuoteCta } from './QuoteCta'
 
-export function SiteFooter() {
+export function SiteFooter({
+  ctaSourcePage = 'footer',
+}: {
+  /** Content pages attribute the footer CTA to themselves. */
+  ctaSourcePage?: string
+}) {
   const strings = useStrings()
   const locale = useLocale()
   const { note, meta, cutoff } = strings.footer
@@ -11,7 +16,7 @@ export function SiteFooter() {
   return (
     <footer>
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <QuoteCta variant="full" sourcePage="footer" />
+        <QuoteCta variant="full" sourcePage={ctaSourcePage} />
 
         <div className="text-muted-foreground flex flex-col gap-3 border-t py-6 font-mono text-xs tracking-widest uppercase sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <span className="text-foreground font-bold">

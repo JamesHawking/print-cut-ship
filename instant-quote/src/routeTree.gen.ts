@@ -15,6 +15,9 @@ import { Route as LocaleIndexRouteImport } from './routes/$locale/index'
 import { Route as LocaleQuoteRouteImport } from './routes/$locale/quote'
 import { Route as LocaleOrdersRouteImport } from './routes/$locale/orders'
 import { Route as LocaleLoginRouteImport } from './routes/$locale/login'
+import { Route as LocaleSectionRouteRouteImport } from './routes/$locale/$section/route'
+import { Route as LocaleSectionIndexRouteImport } from './routes/$locale/$section/index'
+import { Route as LocaleSectionMaterialIdRouteImport } from './routes/$locale/$section/$materialId'
 
 const LocaleRouteRoute = LocaleRouteRouteImport.update({
   id: '/$locale',
@@ -46,14 +49,32 @@ const LocaleLoginRoute = LocaleLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => LocaleRouteRoute,
 } as any)
+const LocaleSectionRouteRoute = LocaleSectionRouteRouteImport.update({
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => LocaleRouteRoute,
+} as any)
+const LocaleSectionIndexRoute = LocaleSectionIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LocaleSectionRouteRoute,
+} as any)
+const LocaleSectionMaterialIdRoute = LocaleSectionMaterialIdRouteImport.update({
+  id: '/$materialId',
+  path: '/$materialId',
+  getParentRoute: () => LocaleSectionRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$locale': typeof LocaleRouteRouteWithChildren
+  '/$locale/$section': typeof LocaleSectionRouteRouteWithChildren
   '/$locale/login': typeof LocaleLoginRoute
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale/': typeof LocaleIndexRoute
+  '/$locale/$section/$materialId': typeof LocaleSectionMaterialIdRoute
+  '/$locale/$section/': typeof LocaleSectionIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,35 +82,53 @@ export interface FileRoutesByTo {
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale': typeof LocaleIndexRoute
+  '/$locale/$section/$materialId': typeof LocaleSectionMaterialIdRoute
+  '/$locale/$section': typeof LocaleSectionIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$locale': typeof LocaleRouteRouteWithChildren
+  '/$locale/$section': typeof LocaleSectionRouteRouteWithChildren
   '/$locale/login': typeof LocaleLoginRoute
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale/': typeof LocaleIndexRoute
+  '/$locale/$section/$materialId': typeof LocaleSectionMaterialIdRoute
+  '/$locale/$section/': typeof LocaleSectionIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/$locale'
+    | '/$locale/$section'
     | '/$locale/login'
     | '/$locale/orders'
     | '/$locale/quote'
     | '/$locale/'
+    | '/$locale/$section/$materialId'
+    | '/$locale/$section/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$locale/login' | '/$locale/orders' | '/$locale/quote' | '/$locale'
+  to:
+    | '/'
+    | '/$locale/login'
+    | '/$locale/orders'
+    | '/$locale/quote'
+    | '/$locale'
+    | '/$locale/$section/$materialId'
+    | '/$locale/$section'
   id:
     | '__root__'
     | '/'
     | '/$locale'
+    | '/$locale/$section'
     | '/$locale/login'
     | '/$locale/orders'
     | '/$locale/quote'
     | '/$locale/'
+    | '/$locale/$section/$materialId'
+    | '/$locale/$section/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -141,10 +180,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleLoginRouteImport
       parentRoute: typeof LocaleRouteRoute
     }
+    '/$locale/$section': {
+      id: '/$locale/$section'
+      path: '/$section'
+      fullPath: '/$locale/$section'
+      preLoaderRoute: typeof LocaleSectionRouteRouteImport
+      parentRoute: typeof LocaleRouteRoute
+    }
+    '/$locale/$section/': {
+      id: '/$locale/$section/'
+      path: '/'
+      fullPath: '/$locale/$section/'
+      preLoaderRoute: typeof LocaleSectionIndexRouteImport
+      parentRoute: typeof LocaleSectionRouteRoute
+    }
+    '/$locale/$section/$materialId': {
+      id: '/$locale/$section/$materialId'
+      path: '/$materialId'
+      fullPath: '/$locale/$section/$materialId'
+      preLoaderRoute: typeof LocaleSectionMaterialIdRouteImport
+      parentRoute: typeof LocaleSectionRouteRoute
+    }
   }
 }
 
+interface LocaleSectionRouteRouteChildren {
+  LocaleSectionMaterialIdRoute: typeof LocaleSectionMaterialIdRoute
+  LocaleSectionIndexRoute: typeof LocaleSectionIndexRoute
+}
+
+const LocaleSectionRouteRouteChildren: LocaleSectionRouteRouteChildren = {
+  LocaleSectionMaterialIdRoute: LocaleSectionMaterialIdRoute,
+  LocaleSectionIndexRoute: LocaleSectionIndexRoute,
+}
+
+const LocaleSectionRouteRouteWithChildren =
+  LocaleSectionRouteRoute._addFileChildren(LocaleSectionRouteRouteChildren)
+
 interface LocaleRouteRouteChildren {
+  LocaleSectionRouteRoute: typeof LocaleSectionRouteRouteWithChildren
   LocaleLoginRoute: typeof LocaleLoginRoute
   LocaleOrdersRoute: typeof LocaleOrdersRoute
   LocaleQuoteRoute: typeof LocaleQuoteRoute
@@ -152,6 +226,7 @@ interface LocaleRouteRouteChildren {
 }
 
 const LocaleRouteRouteChildren: LocaleRouteRouteChildren = {
+  LocaleSectionRouteRoute: LocaleSectionRouteRouteWithChildren,
   LocaleLoginRoute: LocaleLoginRoute,
   LocaleOrdersRoute: LocaleOrdersRoute,
   LocaleQuoteRoute: LocaleQuoteRoute,
