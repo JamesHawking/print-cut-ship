@@ -1,6 +1,6 @@
 # Plan 01 — Persistence layer (database + data access)
 
-> **Status: 🔄 In progress** (as of 2026-07-16) — implementation is live in the working tree (uncommitted, under active development in a parallel session: schema/migrations, sqlc store, money package, seed, compose Postgres, docker-compose profile). Verification checklist below not yet passed; not code-reviewed; do not treat as done until committed and verified.
+> **Status: ✅ Done** (2026-07-16) — implemented and committed as `e6667b6`, code-reviewed by a separate agent (top-3 findings fixed pre-commit; 7 lower-severity findings still open). Verification checklist below passed locally on 2026-07-16 (migrate/seed idempotent, live quote + step-request round-trip with grosze money and nullable-anon FKs, `make gen` idempotent, go vet clean, 48 Go + 30 frontend tests green). The two CI/Coolify items remain deferred to plan 03 as written.
 
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`). The data layer lives in `backend/` (Go), not in TanStack server functions.
 
@@ -211,16 +211,16 @@ CREATE TABLE step_requests (
 
 Expanding the brief's "done when":
 
-- [ ] `docker compose up -d && go run ./cmd/api migrate` clean on a fresh DB; re-run is a no-op (`goose status` confirms).
-- [ ] `make gen` regenerates sqlc code with no diff when queries are unchanged.
-- [ ] `go run ./cmd/api seed` inserts exactly one active `pricing_config_snapshots` row mirroring the Go engine config; idempotent.
-- [ ] `POST /api/v1/quotes` persists a `quotes` row + one `quote_parts` row per part, money in grosze, `pricing_config_id` FK set, prices server-recomputed; read-back by `Q-XXXXXXXX`. Response shape unchanged (no frontend change needed).
-- [ ] `POST /api/v1/step-quotes` persists a `step_requests` row; read-back by `STEP-XXXXXXXX`.
-- [ ] An anonymous quote (no user, no email… where the API allows) persists — nullable FKs confirmed.
-- [ ] `go test ./...` green including golden fixtures; `go vet ./...` clean; frontend untouched (`bun test` still green).
+- [x] `docker compose up -d && go run ./cmd/api migrate` clean on a fresh DB; re-run is a no-op (`goose status` confirms).
+- [x] `make gen` regenerates sqlc code with no diff when queries are unchanged.
+- [x] `go run ./cmd/api seed` inserts exactly one active `pricing_config_snapshots` row mirroring the Go engine config; idempotent.
+- [x] `POST /api/v1/quotes` persists a `quotes` row + one `quote_parts` row per part, money in grosze, `pricing_config_id` FK set, prices server-recomputed; read-back by `Q-XXXXXXXX`. Response shape unchanged (no frontend change needed).
+- [x] `POST /api/v1/step-quotes` persists a `step_requests` row; read-back by `STEP-XXXXXXXX`.
+- [x] An anonymous quote (no user, no email… where the API allows) persists — nullable FKs confirmed.
+- [x] `go test ./...` green including golden fixtures; `go vet ./...` clean; frontend untouched (`bun test` still green).
 - [ ] CI runs `api migrate` against a Postgres service and blocks on failure (verified once plan 03 wires it).
 - [ ] `api migrate` runs on Coolify deploy against the provisioned Postgres (verified with plan 03).
-- [ ] `backend/README.md` documents the full local-dev setup.
+- [x] `backend/README.md` documents the full local-dev setup.
 
 ## 6. Risks & open questions
 

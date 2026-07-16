@@ -30,9 +30,11 @@ gen-go:
 		-generate types,chi-server -package httpapi \
 		-o internal/httpapi/gen.go api/openapi.yaml
 
+# Prettier pass keeps regeneration idempotent against the committed file
+# (the repo's prettier config reformats generated output otherwise).
 gen-ts:
 	cd ../instant-quote && bunx openapi-typescript@7 ../backend/api/openapi.yaml \
-		-o src/lib/api/schema.d.ts
+		-o src/lib/api/schema.d.ts && bunx prettier --write src/lib/api/schema.d.ts
 
 gen-sqlc:
 	go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0 generate
