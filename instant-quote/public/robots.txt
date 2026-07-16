@@ -1,3 +1,7 @@
 # https://www.robotstxt.org/robotstxt.html
+# NOTE: swap the host below together with VITE_SITE_URL when the production
+# domain lands (src/lib/seo.ts SITE_URL).
 User-agent: *
-Disallow:
+Disallow: /api/
+
+Sitemap: https://microfactory.example/sitemap.xml

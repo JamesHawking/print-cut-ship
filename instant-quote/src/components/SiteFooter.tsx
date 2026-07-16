@@ -1,17 +1,12 @@
-import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useLocale, useStrings } from '@/lib/i18n'
-import { formatWarsawClock } from '@/lib/clock'
+import { useWarsawClock } from '@/hooks/useWarsawClock'
 
 export function SiteFooter() {
   const strings = useStrings()
   const locale = useLocale()
   const { ctaHeading, ctaButton, note, meta, cutoff } = strings.footer
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60_000)
-    return () => clearInterval(t)
-  }, [])
+  const clock = useWarsawClock()
   return (
     <footer>
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -40,7 +35,7 @@ export function SiteFooter() {
           </Link>
           <span>{meta}</span>
           <span className="tabular-nums">
-            Europe/Warsaw {formatWarsawClock(now)} · {cutoff}
+            {strings.config.warsawTz} {clock} · {cutoff}
           </span>
         </div>
         <p className="text-muted-foreground/70 pb-8 font-mono text-[0.65rem] tracking-wider uppercase">

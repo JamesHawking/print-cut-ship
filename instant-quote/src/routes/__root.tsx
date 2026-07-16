@@ -12,8 +12,12 @@ import { PartsProvider } from '@/hooks/useParts'
 
 // Type system (Anduril-inspired): Archivo grotesque for display/UI, Martian Mono
 // for technical labels & numerics. Self-hosted via @fontsource (no external CDN).
+// The latin variable files are also preloaded below — @font-face alone defers
+// discovery until CSS parses, costing LCP.
 import '@fontsource-variable/archivo'
 import '@fontsource-variable/martian-mono'
+import archivoWoff2 from '@fontsource-variable/archivo/files/archivo-latin-wght-normal.woff2?url'
+import martianMonoWoff2 from '@fontsource-variable/martian-mono/files/martian-mono-latin-wght-normal.woff2?url'
 
 import appCss from '../styles.css?url'
 import { DEFAULT_LOCALE, isLocale } from '@/lib/i18n'
@@ -31,6 +35,13 @@ export const Route = createRootRoute({
     links: [
       { rel: 'stylesheet', href: appCss },
       { rel: 'apple-touch-icon', href: '/logo192.png' },
+      ...[archivoWoff2, martianMonoWoff2].map((href) => ({
+        rel: 'preload',
+        as: 'font',
+        type: 'font/woff2',
+        crossOrigin: 'anonymous' as const,
+        href,
+      })),
     ],
   }),
   shellComponent: RootDocument,

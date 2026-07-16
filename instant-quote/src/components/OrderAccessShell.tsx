@@ -1,7 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useLocale, useStrings } from '@/lib/i18n'
-import { formatWarsawClock } from '@/lib/clock'
+import { useWarsawClock } from '@/hooks/useWarsawClock'
 import { LocaleSwitcher } from './SiteHeader'
 
 /**
@@ -14,16 +14,12 @@ export function OrderAccessShell({ children }: { children: ReactNode }) {
   const strings = useStrings()
   const locale = useLocale()
   const s = strings.login
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30_000)
-    return () => clearInterval(t)
-  }, [])
+  const clock = useWarsawClock(30_000)
 
   const facts = [
     { label: s.factRetention, value: s.factRetentionValue },
     { label: s.factValidity, value: s.factValidityValue },
-    { label: s.factClock, value: formatWarsawClock(now) },
+    { label: s.factClock, value: clock },
   ]
 
   return (

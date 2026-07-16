@@ -41,6 +41,7 @@ function FactoryFigure() {
         src="/factory-line.webp"
         width={1412}
         height={765}
+        loading="lazy"
         alt={strings.hero.figAlt}
         className="block h-auto w-full"
       />

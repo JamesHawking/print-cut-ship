@@ -25,7 +25,7 @@ import {
 import { MAX_PARTS } from '@/lib/upload'
 import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
 import { track } from '@/lib/funnel'
-import { formatWarsawClock } from '@/lib/clock'
+import { useWarsawClock } from '@/hooks/useWarsawClock'
 import {
   DEFAULT_LOCALE,
   getStrings,
@@ -65,12 +65,7 @@ function QuoteWorkspace() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [pricesExVat, setPricesExVat] = useState(false)
   const [orderOpen, setOrderOpen] = useState(false)
-  const [now, setNow] = useState(() => new Date())
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60_000)
-    return () => clearInterval(t)
-  }, [])
+  const clock = useWarsawClock()
 
   // Parts live in memory only — a refresh or deep link lands here empty, and
   // an upload whose every file was rejected does too. Bounce to the landing.
@@ -279,8 +274,7 @@ function QuoteWorkspace() {
           )}
 
           <p className="text-muted-foreground text-center font-mono text-[0.625rem] tracking-[0.16em] uppercase tabular-nums">
-            {strings.config.warsawTz} {formatWarsawClock(now)} ·{' '}
-            {strings.config.warsawCutoff}
+            {strings.config.warsawTz} {clock} · {strings.config.warsawCutoff}
           </p>
         </div>
 
