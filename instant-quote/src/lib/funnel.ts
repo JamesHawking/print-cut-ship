@@ -2,6 +2,11 @@
 // can be dropped in later by replacing the body of track().
 
 export type FunnelEvent =
+  // Content-page attribution (seo_prompts/01): page_view carries
+  // {path, locale, referrer, source?}; cta_upload_clicked carries
+  // {source_page} so content-page conversion is attributable.
+  | 'page_view'
+  | 'cta_upload_clicked'
   | 'upload_started'
   | 'parse_succeeded'
   | 'parse_failed'

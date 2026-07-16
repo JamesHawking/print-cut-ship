@@ -12,6 +12,11 @@ import { DEFAULT_LOCALE, getStrings, isLocale, useLocale } from '@/lib/i18n'
 import { seoHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/$locale/')({
+  // CTA attribution: QuoteCta deep-links here with ?source=<page>; the
+  // router's page_view subscription forwards it.
+  validateSearch: (search: Record<string, unknown>): { source?: string } => ({
+    source: typeof search.source === 'string' ? search.source : undefined,
+  }),
   head: ({ params, match }) => {
     const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE
     const s = getStrings(locale)

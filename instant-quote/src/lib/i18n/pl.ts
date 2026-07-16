@@ -195,11 +195,15 @@ export const pl = {
     ],
   },
   footer: {
-    ctaHeading: 'Masz część pod ręką?',
-    ctaButton: 'Wgraj plik',
     note: 'Prototyp · stawki poglądowe · każda wycena jest w pełni rozbita na pozycje',
     meta: 'UE · FDM · PLN · 23% VAT',
     cutoff: 'zamówienia do 14:00',
+  },
+  // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
+  cta: {
+    headline: 'Masz część pod ręką?',
+    trust: 'Wycena w sekundach · bez konta · brutto z VAT',
+    button: 'Wgraj plik',
   },
   dropzone: {
     idle: 'Upuść tu plik 3D',

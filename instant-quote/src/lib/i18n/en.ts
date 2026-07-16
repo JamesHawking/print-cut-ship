@@ -183,11 +183,15 @@ export const en = {
     ],
   },
   footer: {
-    ctaHeading: 'Have a part in hand?',
-    ctaButton: 'Upload a file',
     note: 'Prototype · illustrative rates · every quote is fully itemized',
     meta: 'EU · FDM · PLN · 23% VAT',
     cutoff: '14:00 cutoff',
+  },
+  // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
+  cta: {
+    headline: 'Have a part in hand?',
+    trust: 'Quote in seconds · no account · VAT included',
+    button: 'Upload a file',
   },
   dropzone: {
     idle: 'Drop a 3D file here',

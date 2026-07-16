@@ -115,6 +115,44 @@ PLN (zł).
 
 The breakdown lines shown to the user always sum exactly to the line total.
 
+## i18n & SEO conventions
+
+Everything user-facing follows these rules — later content pages (materials,
+pricing, comparisons, blog) build on them.
+
+**Locales.** `/pl` (default, `x-default`) and `/en`, as file routes under
+`src/routes/$locale/`. `/` never renders: it redirects by `locale` cookie →
+`Accept-Language` → `/pl`. The language switcher (SiteHeader) is the only
+cookie writer. All copy lives in `src/lib/i18n/{pl,en}.ts` — `pl.ts` is the
+source of truth (`Dictionary = typeof pl`), `en.ts` must `satisfies
+Dictionary`, so a key missing in either locale is a compile error.
+Parameterized copy is function-valued per key; PL plurals via `plPlural`.
+Components read `useStrings()`/`useLocale()`; client event handlers outside
+the render tree use `getStrings(getActiveLocale())`. `bun run check-strings`
+fails on hardcoded JSX prose (`// i18n-exempt` is the escape hatch). The
+backend returns machine codes + params; the dictionary owns all human text
+(`apiError`/`dfm`/`breakdown` namespaces, mapped via `src/lib/api/errors.ts`).
+Formatters (`src/lib/format.ts`) take an explicit `locale`.
+
+**SEO.** `src/lib/seo.ts` owns the head surface: every route's `head()` calls
+`seoHead({locale, path, title, description, image?, noindex?})` for title,
+description, canonical, OG/Twitter and hreflang (app screens pass `noindex`);
+JSON-LD goes through `jsonLd(...)` builders (`Organization` + `WebSite`
+site-wide on the `$locale` layout; `breadcrumbJsonLd` for content pages).
+Absolute URLs come from `SITE_URL` = `VITE_SITE_URL` (env) with a placeholder
+default — set the real origin in Coolify env and mirror it in
+`public/robots.txt`. Indexable pages are listed in `vite.config.ts`
+`publicPages`: each entry is prerendered at build time and emitted into
+`sitemap.xml` with hreflang alternates (add new content routes there).
+Anything rendering the wall clock must use `useWarsawClock()` (client-mounted
+placeholder) so prerendered HTML stays hydration-stable.
+
+**CTA & analytics.** Every content page ends in `<QuoteCta variant="compact"|
+"full" sourcePage="…"/>` — it deep-links to the landing intake with
+`?source=` and fires `cta_upload_clicked`. `page_view {path, locale,
+referrer, source?}` fires from the router's `onResolved` subscription
+(`src/router.tsx`). Events stay console-only PostHog-shaped (`src/lib/funnel.ts`).
+
 ## Intentional fakes (this is a prototype)
 
 These are deliberately stubbed — no backend, no persistence, no payment:
@@ -145,14 +183,19 @@ These are deliberately stubbed — no backend, no persistence, no payment:
 
 ```
 src/
-  routes/            # __root.tsx (providers, Toaster), index.tsx (landing), quote.tsx
-  components/        # DropZone, PartViewer (R3F), QuoteCard, OrderDialog, ui/…
+  routes/            # __root.tsx (providers, Toaster), index.tsx (/ locale redirect)
+    $locale/         # route.tsx (layout: locale ctx + JSON-LD), index (landing),
+                     # quote, login, orders — all /pl/* + /en/*
+  components/        # DropZone, PartViewer (R3F), QuoteCard, QuoteCta, OrderDialog, ui/…
   lib/
-    api/               # generated OpenAPI types + typed fetch client (make gen-ts)
+    api/               # generated OpenAPI types + typed client + error-code mapping
+    i18n/              # pl.ts (source of truth), en.ts, detect, plurals
+    seo.ts             # seoHead(), jsonLd builders, SITE_URL
     catalog-static.ts  # landing-page marketing figures (mirrors backend config)
     mesh/              # DOM-free STL/OBJ/3MF/STEP parsers, analyze, convex hull
   workers/mesh.worker.ts   # SHA-256 + mesh analysis off the main thread
-  hooks/             # useParts, useMeshWorker, useApi (catalog + ship dates)
+  hooks/             # useParts, useMeshWorker, useApi, useWarsawClock
+scripts/             # check-strings.ts (no hardcoded copy gate)
 tests/               # mesh-volume, STEP geometry, MakerWorld URLs + fixtures
 ../backend/          # Go API: pricing, ship dates, quotes, MakerWorld proxy
 ```

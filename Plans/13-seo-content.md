@@ -1,6 +1,13 @@
 # 13 — SEO, content & trust surface
 
-> **Status: ⬜ Not started** (as of 2026-07-16).
+> **Status: 🟨 Phases 1–2 largely pre-built** (2026-07-16, via seo_prompts/01
+> "SEO foundation"): per-route localized meta + canonical + OG/Twitter
+> (`src/lib/seo.ts` seoHead), Organization/WebSite JSON-LD, sitemap.xml with
+> hreflang alternates + robots.txt, /pl + /en prerendered, manifest/branding
+> identity, font preloads, `page_view`/`cta_upload_clicked` funnel events and
+> the shared QuoteCta. Remaining here: OG image polish (branded template),
+> real domain in `VITE_SITE_URL` + robots.txt, phase 3 trust-copy revision,
+> phase 4 content pages, Search Console submission.
 
 *Phase 3 — post-launch. Lighter plan by design: scoping + sequencing.*
 
