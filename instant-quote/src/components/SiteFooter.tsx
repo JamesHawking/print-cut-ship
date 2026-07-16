@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { formatWarsawClock } from '@/lib/clock'
 
 export function SiteFooter() {
+  const strings = useStrings()
   const { ctaHeading, ctaButton, note, meta, cutoff } = strings.footer
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {

@@ -7,7 +7,7 @@ import { api } from '@/lib/api/client'
 import { clearSessionEmail, getSessionEmail } from '@/lib/session'
 import { formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import type { components } from '@/lib/api/schema'
 
 export const Route = createFileRoute('/orders')({ component: Orders })
@@ -23,7 +23,7 @@ const placedOn = new Intl.DateTimeFormat('en-GB', {
 const ACTIVE_STATUSES = new Set(['submitted', 'ordered'])
 
 function Orders() {
-  const s = strings.orders
+  const s = useStrings().orders
   const navigate = useNavigate()
   const email = getSessionEmail()
 
@@ -106,6 +106,7 @@ function Orders() {
 }
 
 function OrderRow({ order: o }: { order: OrderSummary }) {
+  const strings = useStrings()
   const s = strings.orders
   const lead = strings.config[o.leadTime]
   const meta = [

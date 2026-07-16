@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { LEAD_TIME_DAYS, MATERIALS, VAT_RATE } from '@/lib/catalog-static'
 import { DropZone } from './DropZone'
 
@@ -23,6 +23,7 @@ export function Hero({
   urlPending?: boolean
   onSample?: () => void
 }) {
+  const strings = useStrings()
   const specs = strings.hero.specs.map((label, i) => ({
     label,
     value: SPEC_VALUES[i],

@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 
 export function QuoteSkeleton() {
+  const strings = useStrings()
   return (
     <Card>
       <CardHeader>

@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { api } from '@/lib/api/client'
 import { track } from '@/lib/funnel'
 import type { Part } from '@/hooks/useParts'
 
 export function StepManualCard({ part }: { part: Part }) {
+  const strings = useStrings()
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)

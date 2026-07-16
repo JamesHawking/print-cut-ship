@@ -25,11 +25,12 @@ import {
 import { MAX_PARTS } from '@/lib/upload'
 import { track } from '@/lib/funnel'
 import { formatWarsawClock } from '@/lib/clock'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 
 export const Route = createFileRoute('/quote')({ component: QuoteWorkspace })
 
 function QuoteWorkspace() {
+  const strings = useStrings()
   const {
     parts,
     handleFiles,

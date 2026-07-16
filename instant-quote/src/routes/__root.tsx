@@ -11,18 +11,21 @@ import '@fontsource-variable/archivo'
 import '@fontsource-variable/martian-mono'
 
 import appCss from '../styles.css?url'
-import { strings } from '@/lib/strings'
+import { getActiveLocale, getStrings } from '@/lib/i18n'
 
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: strings.meta.title },
-      { name: 'description', content: strings.meta.description },
-    ],
-    links: [{ rel: 'stylesheet', href: appCss }],
-  }),
+  head: () => {
+    const s = getStrings(getActiveLocale())
+    return {
+      meta: [
+        { charSet: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { title: s.meta.title },
+        { name: 'description', content: s.meta.description },
+      ],
+      links: [{ rel: 'stylesheet', href: appCss }],
+    }
+  },
   shellComponent: RootDocument,
 })
 

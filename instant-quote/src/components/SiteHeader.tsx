@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Menu, X } from 'lucide-react'
 import { useParts } from '@/hooks/useParts'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 
 /**
  * Sticky site-wide header (design-handoff header bar, made navigational).
@@ -13,6 +13,7 @@ import { strings } from '@/lib/strings'
  * Landing Page v2.dc.html.
  */
 export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
+  const strings = useStrings()
   const { parts, clear } = useParts()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)

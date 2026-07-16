@@ -6,10 +6,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { useCatalog } from '@/hooks/useApi'
 
 export function HowWePriceDialog() {
+  const strings = useStrings()
   const catalog = useCatalog()
 
   return (

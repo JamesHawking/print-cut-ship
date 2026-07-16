@@ -3,7 +3,7 @@
 // endpoints, profile resolution) lives in the Go backend
 // (backend/internal/makerworld, POST /api/v1/makerworld/fetch).
 
-import { strings } from './strings'
+import type { Dictionary } from './i18n'
 
 export interface MakerworldRef {
   designId: number
@@ -18,13 +18,20 @@ export type MakerworldErrorCode =
   | 'download_failed'
   | 'too_large'
 
-export const MAKERWORLD_ERROR_MESSAGES: Record<MakerworldErrorCode, string> = {
-  token_missing: strings.errors.mwNotConfigured,
-  design_not_found: strings.errors.mwNotFound,
-  no_instance: strings.errors.mwNoProfile,
-  auth_expired: strings.errors.mwAuthExpired,
-  download_failed: strings.errors.mwDownloadFailed,
-  too_large: strings.errors.mwTooLarge,
+/** Maps a backend error code to copy from the caller's active dictionary. */
+export function makerworldErrorMessage(
+  code: MakerworldErrorCode,
+  s: Dictionary,
+): string {
+  const messages: Record<MakerworldErrorCode, string> = {
+    token_missing: s.errors.mwNotConfigured,
+    design_not_found: s.errors.mwNotFound,
+    no_instance: s.errors.mwNoProfile,
+    auth_expired: s.errors.mwAuthExpired,
+    download_failed: s.errors.mwDownloadFailed,
+    too_large: s.errors.mwTooLarge,
+  }
+  return messages[code]
 }
 
 // /{locale?}/models/{designId}{-slug?}, e.g. /en/models/123456-cool-benchy

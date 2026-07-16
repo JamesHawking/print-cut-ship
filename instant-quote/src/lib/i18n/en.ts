@@ -1,6 +1,13 @@
-// All user-facing English copy lives here (no i18n framework; single source).
+// English dictionary — must satisfy the Dictionary type inferred from pl.ts.
+// Adding a key to one locale without the other is a compile error.
 
-export const strings = {
+import type { Dictionary } from './types'
+import type { MaterialFamily } from './pl'
+import { enPlural } from './plural'
+
+type OrderStatus = 'submitted' | 'expired' | 'ordered'
+
+export const en = {
   meta: {
     title: 'Instant 3D printing quote — upload, price, order',
     description:
@@ -73,39 +80,44 @@ export const strings = {
     from: 'From',
     footnote: 'Rates gross incl. 23% VAT',
   },
+  materialFamilies: {
+    standard: 'Standard',
+    engineering: 'Engineering',
+    specialty: 'Specialty',
+  },
   materials: {
     pla: {
-      family: 'Standard',
+      family: 'standard' as MaterialFamily,
       tagline:
         'Cheapest and easiest to print. Prototypes, concept models, display parts.',
     },
     petg: {
-      family: 'Standard',
+      family: 'standard' as MaterialFamily,
       tagline:
         'Tough, moisture-resistant workhorse. Enclosures, brackets, functional parts.',
     },
     pctg: {
-      family: 'Standard',
+      family: 'standard' as MaterialFamily,
       tagline:
         'Upgraded PETG with higher impact resistance. Housings and mechanical parts.',
     },
     asa: {
-      family: 'Engineering',
+      family: 'engineering' as MaterialFamily,
       tagline:
         'UV- and weather-stable. Outdoor, automotive and exterior parts.',
     },
     petg_fr: {
-      family: 'Specialty',
+      family: 'specialty' as MaterialFamily,
       tagline:
         'Flame-retardant (UL94 V-0). Electronics enclosures and control cabinets.',
     },
     pa12_cf: {
-      family: 'Engineering',
+      family: 'engineering' as MaterialFamily,
       tagline:
         'Carbon-filled nylon — peak strength, heat resistance to ~170°C. Jigs, gears, motorsport.',
     },
     iglidur: {
-      family: 'Specialty',
+      family: 'specialty' as MaterialFamily,
       tagline:
         'Self-lubricating Igus material. Bearings, bushings and sliding parts.',
     },
@@ -234,14 +246,14 @@ export const strings = {
     retry: 'Retry',
     empty: 'No orders for this email yet.',
     placed: 'Placed',
-    moreParts: (n: number) => `+ ${n} more ${n === 1 ? 'part' : 'parts'}`,
+    moreParts: (n: number) => `+ ${n} more ${enPlural(n, 'part', 'parts')}`,
     newQuote: 'Start a new quote →',
     signOut: 'Sign out',
     status: {
       submitted: 'Received',
       ordered: 'In production',
       expired: 'Expired',
-    } as Record<string, string>,
+    } satisfies Record<OrderStatus, string>,
   },
   errors: {
     tooLarge: 'That file is over 100 MB. Please simplify or compress it first.',
@@ -262,4 +274,4 @@ export const strings = {
       'Could not download the model from MakerWorld. Try again.',
     mwTooLarge: 'That model is over 100 MB. Download and simplify it first.',
   },
-} as const
+} satisfies Dictionary

@@ -17,19 +17,13 @@ import type {
   ProcessId,
 } from '@/lib/api/client'
 import { useCatalog, useShipDates } from '@/hooks/useApi'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 
 interface Props {
   config: PartConfig
   onChange: (patch: Partial<PartConfig>) => void
   /** Enables the material meta line (weight / print-time estimates). */
   quote?: PartQuote
-}
-
-const LEAD_LABEL: Record<LeadTimeId, string> = {
-  economy: strings.config.economy,
-  standard: strings.config.standard,
-  express: strings.config.express,
 }
 
 // Chips and selects requote instantly; the free-form quantity input debounces
@@ -44,8 +38,15 @@ const num2 = new Intl.NumberFormat('pl-PL', {
 })
 
 export function ConfigPanel({ config, onChange, quote }: Props) {
+  const strings = useStrings()
   const catalog = useCatalog()
   const shipDates = useShipDates()
+
+  const LEAD_LABEL: Record<LeadTimeId, string> = {
+    economy: strings.config.economy,
+    standard: strings.config.standard,
+    express: strings.config.express,
+  }
 
   const [qtyText, setQtyText] = useState(String(config.quantity))
   const qtyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)

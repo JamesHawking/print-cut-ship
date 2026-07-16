@@ -1,19 +1,21 @@
 import { cn } from '@/lib/utils'
-import { strings } from '@/lib/strings'
+import { useStrings, type Dictionary } from '@/lib/i18n'
+import type { MaterialFamily } from '@/lib/i18n/pl'
 import { MATERIALS, type StaticMaterial } from '@/lib/catalog-static'
 import { SectionHeading } from './SectionHeading'
 
 // Signal-color coding by material family (TE Pocket-Operator style). The dot
 // is echoed in the legend under the table, so colour never carries meaning
-// alone. Tokens resolve against the section's `.dark` scope.
-const FAMILY_DOT: Record<string, string> = {
-  Standard: 'bg-muted-foreground',
-  Engineering: 'bg-primary',
-  Specialty: 'bg-info',
+// alone. Tokens resolve against the section's `.dark` scope. Keyed by the
+// locale-stable family key; display labels come from the dictionary.
+const FAMILY_DOT: Record<MaterialFamily, string> = {
+  standard: 'bg-muted-foreground',
+  engineering: 'bg-primary',
+  specialty: 'bg-info',
 }
 
 // Legend order: simplest → most specialised.
-const FAMILY_ORDER = ['Standard', 'Engineering', 'Specialty'] as const
+const FAMILY_ORDER = ['standard', 'engineering', 'specialty'] as const
 
 // Shared 4-column grid (md+): name / application / density / from —
 // right-aligned numerics, tabular so the two number columns stay on a rail.
@@ -22,9 +24,10 @@ const FAMILY_ORDER = ['Standard', 'Engineering', 'Specialty'] as const
 const ROW_COLS_MD =
   'md:grid-cols-[minmax(110px,1fr)_minmax(0,2.2fr)_minmax(90px,120px)_minmax(84px,120px)] md:gap-4'
 
-type MaterialId = keyof typeof strings.materials
+type MaterialId = keyof Dictionary['materials']
 
 export function Materials() {
+  const strings = useStrings()
   const { n, heading, material, application, density, from, footnote } =
     strings.materialsSection
   return (
@@ -67,7 +70,7 @@ export function Materials() {
                 <span
                   className={cn('size-1.5 rounded-full', FAMILY_DOT[family])}
                 />
-                {family}
+                {strings.materialFamilies[family]}
               </span>
             ))}
             <span className="md:ml-auto">{footnote}</span>
@@ -89,6 +92,7 @@ function MaterialRow({
   from: string
   last: boolean
 }) {
+  const strings = useStrings()
   const m = strings.materials[p.id as MaterialId]
   return (
     <div
@@ -108,7 +112,7 @@ function MaterialRow({
           )}
         />
         {p.label}
-        <span className="sr-only">({m.family})</span>
+        <span className="sr-only">({strings.materialFamilies[m.family]})</span>
       </span>
       <span className="text-muted-foreground col-span-2 row-start-2 text-[13.5px] leading-relaxed text-pretty md:col-span-1 md:row-start-auto">
         {m.tagline}

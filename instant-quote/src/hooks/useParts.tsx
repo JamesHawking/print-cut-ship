@@ -16,12 +16,12 @@ import {
 } from '@/lib/upload'
 import {
   parseMakerworldUrl,
-  MAKERWORLD_ERROR_MESSAGES,
+  makerworldErrorMessage,
   type MakerworldErrorCode,
 } from '@/lib/makerworld'
 import { useMeshWorker } from '@/hooks/useMeshWorker'
 import { track } from '@/lib/funnel'
-import { strings } from '@/lib/strings'
+import { getActiveLocale, getStrings } from '@/lib/i18n'
 import { uploadFile } from '@/lib/upload-file'
 
 export interface Part {
@@ -160,6 +160,8 @@ export function PartsProvider({ children }: { children: ReactNode }) {
   const { analyze } = useMeshWorker()
 
   async function handleFiles(files: File[]): Promise<string[]> {
+    // Event-handler path — resolve copy at call time (see src/lib/i18n).
+    const strings = getStrings(getActiveLocale())
     const added: string[] = []
     let slots = MAX_PARTS - parts.length
     for (const file of files) {
@@ -237,6 +239,7 @@ export function PartsProvider({ children }: { children: ReactNode }) {
   // then the bytes re-enter the normal pipeline as a synthesized File. Raw
   // fetch instead of the typed client: the success body is binary.
   async function handleMakerworldUrl(url: string): Promise<string[]> {
+    const strings = getStrings(getActiveLocale())
     const ref = parseMakerworldUrl(url)
     if (!ref) {
       toast.error(strings.errors.mwInvalidUrl)
@@ -256,7 +259,7 @@ export function PartsProvider({ children }: { children: ReactNode }) {
         } | null
         track('makerworld_fetch_failed', { ...ref, code: body?.code })
         toast.error(
-          (body?.code && MAKERWORLD_ERROR_MESSAGES[body.code]) ??
+          (body?.code && makerworldErrorMessage(body.code, strings)) ??
             strings.errors.mwDownloadFailed,
         )
         return []

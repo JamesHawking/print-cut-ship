@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { formatPln } from '@/lib/format'
 import {
   api,
@@ -47,6 +47,7 @@ export function OrderDialog({
   totals,
   pricesExVat,
 }: Props) {
+  const strings = useStrings()
   const [email, setEmail] = useState('')
   const [country, setCountry] = useState<string>('PL')
   const [submitting, setSubmitting] = useState(false)

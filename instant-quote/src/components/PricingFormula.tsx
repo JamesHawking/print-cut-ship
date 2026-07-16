@@ -1,9 +1,10 @@
 import { Fragment } from 'react'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { SectionHeading } from './SectionHeading'
 
 /** "The price is a formula" section — the pricing model, spelled out. */
 export function PricingFormula() {
+  const strings = useStrings()
   const { n, heading, formulaLead, terms, cards } = strings.pricing
   return (
     <section id="pricing" className="scroll-mt-14 border-b">

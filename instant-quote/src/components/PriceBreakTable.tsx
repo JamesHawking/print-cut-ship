@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { formatPln, formatPercent } from '@/lib/format'
 import type { PriceBreak } from '@/lib/api/client'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 
 export function PriceBreakTable({
   priceBreaks,
@@ -10,6 +10,7 @@ export function PriceBreakTable({
   priceBreaks: PriceBreak[]
   activeQuantity: number
 }) {
+  const strings = useStrings()
   return (
     <div>
       <p className="text-muted-foreground mb-2 font-mono text-[0.625rem] tracking-[0.2em] uppercase">

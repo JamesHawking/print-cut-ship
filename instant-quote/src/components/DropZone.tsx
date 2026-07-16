@@ -1,7 +1,7 @@
 import { useRef, useState, type DragEvent, type FormEvent } from 'react'
 import { Loader2, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { ACCEPT_ATTR } from '@/lib/upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +21,7 @@ export function DropZone({
   onUrl,
   urlPending,
 }: DropZoneProps) {
+  const strings = useStrings()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [urlValue, setUrlValue] = useState('')

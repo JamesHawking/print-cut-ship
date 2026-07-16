@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { formatWarsawClock } from '@/lib/clock'
 
 /**
@@ -10,6 +10,7 @@ import { formatWarsawClock } from '@/lib/clock'
  * The right panel is the screen-specific content.
  */
 export function OrderAccessShell({ children }: { children: ReactNode }) {
+  const strings = useStrings()
   const s = strings.login
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {

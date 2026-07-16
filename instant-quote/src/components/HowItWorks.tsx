@@ -1,7 +1,8 @@
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { SectionHeading } from './SectionHeading'
 
 export function HowItWorks() {
+  const strings = useStrings()
   const { n, heading, steps } = strings.process
   return (
     <section id="how-it-works" className="scroll-mt-14">
@@ -33,6 +34,7 @@ export function HowItWorks() {
 
 /** Full-bleed factory-line illustration with an in-image caption bar. */
 function FactoryFigure() {
+  const strings = useStrings()
   return (
     <figure className="relative m-0">
       <img

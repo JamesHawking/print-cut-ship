@@ -5,14 +5,14 @@ import { OrderAccessShell } from '@/components/OrderAccessShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getSessionEmail, setSessionEmail } from '@/lib/session'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 
 export const Route = createFileRoute('/login')({ component: Login })
 
 const EMAIL_RE = /.+@.+\..+/
 
 function Login() {
-  const s = strings.login
+  const s = useStrings().login
   const navigate = useNavigate()
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [email, setEmail] = useState('')

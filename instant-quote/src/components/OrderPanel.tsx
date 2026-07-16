@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { HowWePriceDialog } from './HowWePriceDialog'
 import { formatPln } from '@/lib/format'
-import { strings } from '@/lib/strings'
+import { useStrings } from '@/lib/i18n'
 import { useCatalog } from '@/hooks/useApi'
 import type { OrderTotals, PartQuote } from '@/lib/api/client'
 
@@ -25,6 +25,7 @@ export function OrderPanel({
   orderableCount,
   onOrderClick,
 }: Props) {
+  const strings = useStrings()
   const catalog = useCatalog()
   const displayTotal = pricesExVat ? totals.netTotalPln : totals.grossTotalPln
 

@@ -4,9 +4,10 @@
 import { describe, it, expect } from 'bun:test'
 import {
   parseMakerworldUrl,
-  MAKERWORLD_ERROR_MESSAGES,
+  makerworldErrorMessage,
   type MakerworldErrorCode,
 } from '../src/lib/makerworld'
+import { getStrings, LOCALES } from '../src/lib/i18n'
 
 describe('parseMakerworldUrl', () => {
   it('parses a canonical model URL with locale and slug', () => {
@@ -69,8 +70,8 @@ describe('parseMakerworldUrl', () => {
   })
 })
 
-describe('MAKERWORLD_ERROR_MESSAGES', () => {
-  it('has a user-facing message for every error code', () => {
+describe('makerworldErrorMessage', () => {
+  it('has a user-facing message for every error code in every locale', () => {
     const codes: MakerworldErrorCode[] = [
       'token_missing',
       'design_not_found',
@@ -79,8 +80,10 @@ describe('MAKERWORLD_ERROR_MESSAGES', () => {
       'download_failed',
       'too_large',
     ]
-    for (const code of codes) {
-      expect(MAKERWORLD_ERROR_MESSAGES[code]).toBeTruthy()
+    for (const locale of LOCALES) {
+      for (const code of codes) {
+        expect(makerworldErrorMessage(code, getStrings(locale))).toBeTruthy()
+      }
     }
   })
 })
