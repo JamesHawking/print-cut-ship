@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { OrderAccessShell } from '@/components/OrderAccessShell'
 import { api } from '@/lib/api/client'
 import { clearSessionEmail, getSessionEmail } from '@/lib/session'
-import { formatPln } from '@/lib/format'
+import { formatPlacedDate, formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useLocale, useStrings } from '@/lib/i18n'
 import type { components } from '@/lib/api/schema'
@@ -13,11 +13,6 @@ import type { components } from '@/lib/api/schema'
 export const Route = createFileRoute('/$locale/orders')({ component: Orders })
 
 type OrderSummary = components['schemas']['OrderSummary']
-
-const placedOn = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-})
 
 // Statuses that mean the factory is actively on it get the signal chip.
 const ACTIVE_STATUSES = new Set(['submitted', 'ordered'])
@@ -110,12 +105,13 @@ function Orders() {
 
 function OrderRow({ order: o }: { order: OrderSummary }) {
   const strings = useStrings()
+  const locale = useLocale()
   const s = strings.orders
   const lead = strings.config[o.leadTime]
   const meta = [
-    `${s.placed} ${placedOn.format(new Date(o.createdAt))}`,
+    `${s.placed} ${formatPlacedDate(o.createdAt, locale)}`,
     lead,
-    formatPln(o.grossTotalPln),
+    formatPln(o.grossTotalPln, locale),
   ].join(' · ')
   const title =
     o.partCount > 1

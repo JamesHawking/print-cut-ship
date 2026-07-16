@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ConfigPanel } from './ConfigPanel'
 import { PriceBreakTable } from './PriceBreakTable'
 import { DfmBadges } from './DfmBadges'
-import { formatPln, formatPercent, formatVolume } from '@/lib/format'
-import { useStrings } from '@/lib/i18n'
+import { formatInt, formatPln, formatPercent, formatVolume } from '@/lib/format'
+import { useLocale, useStrings } from '@/lib/i18n'
 import type { Part } from '@/hooks/useParts'
 import type { PartConfig, PartQuote } from '@/lib/api/client'
 
@@ -15,6 +15,7 @@ interface Props {
 
 export function QuoteCard({ part, quote, onConfigChange }: Props) {
   const strings = useStrings()
+  const locale = useLocale()
   const discount = quote.discountFraction
 
   return (
@@ -32,10 +33,10 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
             </p>
             {part.metrics && (
               <p className="text-muted-foreground mt-1.5 font-mono text-[0.625rem] tracking-wider tabular-nums">
-                {formatVolume(quote.billableVolumeCm3)} ·{' '}
+                {formatVolume(quote.billableVolumeCm3, locale)} ·{' '}
                 {strings.quote.metaTriangles(
                   part.metrics.triangleCount,
-                  part.metrics.triangleCount.toLocaleString('pl-PL'),
+                  formatInt(part.metrics.triangleCount, locale),
                 )}
                 {quote.pieceCount != null && quote.plates != null && (
                   <>
@@ -55,7 +56,7 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
             ) : (
               <>
                 <div className="text-primary-text font-mono text-[clamp(1.375rem,3.5vw,1.75rem)] font-bold tracking-tight whitespace-nowrap tabular-nums">
-                  {formatPln(quote.unitPricePln)}
+                  {formatPln(quote.unitPricePln, locale)}
                 </div>
                 <p className="text-muted-foreground text-xs">
                   {strings.quote.unitPrice}
@@ -66,7 +67,7 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
                 {part.config.quantity > 1 && (
                   <p className="text-muted-foreground text-xs tabular-nums">
                     {strings.quote.lineTotalFor(
-                      formatPln(quote.lineTotalPln),
+                      formatPln(quote.lineTotalPln, locale),
                       part.config.quantity,
                     )}
                   </p>

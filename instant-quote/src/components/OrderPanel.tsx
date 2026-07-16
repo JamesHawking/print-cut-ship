@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { HowWePriceDialog } from './HowWePriceDialog'
 import { formatPln } from '@/lib/format'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 import { useCatalog } from '@/hooks/useApi'
 import type { OrderTotals, PartQuote } from '@/lib/api/client'
 
@@ -26,6 +26,7 @@ export function OrderPanel({
   onOrderClick,
 }: Props) {
   const strings = useStrings()
+  const locale = useLocale()
   const catalog = useCatalog()
   const displayTotal = pricesExVat ? totals.netTotalPln : totals.grossTotalPln
 
@@ -40,7 +41,7 @@ export function OrderPanel({
           line.key === 'plates'
             ? strings.breakdown.plates(line.count ?? 0)
             : strings.breakdown[line.key],
-        value: formatPln(line.amountPln),
+        value: formatPln(line.amountPln, locale),
       })
     }
     if (orderableCount > 1) {
@@ -50,24 +51,25 @@ export function OrderPanel({
           Math.round(
             (totals.partsSubtotalPln - breakdownQuote.lineTotalPln) * 100,
           ) / 100,
+          locale,
         ),
       })
     }
     if (totals.minOrderApplied) {
       rows.push({
         label: strings.orderPanel.minOrderTopUp,
-        value: formatPln(totals.minOrderTopUpPln),
+        value: formatPln(totals.minOrderTopUpPln, locale),
       })
     }
     rows.push({
       label: strings.orderPanel.orderFee,
-      value: formatPln(totals.orderFeePln),
+      value: formatPln(totals.orderFeePln, locale),
     })
     rows.push({
       label: strings.orderPanel.shipping,
       value: totals.freeShipping
         ? strings.orderPanel.free
-        : formatPln(totals.shippingPln),
+        : formatPln(totals.shippingPln, locale),
     })
   }
 
@@ -117,7 +119,7 @@ export function OrderPanel({
                     : strings.orderPanel.totalIncVat}
                 </dt>
                 <dd className="font-mono text-[0.8125rem] font-bold whitespace-nowrap tabular-nums">
-                  {formatPln(displayTotal)}
+                  {formatPln(displayTotal, locale)}
                 </dd>
               </div>
               <div className="text-muted-foreground flex items-baseline justify-between gap-4">
@@ -127,7 +129,7 @@ export function OrderPanel({
                   )}
                 </dt>
                 <dd className="font-mono text-[0.6875rem] whitespace-nowrap tabular-nums">
-                  {formatPln(totals.vatPln)}
+                  {formatPln(totals.vatPln, locale)}
                 </dd>
               </div>
             </dl>
@@ -142,13 +144,13 @@ export function OrderPanel({
             aria-live="polite"
             className="mt-1 font-mono text-2xl font-bold tracking-tight tabular-nums"
           >
-            {formatPln(displayTotal)}
+            {formatPln(displayTotal, locale)}
           </p>
         </div>
 
         {totals.minOrderApplied && catalog && (
           <p className="text-muted-foreground text-xs">
-            {strings.quote.minOrderHint(formatPln(catalog.minOrderPln))}
+            {strings.quote.minOrderHint(formatPln(catalog.minOrderPln, locale))}
           </p>
         )}
         <p className="text-muted-foreground text-xs">
@@ -163,7 +165,7 @@ export function OrderPanel({
           disabled={orderableCount === 0}
           onClick={onOrderClick}
         >
-          {strings.quote.orderButton(formatPln(displayTotal))}
+          {strings.quote.orderButton(formatPln(displayTotal, locale))}
         </Button>
       </CardContent>
     </Card>

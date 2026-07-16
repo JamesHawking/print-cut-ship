@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { formatPln, formatPercent } from '@/lib/format'
 import type { PriceBreak } from '@/lib/api/client'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 
 export function PriceBreakTable({
   priceBreaks,
@@ -11,6 +11,7 @@ export function PriceBreakTable({
   activeQuantity: number
 }) {
   const strings = useStrings()
+  const locale = useLocale()
   return (
     <div>
       <p className="text-muted-foreground mb-2 font-mono text-[0.625rem] tracking-[0.2em] uppercase">
@@ -35,7 +36,7 @@ export function PriceBreakTable({
             >
               <span className="tabular-nums">{row.quantity}</span>
               <span className="text-right font-mono tabular-nums">
-                {formatPln(row.unitPricePln)}
+                {formatPln(row.unitPricePln, locale)}
               </span>
               <span className="text-muted-foreground text-right font-mono tabular-nums">
                 {formatPercent(row.discountFraction)}

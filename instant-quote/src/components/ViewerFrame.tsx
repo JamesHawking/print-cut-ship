@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { CornerMarks } from './DropZone'
-import { formatDims, formatVolume } from '@/lib/format'
-import { useStrings } from '@/lib/i18n'
+import { formatDims, formatInt, formatVolume } from '@/lib/format'
+import { useLocale, useStrings } from '@/lib/i18n'
 import type { Part } from '@/hooks/useParts'
 import type { PartQuote } from '@/lib/api/client'
 
@@ -22,6 +22,7 @@ export function ViewerFrame({
   children: ReactNode
 }) {
   const strings = useStrings()
+  const locale = useLocale()
   const ext = (part.fileName.split('.').pop() ?? '').toUpperCase()
   const metrics = part.metrics
   return (
@@ -44,7 +45,7 @@ export function ViewerFrame({
         <dl className="bg-border grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-px border-t">
           <div className="bg-card px-4 py-3">
             <dt className="font-mono text-xs leading-none font-bold whitespace-nowrap tabular-nums">
-              {formatDims(metrics.bboxMm)}
+              {formatDims(metrics.bboxMm, locale)}
             </dt>
             <dd className="text-muted-foreground mt-2 font-mono text-[0.5625rem] tracking-wider uppercase">
               {strings.viewer.boundingBox}
@@ -52,7 +53,10 @@ export function ViewerFrame({
           </div>
           <div className="bg-card px-4 py-3">
             <dt className="font-mono text-xs leading-none font-bold tabular-nums">
-              {formatVolume(quote?.billableVolumeCm3 ?? metrics.volumeCm3)}
+              {formatVolume(
+                quote?.billableVolumeCm3 ?? metrics.volumeCm3,
+                locale,
+              )}
             </dt>
             <dd className="text-muted-foreground mt-2 font-mono text-[0.5625rem] tracking-wider uppercase">
               {strings.viewer.billableVolume}
@@ -60,7 +64,7 @@ export function ViewerFrame({
           </div>
           <div className="bg-card px-4 py-3">
             <dt className="font-mono text-xs leading-none font-bold tabular-nums">
-              {metrics.triangleCount.toLocaleString('pl-PL')}
+              {formatInt(metrics.triangleCount, locale)}
             </dt>
             <dd className="text-muted-foreground mt-2 font-mono text-[0.5625rem] tracking-wider uppercase">
               {strings.viewer.triangles}

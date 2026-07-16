@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
-import { useStrings, type Dictionary } from '@/lib/i18n'
+import { formatDecimal } from '@/lib/format'
+import { useLocale, useStrings, type Dictionary } from '@/lib/i18n'
 import type { MaterialFamily } from '@/lib/i18n/pl'
 import { MATERIALS, type StaticMaterial } from '@/lib/catalog-static'
 import { SectionHeading } from './SectionHeading'
@@ -93,6 +94,7 @@ function MaterialRow({
   last: boolean
 }) {
   const strings = useStrings()
+  const locale = useLocale()
   const m = strings.materials[p.id as MaterialId]
   return (
     <div
@@ -119,7 +121,7 @@ function MaterialRow({
       </span>
       <span className="text-muted-foreground col-span-2 row-start-3 font-mono text-[13px] tabular-nums md:col-span-1 md:row-start-auto md:text-right">
         <span className="sr-only">{density}: </span>
-        {p.densityGCm3.toFixed(2).replace('.', ',')} g/cm³
+        {formatDecimal(p.densityGCm3, locale, 2, 2)} g/cm³
       </span>
       <span className="col-start-2 row-start-1 text-right font-mono text-sm font-bold whitespace-nowrap tabular-nums md:col-start-auto md:row-start-auto md:text-[13px]">
         <span className="sr-only">{from} </span>

@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { formatPln } from '@/lib/format'
 import { useCatalog } from '@/hooks/useApi'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 import type { Part } from '@/hooks/useParts'
 import type { PartQuote } from '@/lib/api/client'
 
@@ -23,6 +23,7 @@ export function PartsList({
   onRemove,
 }: Props) {
   const strings = useStrings()
+  const locale = useLocale()
   const catalog = useCatalog()
   const processLabel = (id: string) =>
     catalog?.processes.find((p) => p.id === id)?.label ?? id
@@ -88,7 +89,7 @@ export function PartsList({
               </span>
               <span className="font-mono text-[0.8125rem] font-bold whitespace-nowrap tabular-nums">
                 {quote && !quote.blocked
-                  ? formatPln(quote.lineTotalPln)
+                  ? formatPln(quote.lineTotalPln, locale)
                   : quote?.blocked
                     ? '—'
                     : ''}

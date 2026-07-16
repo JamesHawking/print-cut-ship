@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Bounds, Center, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { formatDims } from '@/lib/format'
+import { useLocale } from '@/lib/i18n'
 
 const ACCENT = '#f97316' // industrial orange
 
@@ -28,6 +29,7 @@ export default function PartViewer({
   positions: Float32Array
   bboxMm: { x: number; y: number; z: number }
 }) {
+  const locale = useLocale()
   // Chrome-less: the surrounding ViewerFrame owns border and radius.
   return (
     <div className="bg-muted/30 relative h-full min-h-64 overflow-hidden">
@@ -48,7 +50,7 @@ export default function PartViewer({
         <OrbitControls makeDefault enablePan enableZoom enableRotate />
       </Canvas>
       <div className="bg-background/80 text-foreground pointer-events-none absolute bottom-2 left-2 rounded-md border px-2 py-1 text-xs font-medium tabular-nums backdrop-blur">
-        {formatDims(bboxMm)}
+        {formatDims(bboxMm, locale)}
       </div>
     </div>
   )

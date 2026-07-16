@@ -441,10 +441,17 @@ func (s *server) persistQuote(ctx context.Context, req SubmitQuoteRequest, quote
 	}
 	email := string(req.Email)
 	country := string(req.Country)
+	// UI locale at submit time — plan 06 renders this quote's emails from it,
+	// plan 05 seeds orders.locale. Absent on old clients → PL market default.
+	locale := "pl"
+	if req.Locale != nil {
+		locale = string(*req.Locale)
+	}
 	quoteParams := store.InsertQuoteParams{
 		ShortID:             quoteID,
 		Email:               &email,
 		Country:             &country,
+		Locale:              locale,
 		PricingConfigID:     s.cfg.PricingConfigID,
 		PartsSubtotalGrosze: grosze(totals.PartsSubtotalPln),
 		MinOrderTopupGrosze: grosze(totals.MinOrderTopUpPln),

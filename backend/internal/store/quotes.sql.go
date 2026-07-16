@@ -13,7 +13,7 @@ import (
 )
 
 const getQuoteByShortID = `-- name: GetQuoteByShortID :one
-SELECT id, short_id, user_id, email, country, status, prices_ex_vat, pricing_config_id, parts_subtotal_grosze, min_order_topup_grosze, order_fee_grosze, shipping_grosze, net_total_grosze, vat_grosze, gross_total_grosze, free_shipping, min_order_applied, expires_at, created_at, updated_at FROM quotes WHERE short_id = $1
+SELECT id, short_id, user_id, email, country, status, prices_ex_vat, pricing_config_id, parts_subtotal_grosze, min_order_topup_grosze, order_fee_grosze, shipping_grosze, net_total_grosze, vat_grosze, gross_total_grosze, free_shipping, min_order_applied, expires_at, created_at, updated_at, locale FROM quotes WHERE short_id = $1
 `
 
 func (q *Queries) GetQuoteByShortID(ctx context.Context, shortID string) (Quote, error) {
@@ -40,6 +40,7 @@ func (q *Queries) GetQuoteByShortID(ctx context.Context, shortID string) (Quote,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Locale,
 	)
 	return i, err
 }
@@ -90,9 +91,9 @@ INSERT INTO quotes (
     short_id, user_id, email, country, prices_ex_vat, pricing_config_id,
     parts_subtotal_grosze, min_order_topup_grosze, order_fee_grosze,
     shipping_grosze, net_total_grosze, vat_grosze, gross_total_grosze,
-    free_shipping, min_order_applied
+    free_shipping, min_order_applied, locale
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
 )
 RETURNING id, short_id
 `
@@ -113,6 +114,7 @@ type InsertQuoteParams struct {
 	GrossTotalGrosze    int32
 	FreeShipping        bool
 	MinOrderApplied     bool
+	Locale              string
 }
 
 type InsertQuoteRow struct {
@@ -137,6 +139,7 @@ func (q *Queries) InsertQuote(ctx context.Context, arg InsertQuoteParams) (Inser
 		arg.GrossTotalGrosze,
 		arg.FreeShipping,
 		arg.MinOrderApplied,
+		arg.Locale,
 	)
 	var i InsertQuoteRow
 	err := row.Scan(&i.ID, &i.ShortID)

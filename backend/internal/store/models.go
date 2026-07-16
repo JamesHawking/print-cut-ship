@@ -68,6 +68,7 @@ type Quote struct {
 	ExpiresAt           pgtype.Timestamptz
 	CreatedAt           pgtype.Timestamptz
 	UpdatedAt           pgtype.Timestamptz
+	Locale              string
 }
 
 type QuotePart struct {

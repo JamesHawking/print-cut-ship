@@ -183,7 +183,7 @@ export function OrderDialog({
                   {strings.order.orderTotal}
                 </span>
                 <span className="font-mono text-lg font-bold tabular-nums">
-                  {formatPln(displayTotal)}
+                  {formatPln(displayTotal, locale)}
                 </span>
               </div>
               <DialogFooter>
@@ -192,7 +192,7 @@ export function OrderDialog({
                   disabled={submitting || !email}
                   className="w-full font-bold"
                 >
-                  {strings.order.submit(formatPln(displayTotal))}
+                  {strings.order.submit(formatPln(displayTotal, locale))}
                 </Button>
               </DialogFooter>
             </form>

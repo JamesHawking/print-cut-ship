@@ -17,7 +17,8 @@ import type {
   ProcessId,
 } from '@/lib/api/client'
 import { useCatalog, useShipDates } from '@/hooks/useApi'
-import { useStrings } from '@/lib/i18n'
+import { formatDecimal, formatInt, formatShipDate } from '@/lib/format'
+import { useLocale, useStrings } from '@/lib/i18n'
 
 interface Props {
   config: PartConfig
@@ -30,15 +31,9 @@ interface Props {
 // so typing "125" doesn't fire a pricing request per keystroke.
 const QTY_DEBOUNCE_MS = 250
 
-const num = new Intl.NumberFormat('pl-PL')
-const num1 = new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 1 })
-const num2 = new Intl.NumberFormat('pl-PL', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
 export function ConfigPanel({ config, onChange, quote }: Props) {
   const strings = useStrings()
+  const locale = useLocale()
   const catalog = useCatalog()
   const shipDates = useShipDates()
 
@@ -99,11 +94,11 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
         </Select>
         {process && quote && !quote.blocked && (
           <p className="text-muted-foreground font-mono text-[0.625rem] tracking-wider tabular-nums">
-            {num2.format(process.densityGCm3)} g/cm³ · {process.plnPerKg} zł/kg
-            ·{' '}
+            {formatDecimal(process.densityGCm3, locale, 2, 2)} g/cm³ ·{' '}
+            {process.plnPerKg} zł/kg ·{' '}
             {strings.config.printMeta(
-              num.format(Math.round(quote.weightG)),
-              num1.format(quote.printHours),
+              formatInt(Math.round(quote.weightG), locale),
+              formatDecimal(quote.printHours, locale, 1),
             )}
           </p>
         )}
@@ -192,7 +187,11 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
                     </div>
                     {ship && (
                       <div className="text-muted-foreground mt-0.5 text-[0.6875rem]">
-                        {strings.config.ships(ship.label)}
+                        {/* The API's `label` is the engine's canonical EN
+                            form — display formats the structured date. */}
+                        {strings.config.ships(
+                          formatShipDate(ship.date, locale),
+                        )}
                       </div>
                     )}
                   </div>
