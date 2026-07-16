@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
@@ -17,6 +18,14 @@ const (
 	Machine   BreakdownLineKey = "machine"
 	Material  BreakdownLineKey = "material"
 	Plates    BreakdownLineKey = "plates"
+)
+
+// Defines values for CreateFileRequestKind.
+const (
+	N3mf CreateFileRequestKind = "3mf"
+	Obj  CreateFileRequestKind = "obj"
+	Step CreateFileRequestKind = "step"
+	Stl  CreateFileRequestKind = "stl"
 )
 
 // Defines values for DfmFlagCode.
@@ -149,6 +158,32 @@ type CatalogResponse struct {
 	QuantityChips            []int             `json:"quantityChips"`
 	ShippingFlatPln          float64           `json:"shippingFlatPln"`
 	VatRate                  float64           `json:"vatRate"`
+}
+
+// ConfirmFileResponse defines model for ConfirmFileResponse.
+type ConfirmFileResponse struct {
+	FileId openapi_types.UUID `json:"fileId"`
+	Stored bool               `json:"stored"`
+}
+
+// CreateFileRequest defines model for CreateFileRequest.
+type CreateFileRequest struct {
+	FileName  string                `json:"fileName"`
+	Kind      CreateFileRequestKind `json:"kind"`
+	Sha256    string                `json:"sha256"`
+	SizeBytes int64                 `json:"sizeBytes"`
+}
+
+// CreateFileRequestKind defines model for CreateFileRequest.Kind.
+type CreateFileRequestKind string
+
+// CreateFileResponse defines model for CreateFileResponse.
+type CreateFileResponse struct {
+	AlreadyStored bool               `json:"alreadyStored"`
+	FileId        openapi_types.UUID `json:"fileId"`
+
+	// UploadUrl Presigned PUT URL; absent when alreadyStored is true
+	UploadUrl *string `json:"uploadUrl,omitempty"`
 }
 
 // DfmFlag defines model for DfmFlag.
@@ -315,9 +350,11 @@ type StepQuoteResponse struct {
 
 // SubmitQuotePart defines model for SubmitQuotePart.
 type SubmitQuotePart struct {
-	FileName string     `json:"fileName"`
-	Hash     string     `json:"hash"`
-	LeadTime LeadTimeId `json:"leadTime"`
+	// FileId The stored file backing this part (plan 02). When present the server verifies it exists with a matching hash and links it.
+	FileId   *openapi_types.UUID `json:"fileId,omitempty"`
+	FileName string              `json:"fileName"`
+	Hash     string              `json:"hash"`
+	LeadTime LeadTimeId          `json:"leadTime"`
 
 	// Metrics Pricing-relevant subset of client-side mesh analysis
 	Metrics  MeshMetrics `json:"metrics"`
@@ -353,6 +390,9 @@ type Vec3Mm struct {
 // BadRequest defines model for BadRequest.
 type BadRequest = ApiError
 
+// CreateFileUploadJSONRequestBody defines body for CreateFileUpload for application/json ContentType.
+type CreateFileUploadJSONRequestBody = CreateFileRequest
+
 // FetchMakerworldModelJSONRequestBody defines body for FetchMakerworldModel for application/json ContentType.
 type FetchMakerworldModelJSONRequestBody = MakerworldFetchRequest
 
@@ -370,6 +410,12 @@ type ServerInterface interface {
 	// Pricing catalog for display (processes, lead times, fees)
 	// (GET /api/v1/config)
 	GetConfig(w http.ResponseWriter, r *http.Request)
+	// Reserve a file record and get a presigned upload URL (dedups by hash)
+	// (POST /api/v1/files)
+	CreateFileUpload(w http.ResponseWriter, r *http.Request)
+	// Confirm a presigned upload completed; verifies the stored object size
+	// (POST /api/v1/files/{fileId}/confirm)
+	ConfirmFileUpload(w http.ResponseWriter, r *http.Request, fileId openapi_types.UUID)
 	// Download a MakerWorld model's 3MF via Bambu Cloud
 	// (POST /api/v1/makerworld/fetch)
 	FetchMakerworldModel(w http.ResponseWriter, r *http.Request)
@@ -394,6 +440,18 @@ type Unimplemented struct{}
 // Pricing catalog for display (processes, lead times, fees)
 // (GET /api/v1/config)
 func (_ Unimplemented) GetConfig(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reserve a file record and get a presigned upload URL (dedups by hash)
+// (POST /api/v1/files)
+func (_ Unimplemented) CreateFileUpload(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Confirm a presigned upload completed; verifies the stored object size
+// (POST /api/v1/files/{fileId}/confirm)
+func (_ Unimplemented) ConfirmFileUpload(w http.ResponseWriter, r *http.Request, fileId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -441,6 +499,45 @@ func (siw *ServerInterfaceWrapper) GetConfig(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetConfig(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateFileUpload operation middleware
+func (siw *ServerInterfaceWrapper) CreateFileUpload(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateFileUpload(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConfirmFileUpload operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmFileUpload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "fileId" -------------
+	var fileId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fileId", chi.URLParam(r, "fileId"), &fileId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fileId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConfirmFileUpload(w, r, fileId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -635,6 +732,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/config", wrapper.GetConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/files", wrapper.CreateFileUpload)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/files/{fileId}/confirm", wrapper.ConfirmFileUpload)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/makerworld/fetch", wrapper.FetchMakerworldModel)

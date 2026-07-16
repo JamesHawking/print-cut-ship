@@ -22,6 +22,7 @@ import {
 import { useMeshWorker } from '@/hooks/useMeshWorker'
 import { track } from '@/lib/funnel'
 import { strings } from '@/lib/strings'
+import { uploadFile } from '@/lib/upload-file'
 
 export interface Part {
   id: string
@@ -34,6 +35,9 @@ export interface Part {
   positions?: Float32Array
   config: PartConfig
   error?: { code: string; message: string }
+  /** Stored-file id once the background upload confirms (plan 02). */
+  fileId?: string
+  uploadStatus?: 'uploading' | 'stored' | 'failed'
 }
 
 const DEFAULT_CONFIG: PartConfig = {
@@ -58,6 +62,9 @@ type Action =
       positions: Float32Array
     }
   | { type: 'failed'; id: string; code: string; message: string }
+  | { type: 'upload_started'; id: string }
+  | { type: 'uploaded'; id: string; fileId: string }
+  | { type: 'upload_failed'; id: string }
   | { type: 'updateConfig'; id: string; config: Partial<PartConfig> }
   | { type: 'remove'; id: string }
   | { type: 'clear' }
@@ -97,6 +104,20 @@ function reducer(state: Part[], action: Action): Part[] {
               error: { code: action.code, message: action.message },
             }
           : p,
+      )
+    case 'upload_started':
+      return state.map((p) =>
+        p.id === action.id ? { ...p, uploadStatus: 'uploading' } : p,
+      )
+    case 'uploaded':
+      return state.map((p) =>
+        p.id === action.id
+          ? { ...p, uploadStatus: 'stored', fileId: action.fileId }
+          : p,
+      )
+    case 'upload_failed':
+      return state.map((p) =>
+        p.id === action.id ? { ...p, uploadStatus: 'failed' } : p,
       )
     case 'updateConfig':
       return state.map((p) =>
@@ -186,6 +207,20 @@ export function PartsProvider({ children }: { children: ReactNode }) {
             triangles: res.metrics.triangleCount,
           })
           track('quote_shown', { fileName: file.name })
+
+          // Store the file in the background so production can print it and the
+          // order-time price check has the geometry. Non-blocking; a failure
+          // only prevents ordering later (plan 05), not the quote.
+          dispatch({ type: 'upload_started', id })
+          uploadFile(file, res.hash, kind)
+            .then((fileId) => dispatch({ type: 'uploaded', id, fileId }))
+            .catch((err: unknown) => {
+              dispatch({ type: 'upload_failed', id })
+              track('file_upload_failed', {
+                fileName: file.name,
+                message: err instanceof Error ? err.message : String(err),
+              })
+            })
         })
         .catch((err: unknown) => {
           const message =

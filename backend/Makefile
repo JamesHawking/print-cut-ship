@@ -1,4 +1,4 @@
-.PHONY: run test build gen gen-go gen-ts gen-sqlc migrate seed migrate-new db-up dev-setup
+.PHONY: run test build gen gen-go gen-ts gen-sqlc migrate seed sweep migrate-new db-up dev-setup
 
 # Local dev defaults to the docker-compose Postgres, so no external config is
 # needed. Override by exporting DATABASE_URL (prod injects it via Coolify).
@@ -45,6 +45,10 @@ migrate:
 
 seed:
 	go run ./cmd/api seed
+
+# File-retention sweep (Coolify scheduled task in prod, plan 03).
+sweep:
+	go run ./cmd/api sweep
 
 # make migrate-new NAME=add_orders_columns
 migrate-new:

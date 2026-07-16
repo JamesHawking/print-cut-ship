@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 
+	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
@@ -20,6 +21,9 @@ type Config struct {
 	// Store persists quotes and step-requests. Nil in unit tests, where
 	// handlers fall back to log-only behavior.
 	Store *store.Store
+	// Storage holds uploaded model files. Nil in unit tests; the file
+	// endpoints degrade to log-only when absent.
+	Storage *storage.Store
 	// PricingConfigID is the active pricing_config_snapshots row verified at
 	// startup to equal the compiled-in pricing.Default (see cmd/api). Quotes
 	// are stamped with it; plan 07 replaces this with a live-swappable config.

@@ -1,10 +1,13 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/mail"
@@ -12,12 +15,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/JamesHawking/print-cut-ship/backend/internal/leadtime"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/makerworld"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
+
+// errQuoteFileInvalid marks a client-supplied part.fileId that doesn't resolve
+// to a stored file with a matching hash — a 400, not a 500.
+var errQuoteFileInvalid = errors.New("referenced file not found or hash mismatch")
 
 var priceCfg = &pricing.Default
 
@@ -315,6 +325,10 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 
 	if s.cfg.Store != nil {
 		if err := s.persistQuote(r.Context(), req, quoteID, partQuotes, totals); err != nil {
+			if errors.Is(err, errQuoteFileInvalid) {
+				badRequest(w, err.Error())
+				return
+			}
 			s.cfg.Logger.Error("persist quote failed", "quoteId", quoteID, "err", err)
 			writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to persist quote"})
 			return
@@ -391,6 +405,21 @@ func (s *server) persistQuote(ctx context.Context, req SubmitQuoteRequest, quote
 		if q.Plates != nil {
 			pl := int32(*q.Plates)
 			part.Plates = &pl
+		}
+		// Link the stored file backing this part, verifying it exists with a
+		// matching hash (the quoted geometry is the file the server holds).
+		if p.FileId != nil {
+			f, err := s.cfg.Store.GetFileByID(ctx, *p.FileId)
+			if err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					return fmt.Errorf("%w: %s", errQuoteFileInvalid, *p.FileId)
+				}
+				return fmt.Errorf("lookup file %s: %w", *p.FileId, err)
+			}
+			if f.Hash == nil || *f.Hash != p.Hash {
+				return fmt.Errorf("%w: %s", errQuoteFileInvalid, *p.FileId)
+			}
+			part.FileID = p.FileId
 		}
 		parts = append(parts, part)
 	}
@@ -479,8 +508,49 @@ func (s *server) FetchMakerworldModel(w http.ResponseWriter, r *http.Request) {
 	}
 	s.cfg.Logger.Info("makerworld fetched",
 		"designId", req.DesignId, "fileName", res.FileName, "bytes", len(res.Bytes))
+
+	// Tee the bytes into storage so a later browser upload dedups onto this row
+	// instead of re-PUTting 100 MB. Best-effort: a tee failure never fails the
+	// fetch — the browser's own upload path is the fallback.
+	s.teeMakerworldFile(r.Context(), req, res)
+
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("X-Mw-Filename", encodeURIComponent(res.FileName))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(res.Bytes)
+}
+
+// teeMakerworldFile stores a downloaded MakerWorld 3MF (source='makerworld')
+// unless an identical file is already stored. Non-fatal on any error.
+func (s *server) teeMakerworldFile(ctx context.Context, req MakerworldFetchRequest, res *makerworld.Result) {
+	if s.cfg.Store == nil || s.cfg.Storage == nil {
+		return
+	}
+	sum := sha256.Sum256(res.Bytes)
+	sha := hex.EncodeToString(sum[:])
+
+	if _, err := s.cfg.Store.GetUploadedFileBySha256(ctx, &sha); err == nil {
+		return // already stored
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		s.cfg.Logger.Warn("makerworld tee: dedup lookup failed", "err", err)
+		return
+	}
+
+	key := storage.Key(sha, "3mf")
+	if err := s.cfg.Storage.Put(ctx, key, bytes.NewReader(res.Bytes), int64(len(res.Bytes)), "model/3mf"); err != nil {
+		s.cfg.Logger.Warn("makerworld tee: put failed", "err", err)
+		return
+	}
+	sourceRef, _ := json.Marshal(req)
+	if _, err := s.cfg.Store.InsertFile(ctx, store.InsertFileParams{
+		FileName:      res.FileName,
+		FileSizeBytes: int64(len(res.Bytes)),
+		Kind:          "3mf",
+		Hash:          &sha,
+		Source:        "makerworld",
+		SourceRef:     sourceRef,
+		StorageKey:    &key,
+	}); err != nil {
+		s.cfg.Logger.Warn("makerworld tee: insert row failed", "err", err)
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/JamesHawking/print-cut-ship/backend/internal/db"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/httpapi"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
@@ -46,8 +48,13 @@ func main() {
 			logger.Error("seed failed", "err", err)
 			os.Exit(1)
 		}
+	case "sweep":
+		if err := sweep(context.Background(), logger); err != nil {
+			logger.Error("sweep failed", "err", err)
+			os.Exit(1)
+		}
 	default:
-		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed]")
+		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed|sweep]")
 		os.Exit(2)
 	}
 }
@@ -72,12 +79,23 @@ func serve(logger *slog.Logger) {
 		os.Exit(1)
 	}
 
+	strg, err := storage.New()
+	if err != nil {
+		logger.Error("storage init failed", "err", err)
+		os.Exit(1)
+	}
+	if err := strg.EnsureBucket(context.Background()); err != nil {
+		logger.Error("storage bucket bootstrap failed", "err", err)
+		os.Exit(1)
+	}
+
 	srv := &http.Server{
 		Addr: ":" + port,
 		Handler: httpapi.NewRouter(httpapi.Config{
 			BambuCloudToken: os.Getenv("BAMBU_CLOUD_TOKEN"),
 			Logger:          logger,
 			Store:           st,
+			Storage:         strg,
 			PricingConfigID: pricingConfigID,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
@@ -113,6 +131,27 @@ func seed(ctx context.Context, logger *slog.Logger) error {
 	defer pool.Close()
 	_, err = ensureActivePricingConfig(ctx, store.NewStore(pool), logger)
 	return err
+}
+
+// sweep runs the file-retention sweep (Coolify scheduled task, plan 03). Reads
+// FILE_RETENTION_UNORDERED_DAYS (default 30).
+func sweep(ctx context.Context, logger *slog.Logger) error {
+	pool, err := db.New(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	strg, err := storage.New()
+	if err != nil {
+		return err
+	}
+	days := 0
+	if v := os.Getenv("FILE_RETENTION_UNORDERED_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			days = n
+		}
+	}
+	return storage.RunSweep(ctx, store.NewStore(pool), strg, days, logger)
 }
 
 // ensureActivePricingConfig guarantees the DB's active pricing_config_snapshots

@@ -67,6 +67,7 @@ export function OrderDialog({
           parts: parts.map(({ part }) => ({
             fileName: part.fileName,
             hash: part.hash ?? '',
+            ...(part.fileId && { fileId: part.fileId }),
             metrics: toApiMetrics(part.metrics!),
             process: part.config.process,
             quantity: part.config.quantity,

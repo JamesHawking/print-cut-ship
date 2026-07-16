@@ -14,7 +14,7 @@ export const strings = {
     headline: 'Upload a part, get a price. Right now.',
     sub: 'The fastest, most transparent way to price a 3D-printed part in the EU — a full cost breakdown and a real ship date, with no account and no waiting.',
     trust: 'Made in the EU · Ships D+1/D+2 to Germany · No account',
-    privacy: 'Private — files never leave your session unless you order',
+    privacy: 'Private — files are used only to prepare your quote and auto-deleted if you don’t order',
     figCaption: 'Automated line — print · pick · pack · ship',
     figNo: 'Fig. 01',
     // Zipped with computed values in Hero.tsx (same order).
@@ -38,7 +38,7 @@ export const strings = {
       {
         n: '01',
         title: 'Upload',
-        body: 'Drop an STL, 3MF, OBJ or STEP. The geometry is measured right in your browser — nothing is uploaded just to price it.',
+        body: 'Drop an STL, 3MF, OBJ or STEP. The geometry is measured right in your browser, and your file is stored securely so we can print it — auto-deleted if you don’t order.',
       },
       {
         n: '02',

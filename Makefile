@@ -10,9 +10,9 @@
 DATABASE_URL ?= postgres://dev:dev@localhost:5432/instantquote
 export DATABASE_URL
 
-# Start (and wait for) the local Postgres from docker-compose.yml.
+# Start (and wait for) the local Postgres + MinIO from docker-compose.yml.
 db-up:
-	docker compose up -d --wait postgres
+	docker compose up -d --wait postgres minio
 
 # One command to a working local DB: start Postgres, migrate, seed.
 db-setup: db-up

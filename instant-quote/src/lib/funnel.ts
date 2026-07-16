@@ -13,6 +13,9 @@ export type FunnelEvent =
   | 'makerworld_fetch_started'
   | 'makerworld_fetch_succeeded'
   | 'makerworld_fetch_failed'
+  | 'file_upload_started'
+  | 'file_upload_succeeded'
+  | 'file_upload_failed'
 
 let sessionId: string | null = null
 

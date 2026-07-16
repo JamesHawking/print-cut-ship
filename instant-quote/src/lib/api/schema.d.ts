@@ -106,6 +106,40 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/files': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Reserve a file record and get a presigned upload URL (dedups by hash) */
+    post: operations['createFileUpload']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/files/{fileId}/confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Confirm a presigned upload completed; verifies the stored object size */
+    post: operations['confirmFileUpload']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -332,6 +366,11 @@ export interface components {
     SubmitQuotePart: {
       fileName: string
       hash: string
+      /**
+       * Format: uuid
+       * @description The stored file backing this part (plan 02). When present the server verifies it exists with a matching hash and links it.
+       */
+      fileId?: string
       metrics: components['schemas']['MeshMetrics']
       process: components['schemas']['ProcessId']
       quantity: number
@@ -378,6 +417,26 @@ export interface components {
         | 'auth_expired'
         | 'download_failed'
         | 'too_large'
+    }
+    CreateFileRequest: {
+      sha256: string
+      fileName: string
+      /** @enum {string} */
+      kind: 'stl' | 'obj' | '3mf' | 'step'
+      /** Format: int64 */
+      sizeBytes: number
+    }
+    CreateFileResponse: {
+      /** Format: uuid */
+      fileId: string
+      /** @description Presigned PUT URL; absent when alreadyStored is true */
+      uploadUrl?: string
+      alreadyStored: boolean
+    }
+    ConfirmFileResponse: {
+      /** Format: uuid */
+      fileId: string
+      stored: boolean
     }
     ApiError: {
       error: string
@@ -555,6 +614,55 @@ export interface operations {
       413: components['responses']['MakerworldError']
       502: components['responses']['MakerworldError']
       503: components['responses']['MakerworldError']
+    }
+  }
+  createFileUpload: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateFileRequest']
+      }
+    }
+    responses: {
+      /** @description File reserved (uploadUrl present) or already stored */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CreateFileResponse']
+        }
+      }
+      400: components['responses']['BadRequest']
+    }
+  }
+  confirmFileUpload: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        fileId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Upload confirmed */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfirmFileResponse']
+        }
+      }
+      400: components['responses']['BadRequest']
+      404: components['responses']['BadRequest']
     }
   }
 }
