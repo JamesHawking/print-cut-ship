@@ -77,6 +77,7 @@ func TestPriceEndpoint(t *testing.T) {
 		"unknown process":  strings.Replace(fmt.Sprintf(`{"parts": [%s]}`, validPart), `"pla"`, `"resin"`, 1),
 		"unknown leadTime": strings.Replace(fmt.Sprintf(`{"parts": [%s]}`, validPart), `"standard"`, `"warp"`, 1),
 		"zero quantity":    strings.Replace(fmt.Sprintf(`{"parts": [%s]}`, validPart), `"quantity": 2`, `"quantity": 0`, 1),
+		"huge quantity":    strings.Replace(fmt.Sprintf(`{"parts": [%s]}`, validPart), `"quantity": 2`, `"quantity": 15000000`, 1),
 		"negative volume":  strings.Replace(fmt.Sprintf(`{"parts": [%s]}`, validPart), `"volumeCm3": 100`, `"volumeCm3": -1`, 1),
 		"not JSON":         `{`,
 	}

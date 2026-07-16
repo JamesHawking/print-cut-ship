@@ -2,26 +2,74 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
 	"syscall"
 	"time"
 
 	// Embed tzdata so Europe/Warsaw works in minimal container images.
 	_ "time/tzdata"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+
+	"github.com/JamesHawking/print-cut-ship/backend/internal/db"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/httpapi"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
+	cmd := "serve"
+	if len(os.Args) > 1 {
+		cmd = os.Args[1]
+	}
+
+	switch cmd {
+	case "serve":
+		serve(logger)
+	case "migrate":
+		if err := db.Migrate(context.Background(), os.Getenv("DATABASE_URL")); err != nil {
+			logger.Error("migrate failed", "err", err)
+			os.Exit(1)
+		}
+		logger.Info("migrations applied")
+	case "seed":
+		if err := seed(context.Background(), logger); err != nil {
+			logger.Error("seed failed", "err", err)
+			os.Exit(1)
+		}
+	default:
+		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed]")
+		os.Exit(2)
+	}
+}
+
+func serve(logger *slog.Logger) {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
+	}
+
+	pool, err := db.New(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		logger.Error("database connection failed", "err", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	st := store.NewStore(pool)
+	pricingConfigID, err := ensureActivePricingConfig(context.Background(), st, logger)
+	if err != nil {
+		logger.Error("pricing config bootstrap failed", "err", err)
+		os.Exit(1)
 	}
 
 	srv := &http.Server{
@@ -29,6 +77,8 @@ func main() {
 		Handler: httpapi.NewRouter(httpapi.Config{
 			BambuCloudToken: os.Getenv("BAMBU_CLOUD_TOKEN"),
 			Logger:          logger,
+			Store:           st,
+			PricingConfigID: pricingConfigID,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
@@ -50,4 +100,60 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("shutdown failed", "err", err)
 	}
+}
+
+// seed ensures the active pricing-config snapshot matches pricing.Default.
+// Idempotent; serve() runs the same bootstrap at startup, so this subcommand
+// exists mainly for CI and manual setup.
+func seed(ctx context.Context, logger *slog.Logger) error {
+	pool, err := db.New(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	_, err = ensureActivePricingConfig(ctx, store.NewStore(pool), logger)
+	return err
+}
+
+// ensureActivePricingConfig guarantees the DB's active pricing_config_snapshots
+// row equals the compiled-in pricing.Default, so the pricing_config_id stamped
+// onto quotes always describes the config that actually priced them. Until
+// plan 07 makes the engine load config from the DB, the binary is the source
+// of truth and the DB row follows it: no active row → insert; active row with
+// a different config → replace with a new active snapshot.
+func ensureActivePricingConfig(ctx context.Context, st *store.Store, logger *slog.Logger) (uuid.UUID, error) {
+	wantJSON, err := json.Marshal(pricing.Default)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	row, err := st.GetActivePricingConfig(ctx)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		id, err := st.InsertPricingConfigSnapshot(ctx, store.InsertPricingConfigSnapshotParams{
+			Label:    "auto: pricing.Default",
+			Config:   wantJSON,
+			IsActive: true,
+		})
+		if err != nil {
+			return uuid.Nil, err
+		}
+		logger.Info("seeded active pricing config", "id", id)
+		return id, nil
+	case err != nil:
+		return uuid.Nil, err
+	}
+
+	var stored pricing.Config
+	if json.Unmarshal(row.Config, &stored) == nil && reflect.DeepEqual(stored, pricing.Default) {
+		return row.ID, nil
+	}
+
+	id, err := st.ReplaceActivePricingConfig(ctx, "auto: pricing.Default (superseded "+row.Label+")", wantJSON)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	logger.Warn("active pricing config differed from the binary; replaced it",
+		"oldId", row.ID, "oldLabel", row.Label, "newId", id)
+	return id, nil
 }

@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -13,7 +14,9 @@ import (
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/leadtime"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/makerworld"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
 var priceCfg = &pricing.Default
@@ -152,8 +155,8 @@ func validatePart(metrics MeshMetrics, process ProcessId, quantity int, lead Lea
 	if _, ok := priceCfg.LeadTime(string(lead)); !ok {
 		return fmt.Sprintf("unknown leadTime %q", lead)
 	}
-	if quantity < 1 {
-		return "quantity must be >= 1"
+	if quantity < 1 || quantity > pricing.MaxQuantity {
+		return fmt.Sprintf("quantity must be 1-%d", pricing.MaxQuantity)
 	}
 	if metrics.VolumeCm3 < 0 || metrics.SurfaceAreaCm2 < 0 {
 		return "metrics must be non-negative"
@@ -295,7 +298,7 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 
 	// The server's own pricing is authoritative; the client total is only
 	// telemetry for catching drift between the UI and this engine.
-	_, totals := priceParts(req.Parts)
+	partQuotes, totals := priceParts(req.Parts)
 	quoteID := makeID("Q")
 	logAttrs := []any{
 		"quoteId", quoteID,
@@ -310,10 +313,92 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 	}
 	s.cfg.Logger.Info("submitQuote", logAttrs...)
 
+	if s.cfg.Store != nil {
+		if err := s.persistQuote(r.Context(), req, quoteID, partQuotes, totals); err != nil {
+			s.cfg.Logger.Error("persist quote failed", "quoteId", quoteID, "err", err)
+			writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to persist quote"})
+			return
+		}
+	} else {
+		s.cfg.Logger.Warn("store not configured; quote not persisted", "quoteId", quoteID)
+	}
+
 	writeJSON(w, http.StatusOK, SubmitQuoteResponse{
 		QuoteId: quoteID,
 		Totals:  fromDomainTotals(totals),
 	})
+}
+
+// persistQuote writes the server-authored quote and its parts. Money is stored
+// as integer grosze; breakdown/dfmFlags are serialized to jsonb. The quote is
+// attached to the startup-verified pricing-config snapshot (cfg.PricingConfigID,
+// guaranteed by cmd/api to match the pricing.Default that priced it) so later
+// rate changes never reprice it.
+func (s *server) persistQuote(ctx context.Context, req SubmitQuoteRequest, quoteID string, partQuotes []pricing.PartQuote, totals pricing.OrderTotals) error {
+	var convErr error
+	grosze := func(pln float64) int32 {
+		v, err := money.ToGrosze(pln)
+		if err != nil && convErr == nil {
+			convErr = err
+		}
+		return v
+	}
+	email := string(req.Email)
+	country := string(req.Country)
+	quoteParams := store.InsertQuoteParams{
+		ShortID:             quoteID,
+		Email:               &email,
+		Country:             &country,
+		PricingConfigID:     s.cfg.PricingConfigID,
+		PartsSubtotalGrosze: grosze(totals.PartsSubtotalPln),
+		MinOrderTopupGrosze: grosze(totals.MinOrderTopUpPln),
+		OrderFeeGrosze:      grosze(totals.OrderFeePln),
+		ShippingGrosze:      grosze(totals.ShippingPln),
+		NetTotalGrosze:      grosze(totals.NetTotalPln),
+		VatGrosze:           grosze(totals.VatPln),
+		GrossTotalGrosze:    grosze(totals.GrossTotalPln),
+		FreeShipping:        totals.FreeShipping,
+		MinOrderApplied:     totals.MinOrderApplied,
+	}
+	parts := make([]store.InsertQuotePartParams, 0, len(req.Parts))
+	for i, p := range req.Parts {
+		q := partQuotes[i]
+		breakdown, err := json.Marshal(q.Breakdown)
+		if err != nil {
+			return fmt.Errorf("marshal breakdown: %w", err)
+		}
+		dfm, err := json.Marshal(q.DfmFlags)
+		if err != nil {
+			return fmt.Errorf("marshal dfmFlags: %w", err)
+		}
+		billable := q.BillableVolumeCm3
+		part := store.InsertQuotePartParams{
+			FileName:          p.FileName,
+			Hash:              p.Hash,
+			Process:           string(p.Process),
+			Quantity:          int32(p.Quantity), // safe: validatePart caps at MaxQuantity
+			LeadTime:          string(p.LeadTime),
+			UnitPriceGrosze:   grosze(q.UnitPricePln),
+			LineTotalGrosze:   grosze(q.LineTotalPln),
+			BillableVolumeCm3: &billable,
+			Breakdown:         breakdown,
+			DfmFlags:          dfm,
+		}
+		if q.PieceCount != nil {
+			pc := int32(*q.PieceCount)
+			part.PieceCount = &pc
+		}
+		if q.Plates != nil {
+			pl := int32(*q.Plates)
+			part.Plates = &pl
+		}
+		parts = append(parts, part)
+	}
+	if convErr != nil {
+		return fmt.Errorf("quote exceeds representable money: %w", convErr)
+	}
+	_, err := s.cfg.Store.CreateQuote(ctx, quoteParams, parts)
+	return err
 }
 
 func (s *server) SubmitStepQuote(w http.ResponseWriter, r *http.Request) {
@@ -336,6 +421,22 @@ func (s *server) SubmitStepQuote(w http.ResponseWriter, r *http.Request) {
 	requestID := makeID("STEP")
 	s.cfg.Logger.Info("requestStepQuote",
 		"requestId", requestID, "email", string(req.Email), "fileName", req.FileName)
+
+	if s.cfg.Store != nil {
+		if _, err := s.cfg.Store.InsertStepRequest(r.Context(), store.InsertStepRequestParams{
+			ShortID:       requestID,
+			Email:         string(req.Email),
+			FileName:      req.FileName,
+			FileSizeBytes: int64(req.FileSize),
+		}); err != nil {
+			s.cfg.Logger.Error("persist step request failed", "requestId", requestID, "err", err)
+			writeJSON(w, http.StatusInternalServerError, ApiError{Error: "failed to persist step request"})
+			return
+		}
+	} else {
+		s.cfg.Logger.Warn("store not configured; step request not persisted", "requestId", requestID)
+	}
+
 	writeJSON(w, http.StatusOK, StepQuoteResponse{RequestId: requestID})
 }
 

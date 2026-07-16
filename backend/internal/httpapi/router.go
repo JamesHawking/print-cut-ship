@@ -9,11 +9,21 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
+
+	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
 type Config struct {
 	BambuCloudToken string
 	Logger          *slog.Logger
+	// Store persists quotes and step-requests. Nil in unit tests, where
+	// handlers fall back to log-only behavior.
+	Store *store.Store
+	// PricingConfigID is the active pricing_config_snapshots row verified at
+	// startup to equal the compiled-in pricing.Default (see cmd/api). Quotes
+	// are stamped with it; plan 07 replaces this with a live-swappable config.
+	PricingConfigID uuid.UUID
 }
 
 func NewRouter(cfg Config) http.Handler {

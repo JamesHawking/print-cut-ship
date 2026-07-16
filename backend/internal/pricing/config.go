@@ -85,6 +85,11 @@ var QuantityChips = []int{1, 5, 10, 25, 50}
 
 const MaxParts = 5
 
+// MaxQuantity bounds per-part quantity at the API boundary. Chosen well above
+// any real order while keeping worst-case line totals far from the int32
+// grosze ceiling that persistence enforces (internal/money).
+const MaxQuantity = 10_000
+
 // Default mirrors PRICING in src/lib/pricing-config.ts. Rates anchor to
 // mapi-tech.pl reference quotes; see instant-quote/references/.
 var Default = Config{

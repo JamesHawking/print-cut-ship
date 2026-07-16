@@ -24,6 +24,48 @@ The frontend dev server proxies `/api` here (Nitro routeRules in
 In production, route the `/api` path prefix to this service at the reverse
 proxy; the Nitro fallback proxy also works if `API_PROXY` is set.
 
+## Database / local dev
+
+Postgres (roadmap plan 01) persists quotes and step-requests. It runs from the
+repo-root `docker-compose.yml`; **local dev needs no external config** — the
+Makefiles default `DATABASE_URL` to the compose Postgres. Two modes:
+
+```sh
+# Mode 1 — native hot-reload loop (default). From the repo root:
+make dev              # starts Postgres, migrates+seeds, runs API + frontend
+
+# Just the backend against the compose DB (from backend/):
+make dev-setup        # docker compose up postgres + migrate + seed
+make run              # serve
+
+# Mode 2 — full stack in containers, no Go/Bun toolchain:
+docker compose --profile full up --build
+#   → Postgres + auto migrate + auto seed + API on :8080
+#   (run the frontend natively with `bun dev`; it proxies /api to :8080)
+```
+
+- `DATABASE_URL` — defaulted to `postgres://dev:dev@localhost:5432/instantquote`
+  by the Makefiles and wired between compose services automatically. The
+  **compiled binary still fails fast** if `DATABASE_URL` is unset in serve mode,
+  so production must inject it (Coolify, plan 03) — the default lives only in
+  local tooling, never in the binary.
+- **Migrations** live in `internal/db/migrations/` (goose SQL, embedded into the
+  binary). Create one with `make migrate-new NAME=add_x`; the same binary runs
+  them via `api migrate` (Coolify runs this as a pre-deploy step — plan 03).
+- **Data access** is sqlc-generated from `internal/store/queries/*.sql` against
+  the migration schema; regenerate with `make gen-sqlc` (part of `make gen`).
+- Money is stored as integer grosze (`internal/money`); the base schema is owned
+  here and extended by later plans (04/05/07) via additive migrations.
+
+Run the DB-backed handler test against a throwaway database:
+
+```sh
+TEST_DATABASE_URL=postgres://dev:dev@localhost:5432/instantquote go test ./internal/httpapi/
+```
+
+(It is skipped when `TEST_DATABASE_URL` is unset. CI provisions a Postgres
+service and runs `api migrate` before tests — plan 03.)
+
 ## API
 
 Spec-first: `api/openapi.yaml` is the contract.
