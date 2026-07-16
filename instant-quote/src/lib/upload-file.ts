@@ -13,7 +13,11 @@ export async function uploadFile(
   sha256: string,
   kind: Exclude<FileKind, 'unsupported'>,
 ): Promise<string> {
-  track('file_upload_started', { fileName: file.name, kind, sizeBytes: file.size })
+  track('file_upload_started', {
+    fileName: file.name,
+    kind,
+    sizeBytes: file.size,
+  })
 
   const created = await api.POST('/api/v1/files', {
     body: { sha256, fileName: file.name, kind, sizeBytes: file.size },
@@ -22,7 +26,10 @@ export async function uploadFile(
 
   if (!created.data.alreadyStored && created.data.uploadUrl) {
     // Presigned PUT bypasses the typed client (raw bytes, cross-origin to MinIO).
-    const put = await fetch(created.data.uploadUrl, { method: 'PUT', body: file })
+    const put = await fetch(created.data.uploadUrl, {
+      method: 'PUT',
+      body: file,
+    })
     if (!put.ok) throw new Error(`upload PUT failed (${put.status})`)
 
     const confirmed = await api.POST('/api/v1/files/{fileId}/confirm', {

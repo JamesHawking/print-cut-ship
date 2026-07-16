@@ -36,6 +36,12 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
             >
               {strings.nav.materials}
             </a>
+            <a
+              href="#pricing"
+              className="text-muted-foreground hover:text-foreground hidden transition-colors sm:inline"
+            >
+              {strings.nav.pricing}
+            </a>
             {parts.length > 0 ? (
               <Link
                 to="/quote"
@@ -44,12 +50,9 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
                 {strings.nav.resume(parts.length)}
               </Link>
             ) : (
-              <span className="text-muted-foreground hidden items-center gap-4 lg:flex">
-                <span>{strings.hero.status}</span>
-                <span className="text-foreground flex items-center gap-1.5">
-                  <span className="bg-signal size-1.5 rounded-full" />
-                  {strings.hero.ready}
-                </span>
+              <span className="text-foreground hidden items-center gap-1.5 lg:flex">
+                <span className="bg-signal size-1.5 rounded-full" />
+                {strings.hero.ready}
               </span>
             )}
           </nav>

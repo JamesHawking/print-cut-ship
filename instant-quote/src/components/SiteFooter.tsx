@@ -3,22 +3,19 @@ import { strings } from '@/lib/strings'
 import { formatWarsawClock } from '@/lib/clock'
 
 export function SiteFooter() {
-  const { ctaHeading, ctaBody, ctaButton, note, meta, cutoff } = strings.footer
+  const { ctaHeading, ctaButton, note, meta, cutoff } = strings.footer
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000)
     return () => clearInterval(t)
   }, [])
   return (
-    <footer className="border-t">
+    <footer>
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="flex flex-col items-start gap-6 py-16 sm:flex-row sm:items-center sm:justify-between lg:py-20">
-          <div>
-            <h2 className="text-2xl font-black tracking-tight text-balance sm:text-3xl">
-              {ctaHeading}
-            </h2>
-            <p className="text-muted-foreground mt-2">{ctaBody}</p>
-          </div>
+        <div className="flex flex-col items-start gap-6 py-16 sm:flex-row sm:items-center sm:justify-between lg:py-[72px]">
+          <h2 className="text-[clamp(1.8rem,3.4vw,2.6rem)] font-black tracking-[-0.03em] text-balance uppercase">
+            {ctaHeading}
+          </h2>
           <a
             href="#top"
             className="bg-primary text-primary-foreground hover:shadow-primary/40 inline-flex shrink-0 items-center gap-2 rounded-md px-7 py-3.5 text-sm font-bold transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-lg"

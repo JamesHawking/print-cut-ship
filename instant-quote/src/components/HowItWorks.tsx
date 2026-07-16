@@ -1,35 +1,51 @@
 import { strings } from '@/lib/strings'
+import { SectionHeading } from './SectionHeading'
 
 export function HowItWorks() {
-  const { kicker, heading, steps } = strings.process
+  const { n, heading, steps } = strings.process
   return (
-    <section id="how-it-works" className="scroll-mt-14 border-t">
+    <section id="how-it-works" className="scroll-mt-14">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
-        <p className="text-muted-foreground font-mono text-xs tracking-[0.2em] uppercase">
-          {kicker}
-        </p>
-        <h2 className="mt-4 max-w-2xl text-3xl font-black tracking-tight text-balance sm:text-4xl">
-          {heading}
-        </h2>
-        <ol className="bg-border mt-12 grid gap-px overflow-hidden rounded-lg border md:grid-cols-3">
+        <SectionHeading n={n} title={heading} />
+        <ol className="mt-12 grid list-none gap-12 p-0 md:grid-cols-3">
           {steps.map((step) => (
-            <li key={step.n} className="bg-card p-6 sm:p-8">
-              <div className="flex items-center gap-3">
-                <span className="text-primary-text font-mono text-sm font-bold tabular-nums">
-                  {step.n}
-                </span>
-                <span className="bg-border h-px flex-1" />
-              </div>
-              <h3 className="mt-5 text-xl font-bold tracking-tight">
+            <li key={step.n}>
+              <span
+                aria-hidden
+                className="text-stroke-faint font-mono text-[clamp(40px,5vw,64px)] leading-none font-bold tabular-nums"
+              >
+                {step.n}
+              </span>
+              <h3 className="mt-5 text-xl font-extrabold tracking-tight">
                 {step.title}
               </h3>
-              <p className="text-muted-foreground mt-3 text-pretty">
+              <p className="text-muted-foreground mt-3 text-[15px] leading-relaxed text-pretty">
                 {step.body}
               </p>
             </li>
           ))}
         </ol>
       </div>
+      <FactoryFigure />
     </section>
+  )
+}
+
+/** Full-bleed factory-line illustration with an in-image caption bar. */
+function FactoryFigure() {
+  return (
+    <figure className="relative m-0">
+      <img
+        src="/factory-line.webp"
+        width={1412}
+        height={765}
+        alt="Automated production line: a part is 3D-printed, moved by a robot arm, then packed for shipping."
+        className="block h-auto w-full"
+      />
+      <figcaption className="from-foreground/55 text-background absolute inset-x-0 bottom-0 flex justify-between gap-4 bg-gradient-to-t to-transparent px-6 py-3.5 font-mono text-[0.65rem] tracking-[0.16em] uppercase">
+        <span>{strings.hero.figCaption}</span>
+        <span>{strings.hero.figNo}</span>
+      </figcaption>
+    </figure>
   )
 }

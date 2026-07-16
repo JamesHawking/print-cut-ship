@@ -1,38 +1,27 @@
 import { cn } from '@/lib/utils'
 import { strings } from '@/lib/strings'
-import {
-  BUILD_VOLUME_MM,
-  LEAD_TIME_DAYS,
-  MATERIALS,
-  VAT_RATE,
-} from '@/lib/catalog-static'
+import { LEAD_TIME_DAYS, MATERIALS, VAT_RATE } from '@/lib/catalog-static'
 import { DropZone } from './DropZone'
 
 // Capability figures from the static marketing catalog, zipped with the
 // labels in strings.hero.specs (same order).
 const SPEC_VALUES = [
   String(MATERIALS.length).padStart(2, '0'),
-  `${BUILD_VOLUME_MM.x}×${BUILD_VOLUME_MM.y}×${BUILD_VOLUME_MM.z}`,
   `${LEAD_TIME_DAYS.min}–${LEAD_TIME_DAYS.max}`,
+  'D+1',
   `${Math.round(VAT_RATE * 100)}%`,
-]
-
-// The three line stages, positioned over their machine in the hero figure.
-// Decorative (aria-hidden) — the illustration's alt text carries the meaning.
-const STAGES = [
-  { n: '01', label: '3D printing', left: '6%', line: 'h-9' },
-  { n: '02', label: 'Pick & place', left: '33%', line: 'h-14' },
-  { n: '03', label: 'Pack & ship', left: '61%', line: 'h-16' },
 ]
 
 export function Hero({
   onFiles,
   onUrl,
   urlPending,
+  onSample,
 }: {
   onFiles: (files: File[]) => void
   onUrl?: (url: string) => void
   urlPending?: boolean
+  onSample?: () => void
 }) {
   const specs = strings.hero.specs.map((label, i) => ({
     label,
@@ -40,119 +29,162 @@ export function Hero({
   }))
 
   return (
-    <section id="top" className="relative scroll-mt-0">
-      <CornerMarks />
+    <section id="top" className="relative overflow-hidden border-b">
+      <Drone />
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        {/* hero body — copy and the upload panel sit side by side; below them a
-            full-width capability strip, then the full-width factory figure.
-            On mobile everything stacks in that order. */}
-        <div className="py-12 lg:py-20">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch lg:gap-12">
-            <div className="flex flex-col justify-center">
-              <p className="text-muted-foreground font-mono text-xs tracking-[0.2em] uppercase">
-                {strings.hero.kicker}
-              </p>
-              <h1 className="mt-5 text-4xl leading-[0.95] font-black tracking-tight text-balance sm:text-5xl md:text-6xl">
-                {strings.hero.headline}
-              </h1>
-              <p className="text-muted-foreground mt-6 max-w-xl text-[17px] leading-relaxed text-pretty">
+      <div className="relative mx-auto max-w-6xl px-4 pt-16 sm:px-6 lg:pt-[72px]">
+        <p className="text-muted-foreground flex items-center gap-3.5 font-mono text-[0.7rem] tracking-[0.24em] uppercase">
+          <span className="bg-primary text-primary-foreground px-1.5 py-1 font-bold tracking-[0.14em]">
+            {strings.hero.kickerBadge}
+          </span>
+          {strings.hero.kicker}
+        </p>
+        <h1 className="mt-7 text-[clamp(3rem,8.6vw,7.25rem)] leading-[0.88] font-black tracking-[-0.035em] uppercase">
+          {strings.hero.headline1}
+          <br />
+          <span className="text-stroke-ink">{strings.hero.headline2}</span>
+        </h1>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 pt-12 pb-16 sm:px-6 lg:pb-[72px]">
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch lg:gap-12">
+          <div className="flex flex-col justify-between gap-8">
+            <div>
+              <p className="text-muted-foreground max-w-md text-[17px] leading-relaxed text-pretty lg:text-lg">
                 {strings.hero.sub}
               </p>
-              <p className="text-muted-foreground mt-7 font-mono text-[0.65rem] tracking-wider uppercase">
-                {strings.hero.trust}
-              </p>
+              {onSample && (
+                <button
+                  type="button"
+                  onClick={onSample}
+                  className="hover:text-primary-text focus-visible:ring-ring mt-6 cursor-pointer font-mono text-[0.65rem] tracking-[0.14em] uppercase underline underline-offset-4 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                  {strings.hero.sample}
+                </button>
+              )}
             </div>
 
-            <div className="flex flex-col">
-              <DropZone
-                onFiles={onFiles}
-                variant="hero"
-                onUrl={onUrl}
-                urlPending={urlPending}
-              />
-              <p className="text-muted-foreground mt-3.5 text-center font-mono text-[0.7rem] tracking-widest uppercase">
-                {strings.hero.privacy}
-              </p>
-            </div>
+            <dl className="grid grid-cols-2 border-t">
+              {specs.map((s, i) => (
+                <div
+                  key={s.label}
+                  className={cn(
+                    i % 2 === 0 ? 'border-r pr-5' : 'pl-5',
+                    i < 2 ? 'border-b py-5' : 'pt-5',
+                  )}
+                >
+                  <dt className="font-mono text-[clamp(22px,2.4vw,30px)] leading-none font-bold whitespace-nowrap tabular-nums">
+                    {s.value}
+                  </dt>
+                  <dd className="text-muted-foreground mt-2.5 font-mono text-[0.6rem] tracking-[0.16em] uppercase">
+                    {s.label}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          <dl className="bg-border mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-4">
-            {specs.map((s) => (
-              <div key={s.label} className="bg-card p-5">
-                <dt className="font-mono text-2xl leading-none font-bold tracking-tight tabular-nums">
-                  {s.value}
-                </dt>
-                <dd className="text-muted-foreground mt-2.5 font-mono text-[0.65rem] tracking-wider uppercase">
-                  {s.label}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
-          <FactoryFigure className="mt-16 lg:mt-[72px]" />
+          <div className="flex flex-col">
+            <DropZone
+              onFiles={onFiles}
+              variant="hero"
+              onUrl={onUrl}
+              urlPending={urlPending}
+            />
+            <p className="text-muted-foreground mt-3.5 text-center font-mono text-[0.7rem] tracking-widest uppercase">
+              {strings.hero.privacy}
+            </p>
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-/** Factory-line illustration with numbered stage callouts. */
-function FactoryFigure({ className }: { className?: string }) {
+/** Courier drone drifting across the hero — pure decoration, motion-gated. */
+function Drone() {
   return (
-    <figure className={cn('relative pt-11 sm:pt-14', className)}>
-      <img
-        src="/factory-line.webp"
-        width={1412}
-        height={765}
-        alt="Automated production line: a part is 3D-printed, moved by a robot arm, then packed for shipping."
-        className="h-auto w-full"
-      />
-      {/* stage callouts — decorative overlay, hidden on small screens */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden sm:block"
-      >
-        {STAGES.map((s) => (
-          <div
-            key={s.n}
-            className="absolute top-0 flex flex-col items-start"
-            style={{ left: s.left }}
-          >
-            <div className="flex items-center gap-2">
-              <span className="bg-primary text-primary-foreground grid h-5 min-w-5 place-items-center px-1 font-mono text-[0.72rem] leading-none font-bold">
-                {s.n}
-              </span>
-              <span className="text-foreground font-mono text-[0.7rem] font-semibold tracking-wider whitespace-nowrap uppercase">
-                {s.label}
-              </span>
-            </div>
-            <span
-              className={cn(
-                'border-foreground/25 mt-1 ml-2 w-px border-l border-dashed',
-                s.line,
-              )}
-            />
-          </div>
-        ))}
+    <div
+      aria-hidden
+      className="motion-safe:animate-drone-x pointer-events-none absolute top-[11%] left-0 z-0 motion-reduce:hidden"
+    >
+      <div className="motion-safe:animate-drone-y">
+        <svg
+          width="84"
+          height="44"
+          viewBox="-42 -18 84 44"
+          className="text-foreground/35"
+        >
+          <Rotor x={-26} />
+          <Rotor x={26} />
+          <line
+            x1="-26"
+            y1="0"
+            x2="26"
+            y2="0"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <rect
+            x="-9"
+            y="-3"
+            width="18"
+            height="8"
+            rx="2.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <line
+            x1="0"
+            y1="5"
+            x2="0"
+            y2="12"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          {/* the parcel */}
+          <rect
+            x="-5"
+            y="12"
+            width="10"
+            height="7"
+            rx="1.5"
+            className="fill-primary/75"
+          />
+        </svg>
       </div>
-      <figcaption className="text-muted-foreground mt-5 flex items-center justify-between gap-4 border-t pt-3 font-mono text-[0.65rem] tracking-wider uppercase">
-        <span>{strings.hero.figCaption}</span>
-        <span>{strings.hero.figNo}</span>
-      </figcaption>
-    </figure>
+    </div>
   )
 }
 
-/** Section-framing alignment marks (TE / Anduril). */
-function CornerMarks() {
-  const base = 'pointer-events-none absolute z-10 size-4 border-foreground/20'
+function Rotor({ x }: { x: number }) {
   return (
-    <>
-      <span className={cn(base, 'top-4 left-4 border-t-2 border-l-2')} />
-      <span className={cn(base, 'top-4 right-4 border-t-2 border-r-2')} />
-      <span className={cn(base, 'bottom-4 left-4 border-b-2 border-l-2')} />
-      <span className={cn(base, 'right-4 bottom-4 border-r-2 border-b-2')} />
-    </>
+    <g transform={`translate(${x},0)`}>
+      <line
+        x1="0"
+        y1="0"
+        x2="0"
+        y2="-5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <ellipse
+        cx="0"
+        cy="-6"
+        rx="9"
+        ry="1.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
+        <animate
+          attributeName="rx"
+          values="9;2.5;9"
+          dur="0.22s"
+          repeatCount="indefinite"
+        />
+      </ellipse>
+    </g>
   )
 }
