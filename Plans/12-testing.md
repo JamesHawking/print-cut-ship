@@ -1,5 +1,7 @@
 # 12 — Test & quality expansion
 
+> **Status: ⬜ Not started** (as of 2026-07-16) — groundwork exists: Go golden-fixture + handler suites and the frontend unit suite are in place; Playwright E2E and CI integration are untouched.
+
 ## 1. Context
 
 Coverage today is deep but narrow. **Frontend:** 109 unit tests (`instant-quote/tests/`) on the pure libs — mesh parsing/analysis, packing, MakerWorld URL parsing, STEP quoting — all `bun test`, zero component/route/E2E coverage. **Backend:** Go tests including the crown jewel — `backend/internal/pricing/golden_test.go` with 1,512 part-quote golden cases (+ order totals, packing, ship dates) frozen from the retired TS engine, plus handler and leadtime tests. A local `instant-quote:verify` skill covers manual browser passes.

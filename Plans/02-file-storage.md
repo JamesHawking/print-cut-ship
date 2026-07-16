@@ -1,5 +1,7 @@
 # Plan 02 — File storage for uploaded models
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`). Storage client, upload endpoints, recompute, and retention all live in `backend/` (Go); the browser talks to them through the OpenAPI client.
 
 ## 1. Context

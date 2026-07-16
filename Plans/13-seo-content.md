@@ -1,5 +1,7 @@
 # 13 — SEO, content & trust surface
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 *Phase 3 — post-launch. Lighter plan by design: scoping + sequencing.*
 
 ## 1. Context

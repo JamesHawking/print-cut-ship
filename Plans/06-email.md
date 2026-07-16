@@ -1,5 +1,7 @@
 # Plan 06 — Transactional email (+ customer support channel)
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`): all sending happens from the Go service. Templates are authored with React Email but **pre-rendered to Go-templated HTML at build time** — see the topic-local decision below (the DECISIONS.md email row's "React Email" phrasing is amended accordingly).
 
 ## 1. Context

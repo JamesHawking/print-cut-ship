@@ -1,5 +1,7 @@
 # 10 — Security hardening
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 ## 1. Context
 
 The app is about to face the internet with money and personal data behind it, and today it has: **no rate limiting** anywhere (the MakerWorld proxy will download 100 MB files for anyone who asks — an SSRF-adjacent, bandwidth-amplifying endpoint), **no security headers** (no CSP despite a WASM + web-worker + WebGL client surface, no HSTS), **no server-side upload validation**, secrets in local `.env`s, and a Bambu bearer token that expires (~90 days) against undocumented APIs with no expiry monitoring. Auth (04) and payments (05) will add login and webhook surfaces that need their own hardening.

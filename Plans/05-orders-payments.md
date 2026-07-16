@@ -1,5 +1,7 @@
 # 05 — Orders, checkout & payments
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 > The quote a customer sees becomes a paid order with a legal Polish invoice.
 > Scope contract: ROADMAP.md "### 5. Orders, checkout & payments".
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`): all transaction surface — order creation, Stripe (stripe-go), webhook, Fakturownia, refunds — lives in `backend/`.

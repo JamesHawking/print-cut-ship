@@ -1,5 +1,7 @@
 # Plan 01 — Persistence layer (database + data access)
 
+> **Status: 🔄 In progress** (as of 2026-07-16) — implementation is live in the working tree (uncommitted, under active development in a parallel session: schema/migrations, sqlc store, money package, seed, compose Postgres, docker-compose profile). Verification checklist below not yet passed; not code-reviewed; do not treat as done until committed and verified.
+
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`). The data layer lives in `backend/` (Go), not in TanStack server functions.
 
 ## 1. Context

@@ -1,5 +1,7 @@
 # 07 — Back-office admin
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 ## 1. Context
 
 There is no way to run the business. Orders (once plans 01/05 land) would sit in Postgres with no UI to see them; the model files customers pay to have printed (plan 02) have no download path; order statuses can only change via SQL; pricing lives compiled into `backend/internal/pricing/config.go`, so every rate change is a deploy; and STEP manual-quote requests (`step_requests`) land in a table nobody reads.

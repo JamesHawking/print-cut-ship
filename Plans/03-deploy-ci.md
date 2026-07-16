@@ -1,5 +1,7 @@
 # 03 — Deployment, CI/CD, and environments
 
+> **Status: ⬜ Not started** (as of 2026-07-16) — groundwork exists: production Dockerfile (backend/) and local docker-compose Postgres predate this plan; CI, Coolify wiring, and staging are untouched.
+
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`). The deploy unit is now **two containers** — the Go API (`backend/`) and the TanStack frontend (`instant-quote/`) — with `/api` routed to Go at the proxy.
 
 ## 1. Context

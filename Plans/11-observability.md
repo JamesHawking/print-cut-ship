@@ -1,5 +1,7 @@
 # 11 — Observability, error tracking & analytics
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 ## 1. Context
 
 Today the shop would fail silently. `instant-quote/src/lib/funnel.ts` emits a complete, PostHog-shaped event taxonomy (`upload_started`, `parse_succeeded`, `quote_shown`, `config_changed`, `order_clicked`, `order_submitted`…) — **to the console only**. `vite.config.ts` marks Sentry external but no SDK is wired. The Go backend logs to stdout with no aggregation, no error tracker, no uptime monitor, and no alerting. Once money flows (plan 05), a broken webhook or a dead Bambu token must page someone before a customer notices.

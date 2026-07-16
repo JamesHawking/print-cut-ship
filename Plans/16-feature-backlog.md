@@ -1,5 +1,7 @@
 # 16 — Feature backlog (customer-facing)
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 *Phase 3 — post-launch. This is a triaged backlog, not an implementation plan: each item gets its own mini-plan when picked. Order below is the recommended pick order.*
 
 ## 1. Context

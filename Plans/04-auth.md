@@ -1,5 +1,7 @@
 # 04 — User accounts & authentication
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`): better-auth is **out**; auth lives in the Go service with server-side sessions, consumed by the frontend through the OpenAPI client.
 
 ## 1. Context

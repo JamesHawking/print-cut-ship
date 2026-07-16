@@ -1,5 +1,7 @@
 # 09 — Legal & GDPR/RODO compliance
 
+> **Status: ⬜ Not started** (as of 2026-07-16).
+
 ## 1. Context
 
 Nothing legal exists: no regulamin (terms), no privacy policy, no cookie posture, no company details anywhere, no withdrawal-rights disclosure, no complaint procedure, no data-subject rights implementation. The footer has no legal links. Meanwhile the stack is accumulating exactly the things these documents must describe: uploaded files with retention windows (plan 02), payments via Stripe (05), invoices with a 5-year statutory retention (05), transactional email (06), analytics (11), and an admin who can look up customers (07).
