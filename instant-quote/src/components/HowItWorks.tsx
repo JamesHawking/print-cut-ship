@@ -5,7 +5,7 @@ export function HowItWorks() {
   const { n, heading, steps } = strings.process
   return (
     <section id="how-it-works" className="scroll-mt-14">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
         <SectionHeading n={n} title={heading} />
         <ol className="mt-12 grid list-none gap-12 p-0 md:grid-cols-3">
           {steps.map((step) => (

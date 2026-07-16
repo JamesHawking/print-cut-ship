@@ -129,7 +129,7 @@ export function DropZone({
       <div
         {...dnd}
         className={cn(
-          'group border-border bg-card hover:border-primary/60 relative isolate flex min-h-[440px] flex-1 flex-col items-center justify-center overflow-hidden rounded-lg border px-8 py-14 text-center shadow-xl shadow-black/[0.06] transition-[border-color,box-shadow] hover:shadow-2xl',
+          'group border-border bg-card hover:border-primary/60 relative isolate flex min-h-[300px] flex-1 flex-col items-center justify-center overflow-hidden rounded-lg border px-[22px] py-9 text-center shadow-xl shadow-black/[0.06] transition-[border-color,box-shadow] hover:shadow-2xl md:min-h-[440px] md:px-8 md:py-14',
           'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
           disabled && 'pointer-events-none opacity-50',
         )}

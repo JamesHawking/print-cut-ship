@@ -33,6 +33,7 @@ export const strings = {
     materials: 'Materials',
     pricing: 'Pricing',
     trackOrder: 'Track order',
+    menuLabel: 'Toggle menu',
     resume: (n: number) => `Resume quote (${n}) →`,
     newQuote: '← New quote',
   },

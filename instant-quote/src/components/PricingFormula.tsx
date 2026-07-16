@@ -7,10 +7,10 @@ export function PricingFormula() {
   const { n, heading, formulaLead, terms, cards } = strings.pricing
   return (
     <section id="pricing" className="scroll-mt-14 border-b">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
         <SectionHeading n={n} title={heading} />
 
-        <p className="mt-12 max-w-[900px] font-mono text-[clamp(13px,1.9vw,19px)] leading-[1.9] font-semibold wrap-break-word">
+        <p className="mt-12 max-w-[900px] font-mono text-[clamp(13px,1.9vw,19px)] leading-[2.15] font-semibold wrap-break-word md:leading-[1.9]">
           {formulaLead}
           {terms.map((t) => (
             <Fragment key={t.name}>

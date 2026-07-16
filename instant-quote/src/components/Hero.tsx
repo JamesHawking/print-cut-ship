@@ -32,22 +32,22 @@ export function Hero({
     <section id="top" className="relative overflow-hidden border-b">
       <Drone />
 
-      <div className="relative mx-auto max-w-6xl px-4 pt-16 sm:px-6 lg:pt-[72px]">
+      <div className="relative mx-auto max-w-6xl px-4 pt-10 sm:px-6 md:pt-[72px]">
         <p className="text-muted-foreground flex items-center gap-3.5 font-mono text-[0.7rem] tracking-[0.24em] uppercase">
           <span className="bg-primary text-primary-foreground px-1.5 py-1 font-bold tracking-[0.14em]">
             {strings.hero.kickerBadge}
           </span>
           {strings.hero.kicker}
         </p>
-        <h1 className="mt-7 text-[clamp(3rem,8.6vw,7.25rem)] leading-[0.88] font-black tracking-[-0.035em] uppercase">
+        <h1 className="mt-[22px] text-[clamp(2.1rem,12vw,3rem)] leading-[0.92] font-black tracking-[-0.035em] uppercase min-[421px]:text-[clamp(2.5rem,13vw,3.8rem)] md:mt-7 md:text-[clamp(3rem,8.6vw,7.25rem)] md:leading-[0.88]">
           {strings.hero.headline1}
           <br />
           <span className="text-stroke-ink">{strings.hero.headline2}</span>
         </h1>
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 pt-12 pb-16 sm:px-6 lg:pb-[72px]">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch lg:gap-12">
+      <div className="mx-auto max-w-6xl px-4 pt-9 pb-14 sm:px-6 md:pt-12 md:pb-[72px]">
+        <div className="grid gap-9 md:gap-12 lg:grid-cols-2 lg:items-stretch">
           <div className="flex flex-col justify-between gap-8">
             <div>
               <p className="text-muted-foreground max-w-md text-[17px] leading-relaxed text-pretty lg:text-lg">

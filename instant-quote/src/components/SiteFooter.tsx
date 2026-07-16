@@ -13,7 +13,7 @@ export function SiteFooter() {
   return (
     <footer>
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="flex flex-col items-start gap-6 py-16 sm:flex-row sm:items-center sm:justify-between lg:py-[72px]">
+        <div className="flex flex-col items-start gap-[22px] py-13 md:flex-row md:items-center md:justify-between md:py-[72px]">
           <h2 className="text-[clamp(1.8rem,3.4vw,2.6rem)] font-black tracking-[-0.03em] text-balance uppercase">
             {ctaHeading}
           </h2>
