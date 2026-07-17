@@ -72,6 +72,30 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /api/v1/quotes/{id}:
+    get:
+      operationId: getQuote
+      summary: >-
+        Read back a submitted quote by its id. The id is an unguessable
+        capability token (the quoteId returned by submitQuote); the response
+        is pricing-only and carries no customer PII.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The quoteId returned by submitQuote, e.g. "Q-1A2B3C4D"
+      responses:
+        '200':
+          description: Quote found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitQuoteResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/orders:
     get:
       operationId: listOrders
@@ -199,6 +223,12 @@ components:
   responses:
     BadRequest:
       description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFound:
+      description: Resource not found
       content:
         application/json:
           schema:
@@ -727,6 +757,7 @@ components:
         - unsupported_country
         - missing_file_fields
         - quote_file_invalid
+        - quote_not_found
         - missing_file_name
         - invalid_file_size
         - invalid_design_id

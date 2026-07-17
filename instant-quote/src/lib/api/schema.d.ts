@@ -72,6 +72,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/quotes/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Read back a submitted quote by its id. The id is an unguessable capability token (the quoteId returned by submitQuote); the response is pricing-only and carries no customer PII. */
+    get: operations['getQuote']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/orders': {
     parameters: {
       query?: never
@@ -510,6 +527,7 @@ export interface components {
       | 'unsupported_country'
       | 'missing_file_fields'
       | 'quote_file_invalid'
+      | 'quote_not_found'
       | 'missing_file_name'
       | 'invalid_file_size'
       | 'invalid_design_id'
@@ -527,6 +545,15 @@ export interface components {
   responses: {
     /** @description Invalid request payload */
     BadRequest: {
+      headers: {
+        [name: string]: unknown
+      }
+      content: {
+        'application/json': components['schemas']['ApiError']
+      }
+    }
+    /** @description Resource not found */
+    NotFound: {
       headers: {
         [name: string]: unknown
       }
@@ -639,6 +666,30 @@ export interface operations {
         }
       }
       400: components['responses']['BadRequest']
+    }
+  }
+  getQuote: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The quoteId returned by submitQuote, e.g. "Q-1A2B3C4D" */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Quote found */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubmitQuoteResponse']
+        }
+      }
+      404: components['responses']['NotFound']
     }
   }
   listOrders: {

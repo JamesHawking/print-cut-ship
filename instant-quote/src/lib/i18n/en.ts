@@ -508,6 +508,7 @@ export const en = {
       'The request was incomplete. Re-add the file and try again.',
     quote_file_invalid:
       'A file in this quote is no longer stored. Re-upload it and try again.',
+    quote_not_found: 'Quote not found or expired.',
     missing_file_name: 'The file name is missing. Re-add the file.',
     invalid_file_size: 'The file size is invalid. Re-add the file.',
     invalid_design_id: 'That MakerWorld model link is invalid.',

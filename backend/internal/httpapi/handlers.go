@@ -405,6 +405,43 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetQuote reads back a submitted quote by its id (the quoteId returned by
+// SubmitQuote, an unguessable capability token). The response reuses the
+// pricing-only SubmitQuoteResponse shape — no customer PII. Prerequisite for
+// quote links (plan 14) and abandoned-quote email (plan 06); rate limiting is
+// plan 10.
+func (s *server) GetQuote(w http.ResponseWriter, r *http.Request, id string) {
+	if s.cfg.Store == nil {
+		s.cfg.Logger.Warn("store not configured; cannot read quote")
+		apiError(w, http.StatusNotFound, QuoteNotFound, "quote not found", nil)
+		return
+	}
+	q, err := s.cfg.Store.GetQuoteByShortID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apiError(w, http.StatusNotFound, QuoteNotFound, "quote not found", nil)
+			return
+		}
+		s.cfg.Logger.Error("get quote failed", "quoteId", id, "err", err)
+		internalError(w, "failed to read quote")
+		return
+	}
+	writeJSON(w, http.StatusOK, SubmitQuoteResponse{
+		QuoteId: q.ShortID,
+		Totals: OrderTotals{
+			PartsSubtotalPln: money.FromGrosze(q.PartsSubtotalGrosze),
+			MinOrderTopUpPln: money.FromGrosze(q.MinOrderTopupGrosze),
+			OrderFeePln:      money.FromGrosze(q.OrderFeeGrosze),
+			ShippingPln:      money.FromGrosze(q.ShippingGrosze),
+			NetTotalPln:      money.FromGrosze(q.NetTotalGrosze),
+			VatPln:           money.FromGrosze(q.VatGrosze),
+			GrossTotalPln:    money.FromGrosze(q.GrossTotalGrosze),
+			FreeShipping:     q.FreeShipping,
+			MinOrderApplied:  q.MinOrderApplied,
+		},
+	})
+}
+
 // ListOrders returns the order history (persisted quotes) for an email,
 // newest first. Prototype access control: the frontend gates this behind a
 // simulated one-time code, so there is no server-side identity check yet —

@@ -31,6 +31,7 @@ const (
 	PartsCount          ApiErrorCode = "parts_count"
 	QuantityRange       ApiErrorCode = "quantity_range"
 	QuoteFileInvalid    ApiErrorCode = "quote_file_invalid"
+	QuoteNotFound       ApiErrorCode = "quote_not_found"
 	StorageUnavailable  ApiErrorCode = "storage_unavailable"
 	UnknownLeadTime     ApiErrorCode = "unknown_lead_time"
 	UnknownProcess      ApiErrorCode = "unknown_process"
@@ -480,6 +481,9 @@ type Vec3Mm struct {
 // BadRequest defines model for BadRequest.
 type BadRequest = ApiError
 
+// NotFound defines model for NotFound.
+type NotFound = ApiError
+
 // ListOrdersParams defines parameters for ListOrders.
 type ListOrdersParams struct {
 	Email openapi_types.Email `form:"email" json:"email"`
@@ -523,6 +527,9 @@ type ServerInterface interface {
 	// Submit an order request; prices are recomputed server-side
 	// (POST /api/v1/quotes)
 	SubmitQuote(w http.ResponseWriter, r *http.Request)
+	// Read back a submitted quote by its id. The id is an unguessable capability token (the quoteId returned by submitQuote); the response is pricing-only and carries no customer PII.
+	// (GET /api/v1/quotes/{id})
+	GetQuote(w http.ResponseWriter, r *http.Request, id string)
 	// Estimated ship dates per lead time (Europe/Warsaw clock)
 	// (GET /api/v1/ship-dates)
 	GetShipDates(w http.ResponseWriter, r *http.Request)
@@ -574,6 +581,12 @@ func (_ Unimplemented) Price(w http.ResponseWriter, r *http.Request) {
 // Submit an order request; prices are recomputed server-side
 // (POST /api/v1/quotes)
 func (_ Unimplemented) SubmitQuote(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read back a submitted quote by its id. The id is an unguessable capability token (the quoteId returned by submitQuote); the response is pricing-only and carries no customer PII.
+// (GET /api/v1/quotes/{id})
+func (_ Unimplemented) GetQuote(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -718,6 +731,31 @@ func (siw *ServerInterfaceWrapper) SubmitQuote(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SubmitQuote(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetQuote operation middleware
+func (siw *ServerInterfaceWrapper) GetQuote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetQuote(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -888,6 +926,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/quotes", wrapper.SubmitQuote)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/quotes/{id}", wrapper.GetQuote)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/ship-dates", wrapper.GetShipDates)

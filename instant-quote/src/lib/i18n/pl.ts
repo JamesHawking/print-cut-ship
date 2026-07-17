@@ -531,6 +531,7 @@ export const pl = {
       'Żądanie było niekompletne. Dodaj plik ponownie i spróbuj jeszcze raz.',
     quote_file_invalid:
       'Jeden z plików tej wyceny nie jest już przechowywany. Wgraj go ponownie.',
+    quote_not_found: 'Nie znaleziono wyceny lub jej ważność wygasła.',
     missing_file_name: 'Brakuje nazwy pliku. Dodaj plik ponownie.',
     invalid_file_size: 'Nieprawidłowy rozmiar pliku. Dodaj plik ponownie.',
     invalid_design_id: 'Nieprawidłowy link do modelu MakerWorld.',
