@@ -1,10 +1,13 @@
 import { Fragment } from 'react'
-import { useStrings } from '@/lib/i18n'
+import { Link } from '@tanstack/react-router'
+import { useLocale, useStrings } from '@/lib/i18n'
+import { SECTIONS } from '@/content/sections'
 import { SectionHeading } from './SectionHeading'
 
 /** "The price is a formula" section — the pricing model, spelled out. */
 export function PricingFormula() {
   const strings = useStrings()
+  const locale = useLocale()
   const { n, heading, formulaLead, terms, cards } = strings.pricing
   return (
     <section id="pricing" className="scroll-mt-14 border-b">
@@ -34,6 +37,15 @@ export function PricingFormula() {
             </div>
           ))}
         </div>
+        <p className="mt-8">
+          <Link
+            to="/$locale/$section"
+            params={{ locale, section: SECTIONS.pricing[locale] }}
+            className="text-primary-text hover:text-foreground font-mono text-[0.7rem] font-bold tracking-[0.14em] uppercase transition-colors"
+          >
+            {strings.pricingPage.fullRateCardLink}
+          </Link>
+        </p>
       </div>
     </section>
   )

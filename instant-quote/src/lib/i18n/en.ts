@@ -251,6 +251,7 @@ export const en = {
     shipsLabel: (lead: string, weekday: string) => `${lead} → ships ${weekday}`,
     minimumsTitle: 'Minimums & shipping',
     minOrderExampleTitle: 'When the minimum binds',
+    fullRateCardLink: 'Full rate card →',
     noHiddenTitle: 'No hidden costs',
     comparisonTitle: 'An honest comparison',
     faqTitle: 'Pricing FAQ',

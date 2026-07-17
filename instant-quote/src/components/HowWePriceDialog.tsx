@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import {
   Dialog,
   DialogContent,
@@ -6,11 +7,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 import { useCatalog } from '@/hooks/useApi'
+import { SECTIONS } from '@/content/sections'
 
 export function HowWePriceDialog() {
   const strings = useStrings()
+  const locale = useLocale()
   const catalog = useCatalog()
 
   return (
@@ -24,6 +27,13 @@ export function HowWePriceDialog() {
           <DialogDescription>{strings.howWePrice.subtitle}</DialogDescription>
         </DialogHeader>
         {catalog && <PricingCopy catalog={catalog} />}
+        <Link
+          to="/$locale/$section"
+          params={{ locale, section: SECTIONS.pricing[locale] }}
+          className="text-primary-text hover:text-foreground font-mono text-[0.7rem] font-bold tracking-[0.14em] uppercase transition-colors"
+        >
+          {strings.pricingPage.fullRateCardLink}
+        </Link>
       </DialogContent>
     </Dialog>
   )

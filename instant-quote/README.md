@@ -153,8 +153,16 @@ placeholder) so prerendered HTML stays hydration-stable.
 referrer, source?}` fires from the router's `onResolved` subscription
 (`src/router.tsx`). Events stay console-only PostHog-shaped (`src/lib/funnel.ts`).
 
-**Material pages** live under the localized `$section` segment
-(`/pl/materialy/*`, `/en/materials/*`; wrong-language sections redirect).
+**Content sections** (materials, pricing) live under the localized
+`$section` segment with per-locale URL words registered in
+`src/content/sections.ts` (`/pl/materialy`↔`/en/materials`,
+`/pl/cennik`↔`/en/pricing`; wrong-language words redirect). New sections
+register there, branch in `$section/index.tsx`, and add their paths to
+`vite.config.ts` `localizedPages`. The pricing page interpolates every zł
+amount from the engine dataset (`no-literal-prices.spec.ts` enforces it);
+its volume slider is the one content-page API consumer (client-side only).
+
+**Material pages** live under the same segment.
 Adding one: append the slug to `PUBLISHED_MATERIALS`
 (`src/content/materials/slugs.ts`) **and** to `referenceMaterials` in
 `backend/cmd/api/referenceprices.go`, run `make gen-reference-prices`, add

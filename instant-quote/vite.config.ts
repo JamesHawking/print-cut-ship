@@ -23,6 +23,7 @@ const localizedPages: Array<{
 }> = [
   { paths: { pl: '/pl', en: '/en' }, priority: 1 },
   { paths: { pl: '/pl/materialy', en: '/en/materials' }, priority: 0.8 },
+  { paths: { pl: '/pl/cennik', en: '/en/pricing' }, priority: 0.9 },
   ...MATERIAL_SLUGS.map((slug) => ({
     paths: { pl: `/pl/materialy/${slug}`, en: `/en/materials/${slug}` },
     priority: 0.9,

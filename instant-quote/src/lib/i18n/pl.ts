@@ -262,6 +262,7 @@ export const pl = {
       `${lead} → wysyłka ${weekday}`,
     minimumsTitle: 'Minima i wysyłka',
     minOrderExampleTitle: 'Kiedy minimum ma znaczenie',
+    fullRateCardLink: 'Pełny cennik →',
     noHiddenTitle: 'Bez ukrytych kosztów',
     comparisonTitle: 'Uczciwe porównanie',
     faqTitle: 'Częste pytania o ceny',

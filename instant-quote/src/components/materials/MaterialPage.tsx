@@ -22,6 +22,7 @@ import {
   PUBLISHED_MATERIALS,
   type MaterialSlug,
 } from '@/content/materials/slugs'
+import { SECTIONS } from '@/content/sections'
 import {
   REFERENCE_PARTS,
   REFERENCE_QUANTITIES,
@@ -247,9 +248,8 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
                 )
               })}
               <Link
-                to="/$locale"
-                params={{ locale }}
-                hash="pricing"
+                to="/$locale/$section"
+                params={{ locale, section: SECTIONS.pricing[locale] }}
                 className="text-muted-foreground hover:text-foreground ml-auto transition-colors"
               >
                 {s.pricingLink}
