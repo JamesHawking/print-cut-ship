@@ -14,8 +14,9 @@ import { LOCALES, useLocale, useStrings, type Locale } from '@/lib/i18n'
 import { setLocaleCookie } from '@/lib/i18n/detect'
 import { SECTIONS, sectionKeyFor } from '@/content/sections'
 
-/** Content sections in nav order — label keys align with strings.nav. */
-const NAV_SECTIONS = ['materials', 'pricing', 'compare', 'blog'] as const
+/** Content sections in nav order — label keys align with strings.nav.
+    Shared with SiteFooter's sitemap so the two surfaces never drift. */
+export const NAV_SECTIONS = ['materials', 'pricing', 'compare', 'blog'] as const
 
 /** Landing section anchors the scroll-spy watches, and the nav item each
     one lights up (the landing sections preview their content pages). */
