@@ -17,6 +17,7 @@ Candidates that improve the customer surface but gate nothing. The quoting core 
 5. **DFM feedback expansion** — wall-thickness analysis exists; surface actionable suggestions (orientation hints, "scale up 15% to clear min wall", material swap suggestions). Differentiator territory; needs design care to not clutter the deliberately-clean quote card.
 6. **More processes beyond FDM** — the pricing engine's process structure anticipates SLS/MJF/resin. Each new process = supplier or machine reality first, then a config snapshot + calibration entries (plan 14 pattern). Business decision before code.
 7. **MakerWorld import hardening** — undocumented API; monitor breakage via plan 12's weekly live canary + plan 10's token check; degrade gracefully (already does). No official API expected; keep the surface thin, don't invest ahead of breakage.
+8. **Proof-of-output strip on the landing** *(added 2026-07-17, from the landing UI review — deferred at execution time)* — the page claims a factory but shows nothing it made. Scope: 3–4 real printed parts (photo or the existing STL viewer) with mono spec captions ("PA12-CF · 0.2 mm · shipped D+1"), placed between Materials (02) and Pricing (03). Pre-launch source: the bundled sample files in `public/samples/` printed and photographed; later swap to customer parts (needs an asset pipeline + consent line in plan 09's terms). Pair with item 1's audit pass since it adds imagery (alt text, non-text contrast).
 
 ## 3. Dependencies
 
