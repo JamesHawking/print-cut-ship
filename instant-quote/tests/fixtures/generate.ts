@@ -1,6 +1,11 @@
 // In-memory geometry fixture builders for tests. No files on disk.
 import { zipSync } from 'fflate'
 
+// Pinned zip mtime so 3MF fixtures are byte-deterministic: fflate defaults to
+// wall-clock time, which would make the mesh golden fixtures regenerate to
+// different bytes every run (backend/internal/mesh testdata).
+const ZIP_MTIME = new Date('1980-01-01T00:00:00Z')
+
 type V3 = [number, number, number]
 
 // Cube corners for [0,s]^3.
@@ -305,14 +310,17 @@ ${faces.join('\n')}
 </Relationships>`
 
   const enc = (str: string) => new TextEncoder().encode(str)
-  const zipped = zipSync({
-    '[Content_Types].xml': enc(
-      '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/></Types>',
-    ),
-    '_rels/.rels': enc(rootRels),
-    '3D/3dmodel.model': enc(rootModel),
-    '3D/Objects/object_1.model': enc(objectModel),
-  })
+  const zipped = zipSync(
+    {
+      '[Content_Types].xml': enc(
+        '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/></Types>',
+      ),
+      '_rels/.rels': enc(rootRels),
+      '3D/3dmodel.model': enc(rootModel),
+      '3D/Objects/object_1.model': enc(objectModel),
+    },
+    { mtime: ZIP_MTIME },
+  )
   return zipped.buffer.slice(
     zipped.byteOffset,
     zipped.byteOffset + zipped.byteLength,
@@ -372,13 +380,16 @@ ${items}
 </Relationships>`
 
   const enc = (str: string) => new TextEncoder().encode(str)
-  const zipped = zipSync({
-    '[Content_Types].xml': enc(
-      '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/></Types>',
-    ),
-    '_rels/.rels': enc(rootRels),
-    '3D/3dmodel.model': enc(rootModel),
-  })
+  const zipped = zipSync(
+    {
+      '[Content_Types].xml': enc(
+        '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/></Types>',
+      ),
+      '_rels/.rels': enc(rootRels),
+      '3D/3dmodel.model': enc(rootModel),
+    },
+    { mtime: ZIP_MTIME },
+  )
   return zipped.buffer.slice(
     zipped.byteOffset,
     zipped.byteOffset + zipped.byteLength,
