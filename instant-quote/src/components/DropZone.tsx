@@ -36,7 +36,21 @@ export function DropZone({
     if (files.length) onFiles(files)
   }
 
-  const dnd = {
+  // Two nested layers, deliberately split: the OUTER container owns the
+  // drag-and-drop surface (no ARIA role), the INNER region is the
+  // role="button" file picker. Keeping role="button" off the container
+  // keeps the MakerWorld form out of it — ARIA forbids interactive
+  // descendants inside a button role.
+  const dropHandlers = {
+    onDragOver: (e: DragEvent) => {
+      e.preventDefault()
+      if (!disabled) setDragging(true)
+    },
+    onDragLeave: () => setDragging(false),
+    onDrop: handleDrop,
+  }
+
+  const pickerButton = {
     role: 'button' as const,
     tabIndex: 0,
     'aria-label': strings.dropzone.idle,
@@ -48,12 +62,6 @@ export function DropZone({
         inputRef.current?.click()
       }
     },
-    onDragOver: (e: DragEvent) => {
-      e.preventDefault()
-      if (!disabled) setDragging(true)
-    },
-    onDragLeave: () => setDragging(false),
-    onDrop: handleDrop,
   }
 
   const input = (
@@ -79,8 +87,9 @@ export function DropZone({
     setUrlValue('')
   }
 
-  // The zone root is a role="button" file picker — the form must not let
-  // clicks or keystrokes (e.g. Space in the input) bubble up to it.
+  // The zone's clickable region is a role="button" file picker — the form
+  // must not let clicks or keystrokes (e.g. Space in the input) bubble up
+  // to it.
   const urlForm = onUrl && (
     <form
       className={cn(
@@ -128,10 +137,9 @@ export function DropZone({
   if (hero) {
     return (
       <div
-        {...dnd}
+        {...dropHandlers}
         className={cn(
           'group border-border bg-card hover:border-primary/60 relative isolate flex min-h-[300px] flex-1 flex-col items-center justify-center overflow-hidden rounded-lg border px-[22px] py-9 text-center shadow-xl shadow-black/[0.06] transition-[border-color,box-shadow] hover:shadow-2xl md:min-h-[440px] md:px-8 md:py-14',
-          'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
           disabled && 'pointer-events-none opacity-50',
         )}
       >
@@ -140,18 +148,26 @@ export function DropZone({
         {/* dashed intake frame */}
         <div className="border-border pointer-events-none absolute inset-4 rounded border border-dashed" />
         <div className="relative flex flex-col items-center gap-4">
-          <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.2em] uppercase">
-            {strings.dropzone.intake}
-          </span>
-          <p className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-            {strings.dropzone.idle}
-          </p>
-          <span className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-bold transition-transform group-hover:-translate-y-px">
-            {strings.dropzone.button}
-          </span>
-          <span className="text-muted-foreground font-mono text-[0.7rem] tracking-widest uppercase">
-            {strings.dropzone.formats}
-          </span>
+          <div
+            {...pickerButton}
+            className={cn(
+              'flex cursor-pointer flex-col items-center gap-4 rounded-md',
+              'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+            )}
+          >
+            <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.2em] uppercase">
+              {strings.dropzone.intake}
+            </span>
+            <p className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+              {strings.dropzone.idle}
+            </p>
+            <span className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-bold transition-transform group-hover:-translate-y-px">
+              {strings.dropzone.button}
+            </span>
+            <span className="text-muted-foreground font-mono text-[0.7rem] tracking-widest uppercase">
+              {strings.dropzone.formats}
+            </span>
+          </div>
           {urlForm}
         </div>
         {/* build-envelope limit, pinned to the frame's lower edge */}
@@ -177,10 +193,9 @@ export function DropZone({
 
   return (
     <div
-      {...dnd}
+      {...dropHandlers}
       className={cn(
-        'group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-colors',
-        'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+        'group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-colors',
         dragging
           ? 'border-primary bg-primary/5'
           : 'border-muted-foreground/25 hover:border-primary/50',
@@ -188,22 +203,33 @@ export function DropZone({
         compact ? 'gap-1 px-4 py-6' : 'gap-2 px-6 py-16',
       )}
     >
-      <Upload
+      <div
+        {...pickerButton}
         className={cn(
-          'text-muted-foreground group-hover:text-primary transition-colors',
-          compact ? 'size-4' : 'size-8',
+          'flex cursor-pointer flex-col items-center rounded-md',
+          'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+          compact ? 'gap-1' : 'gap-2',
         )}
-      />
-      <p className={cn('font-medium', compact ? 'text-sm' : 'text-lg')}>
-        {dragging ? strings.dropzone.dragActive : strings.dropzone.idle}
-      </p>
-      {compact ? (
-        <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase">
-          {strings.dropzone.multiHint}
+      >
+        <Upload
+          className={cn(
+            'text-muted-foreground group-hover:text-primary transition-colors',
+            compact ? 'size-4' : 'size-8',
+          )}
+        />
+        <p className={cn('font-medium', compact ? 'text-sm' : 'text-lg')}>
+          {dragging ? strings.dropzone.dragActive : strings.dropzone.idle}
         </p>
-      ) : (
-        <p className="text-muted-foreground text-sm">{strings.dropzone.hint}</p>
-      )}
+        {compact ? (
+          <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase">
+            {strings.dropzone.multiHint}
+          </p>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            {strings.dropzone.hint}
+          </p>
+        )}
+      </div>
       {urlForm && (
         <div className={cn('w-full px-2', compact ? 'mt-3' : 'mt-2')}>
           {urlForm}

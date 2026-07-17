@@ -31,7 +31,8 @@ const num = (v: unknown): string => {
 
 export const pl = {
   meta: {
-    title: 'Natychmiastowa wycena druku 3D — wgraj, wyceń, zamów',
+    title:
+      'Natychmiastowa wycena druku 3D — wgraj, wyceń, zamów | MICRO_FACTORY',
     description:
       'Wgraj plik STL, 3MF, OBJ lub STEP i otrzymaj cenę od ręki. Produkcja w UE, wysyłka D+1/D+2 do Niemiec. Bez zakładania konta.',
     quote: {
@@ -66,7 +67,7 @@ export const pl = {
     specs: [
       'materiałów FDM',
       'dni roboczych realizacji',
-      'wysyłka PL/DE · D+2 UE',
+      'wysyłka PL/DE',
       'VAT zawsze wliczony',
     ],
   },
@@ -78,6 +79,7 @@ export const pl = {
     blog: 'Baza wiedzy',
     trackOrder: 'Śledź zamówienie',
     menuLabel: 'Przełącz menu',
+    skipToContent: 'Przejdź do treści',
     resume: (n: number) => `Wróć do wyceny (${n}) →`,
     // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
     resumeShort: (n: number) => `Wycena (${n}) →`,
@@ -93,7 +95,7 @@ export const pl = {
     n: '01',
     heading: 'Od pliku do daty wysyłki w trzech krokach',
     intro:
-      'To nie formularz zapytania. Maszyna prowadzi Twój plik przez linię — zmierzony, wyceniony i z wiążącą datą wysyłki w niecałą minutę.',
+      'Maszyna prowadzi Twój plik przez linię — zmierzony, wyceniony i z wiążącą datą wysyłki w niecałą minutę. Poniżej prawdziwy przebieg na żywym silniku.',
     steps: [
       { n: '01', kicker: 'WGRAJ', title: 'Upuść plik' },
       { n: '02', kicker: 'WYCEŃ', title: 'Zobacz liczby' },

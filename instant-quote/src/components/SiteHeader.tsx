@@ -74,6 +74,15 @@ export function SiteHeader({
 
   return (
     <>
+      {variant === 'landing' && (
+        // First focusable element on the page; visible only when focused.
+        <a
+          href="#content"
+          className="bg-background focus-visible:ring-ring sr-only z-50 rounded-md border px-4 py-2 font-mono text-xs font-bold tracking-widest uppercase focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:ring-2 focus-visible:outline-none"
+        >
+          {strings.nav.skipToContent}
+        </a>
+      )}
       <header className="bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 font-mono text-xs tracking-widest uppercase sm:px-6">
           {/* exact: fuzzy matching would mark the home link current on every

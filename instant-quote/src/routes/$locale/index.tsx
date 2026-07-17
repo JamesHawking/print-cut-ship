@@ -61,16 +61,19 @@ function Landing() {
   return (
     <>
       <SiteHeader variant="landing" />
-      <Hero
-        onFiles={handleLandingFiles}
-        onUrl={handleLandingUrl}
-        urlPending={mwPending}
-        onSample={handleSample}
-      />
-      <RateTicker />
-      <HowItWorks />
-      <Materials />
-      <PricingFormula />
+      {/* id/tabIndex: target of the header's skip link (landing variant). */}
+      <main id="content" tabIndex={-1}>
+        <Hero
+          onFiles={handleLandingFiles}
+          onUrl={handleLandingUrl}
+          urlPending={mwPending}
+          onSample={handleSample}
+        />
+        <RateTicker />
+        <HowItWorks />
+        <Materials />
+        <PricingFormula />
+      </main>
       <SiteFooter />
     </>
   )

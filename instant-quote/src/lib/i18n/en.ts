@@ -21,7 +21,7 @@ const num = (v: unknown): string => {
 
 export const en = {
   meta: {
-    title: 'Instant 3D printing quote — upload, price, order',
+    title: 'Instant 3D printing quote — upload, price, order | MICRO_FACTORY',
     description:
       'Upload an STL, 3MF, OBJ or STEP file and get an instant price. Made in the EU, ships D+1/D+2 to Germany. No account needed.',
     quote: {
@@ -55,7 +55,7 @@ export const en = {
     specs: [
       'FDM materials',
       'business-day lead',
-      'shipping PL/DE · D+2 EU',
+      'shipping PL/DE',
       'VAT always included',
     ],
   },
@@ -67,6 +67,7 @@ export const en = {
     blog: 'Blog',
     trackOrder: 'Track order',
     menuLabel: 'Toggle menu',
+    skipToContent: 'Skip to content',
     resume: (n: number) => `Resume quote (${n}) →`,
     // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
     resumeShort: (n: number) => `Quote (${n}) →`,
@@ -82,7 +83,7 @@ export const en = {
     n: '01',
     heading: 'File to ship date in three steps',
     intro:
-      'Not a request form. The machine takes your file down the line — measured, priced, and committed to a ship date in under a minute.',
+      'The machine takes your file down the line — measured, priced, and committed to a ship date in under a minute. Below is a real run on the live engine.',
     steps: [
       { n: '01', kicker: 'UPLOAD', title: 'Drop the file' },
       { n: '02', kicker: 'PRICE', title: 'Read the numbers' },
