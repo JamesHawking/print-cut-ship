@@ -16,6 +16,10 @@ SELECT * FROM files WHERE id = $1;
 -- name: SetFileStorageKey :exec
 UPDATE files SET storage_key = $2 WHERE id = $1;
 
+-- name: SetFileMetrics :exec
+-- Persist the server-recomputed MeshMetrics for a stored file (plan 02).
+UPDATE files SET metrics = $2 WHERE id = $1;
+
 -- name: SoftDeleteFile :exec
 UPDATE files SET deleted_at = now() WHERE id = $1;
 

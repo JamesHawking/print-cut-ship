@@ -149,6 +149,21 @@ func (q *Queries) ListUnreferencedUploadedFiles(ctx context.Context, createdAt p
 	return items, nil
 }
 
+const setFileMetrics = `-- name: SetFileMetrics :exec
+UPDATE files SET metrics = $2 WHERE id = $1
+`
+
+type SetFileMetricsParams struct {
+	ID      uuid.UUID
+	Metrics []byte
+}
+
+// Persist the server-recomputed MeshMetrics for a stored file (plan 02).
+func (q *Queries) SetFileMetrics(ctx context.Context, arg SetFileMetricsParams) error {
+	_, err := q.db.Exec(ctx, setFileMetrics, arg.ID, arg.Metrics)
+	return err
+}
+
 const setFileStorageKey = `-- name: SetFileStorageKey :exec
 UPDATE files SET storage_key = $2 WHERE id = $1
 `

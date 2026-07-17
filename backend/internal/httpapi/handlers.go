@@ -352,6 +352,22 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Re-parse each part's stored file and recompute its geometry in Go, so
+	// pricing consumes metrics derived from bytes the server holds — not
+	// client-submitted ones. Soft-falls-back on storage/parse trouble; hard
+	// 400s only on a stored-bytes hash mismatch (tampering/corruption).
+	if s.cfg.Store != nil && s.cfg.Storage != nil {
+		if err := s.recomputeQuoteParts(r.Context(), req.Parts); err != nil {
+			if errors.Is(err, errQuoteFileInvalid) {
+				badRequest(w, QuoteFileInvalid, err.Error(), nil)
+				return
+			}
+			s.cfg.Logger.Error("recompute quote parts failed", "err", err)
+			internalError(w, "failed to verify quote files")
+			return
+		}
+	}
+
 	// The server's own pricing is authoritative; the client total is only
 	// telemetry for catching drift between the UI and this engine.
 	partQuotes, totals := priceParts(req.Parts)
