@@ -14,6 +14,15 @@ export interface AnalyzeResult {
   positions: Float32Array
 }
 
+// SHA-256 of raw file bytes, lowercase hex — must match what the backend's
+// MakerWorld tee computes over the same bytes (content-addressed storage).
+export async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', buffer)
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 export class AnalyzeError extends Error {
   constructor(
     public code: WorkerErrorCode,
@@ -77,10 +86,15 @@ export function useMeshWorker() {
 
     let request: WorkerRequest
     let pieces: MeshMetrics['pieces']
+    let fileHash: string | undefined
     if (kind === '3mf') {
       // Parse 3MF on the main thread, send flattened positions to the worker.
       // Per-piece bboxes (multi-item files) are computed here, before the
       // pieces are merged into one soup for the geometry math.
+      // Hash the ORIGINAL file bytes here — the worker only sees positions,
+      // and the backend (MakerWorld tee, content-addressed keys) hashes file
+      // bytes.
+      fileHash = await sha256Hex(arrayBuffer)
       const parts = parse3mfParts(arrayBuffer)
       if (parts.length >= 2) {
         pieces = parts.map((p) => ({ bboxMm: positionsBbox(p) }))
@@ -103,6 +117,7 @@ export function useMeshWorker() {
       worker.postMessage(request, { transfer: [request.buffer] })
     })
     if (pieces) result.metrics.pieces = pieces
+    if (fileHash) result.hash = fileHash
     return result
   }
 
