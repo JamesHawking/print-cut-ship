@@ -78,6 +78,7 @@ export const pl = {
     howItWorks: 'Jak to działa',
     materials: 'Materiały',
     pricing: 'Cennik',
+    blog: 'Baza wiedzy',
     trackOrder: 'Śledź zamówienie',
     menuLabel: 'Przełącz menu',
     resume: (n: number) => `Wróć do wyceny (${n}) →`,

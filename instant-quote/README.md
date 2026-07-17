@@ -153,11 +153,11 @@ placeholder) so prerendered HTML stays hydration-stable.
 referrer, source?}` fires from the router's `onResolved` subscription
 (`src/router.tsx`). Events stay console-only PostHog-shaped (`src/lib/funnel.ts`).
 
-**Content sections** (materials, pricing, compare) live under the localized
-`$section` segment with per-locale URL words registered in
+**Content sections** (materials, pricing, compare, blog) live under the
+localized `$section` segment with per-locale URL words registered in
 `src/content/sections.ts` (`/pl/materialy`↔`/en/materials`,
-`/pl/cennik`↔`/en/pricing`, `/pl/porownanie`↔`/en/compare`; wrong-language
-words redirect). New sections register there, branch in `$section/index.tsx`
+`/pl/cennik`↔`/en/pricing`, `/pl/porownanie`↔`/en/compare`,
+`/pl/baza-wiedzy`↔`/en/blog`; wrong-language words redirect). New sections register there, branch in `$section/index.tsx`
 and (for detail pages) in the shared `$section/$detail.tsx` param route, and
 add their paths to `vite.config.ts` `localizedPages`. The pricing and compare
 pages interpolate every zł amount from the engine dataset
@@ -184,6 +184,30 @@ files (`pl.ts` is the `CompareCopy` type source), extend the slug switch in
 `ComparePage.tsx` if it needs its own table shape, and list the paths in
 `localizedPages`. Engine numbers only via the `reference-prices` accessors;
 cited external figures stay in `data.ts` and are labelled as not our quote.
+
+**Blog** (seo_prompts/05) lives at `/pl/baza-wiedzy` ↔ `/en/blog`. Articles
+are MDX files at `src/content/blog/{locale}/{slug}.mdx` — the file name IS
+the (per-locale, localized) slug, and a shared frontmatter `translationKey`
+pairs the pl/en versions for hreflang and the locale switch; an article
+without a translation 404s in the other locale. Adding an article:
+
+1. Write `src/content/blog/en/<slug>.mdx` and `pl/<slug-pl>.mdx` with the
+   frontmatter fields from `src/content/blog/schema.ts` (`title`,
+   `description`, `date`, optional `updated`, `author`, 1–5 kebab-case
+   `tags`, `translationKey` — same key in both files). Invalid frontmatter
+   fails `bun run build` (registry zod parse) and `bun test` (content.spec).
+2. Place exactly one `<CtaBreak />` right after the second `##` section —
+   the compact quote CTA (content.spec enforces position and count).
+   Components (e.g. `@/components/blog/diagrams/*`) can be imported
+   directly; pass all visible labels as props so they stay locale-free.
+3. Bump `updated` on substantive edits (it drives `dateModified` + RSS).
+
+That's it — prerender, sitemap and both RSS feeds pick new files up
+automatically (`vite.config.ts` reads the content directory at config
+time). Reading time and the ToC (shown at 4+ h2/h3s) come from the MDX
+pipeline. One boundary rule: bun cannot parse `.mdx`, so test files must
+never import `src/content/blog/registry.ts` — pure logic lives in
+`schema/paths/helpers/toc.ts`.
 
 ## Intentional fakes (this is a prototype)
 

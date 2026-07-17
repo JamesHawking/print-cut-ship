@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { useWarsawClock } from '@/hooks/useWarsawClock'
+import { SECTIONS } from '@/content/sections'
 import { QuoteCta } from './QuoteCta'
 
 export function SiteFooter({
@@ -22,6 +23,13 @@ export function SiteFooter({
           <span className="text-foreground font-bold">
             {strings.hero.wordmark}
           </span>
+          <Link
+            to="/$locale/$section"
+            params={{ locale, section: SECTIONS.blog[locale] }}
+            className="hover:text-foreground transition-colors"
+          >
+            {strings.nav.blog}
+          </Link>
           <Link
             to="/$locale/login"
             params={{ locale }}

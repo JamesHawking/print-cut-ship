@@ -67,6 +67,7 @@ export const en = {
     howItWorks: 'How it works',
     materials: 'Materials',
     pricing: 'Pricing',
+    blog: 'Blog',
     trackOrder: 'Track order',
     menuLabel: 'Toggle menu',
     resume: (n: number) => `Resume quote (${n}) →`,

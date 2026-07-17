@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { useParts } from '@/hooks/useParts'
 import { LOCALES, useLocale, useStrings, type Locale } from '@/lib/i18n'
 import { setLocaleCookie } from '@/lib/i18n/detect'
+import { SECTIONS } from '@/content/sections'
 
 /**
  * Sticky site-wide header (design-handoff header bar, made navigational).
@@ -60,6 +61,13 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 {strings.nav.pricing}
+              </Link>
+              <Link
+                to="/$locale/$section"
+                params={{ locale, section: SECTIONS.blog[locale] }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {strings.nav.blog}
               </Link>
               <Link
                 to="/$locale/login"
@@ -151,6 +159,17 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
               </span>
             </Link>
           ))}
+          <Link
+            to="/$locale/$section"
+            params={{ locale, section: SECTIONS.blog[locale] }}
+            onClick={() => setMenuOpen(false)}
+            className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
+          >
+            {strings.nav.blog}
+            <span aria-hidden className="text-primary-text">
+              04
+            </span>
+          </Link>
           <Link
             to="/$locale/login"
             params={{ locale }}
