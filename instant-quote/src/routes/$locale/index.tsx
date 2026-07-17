@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 import { Hero } from '@/components/Hero'
+import { GuidesTeaser } from '@/components/GuidesTeaser'
 import { HowItWorks } from '@/components/HowItWorks'
 import { LandingFaq } from '@/components/LandingFaq'
 import { Materials } from '@/components/Materials'
@@ -79,6 +80,7 @@ function Landing() {
         <Materials />
         <PricingFormula />
         <LandingFaq />
+        <GuidesTeaser />
       </main>
       <SiteFooter />
     </>

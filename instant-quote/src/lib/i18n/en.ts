@@ -351,6 +351,8 @@ export const en = {
       'The three decisions we help with most often. The numbers come from our material card and quoting engine — where we cite someone else’s market, we say so plainly.',
     verdictTitle: 'The short answer',
     readVerdict: 'Read the verdict →',
+    // Landing teaser card for the comparisons hub (GuidesTeaser.tsx).
+    teaserTitle: 'ASA or PETG? Your own printer or ordering?',
     higherBetter: 'higher is better',
     lowerBetter: 'lower is better',
     tileStatAsa: (hdtC: number) => `${hdtC} °C · UV+`,
@@ -412,6 +414,8 @@ export const en = {
     relatedTitle: 'Related articles',
     newestLabel: 'Newest',
     readGuide: 'Read the guide →',
+    // Landing teaser (GuidesTeaser.tsx) — section label above the cards.
+    teaserLabel: 'From the knowledge base',
     allGuidesTitle: 'All guides',
     guidesCount: (n: number) => `${n} ${enPlural(n, 'guide', 'guides')}`,
     rssNote: 'new guides via',

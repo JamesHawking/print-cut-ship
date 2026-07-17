@@ -369,6 +369,8 @@ export const pl = {
       'Trzy decyzje, przy których pomagamy najczęściej. Liczby pochodzą z naszej karty materiałowej i silnika wyceny — tam, gdzie cytujemy cudzy rynek, mówimy to wprost.',
     verdictTitle: 'W skrócie',
     readVerdict: 'Przeczytaj werdykt →',
+    // Landing teaser card for the comparisons hub (GuidesTeaser.tsx).
+    teaserTitle: 'ASA czy PETG? Własna drukarka czy zamówienie?',
     higherBetter: 'więcej = lepiej',
     lowerBetter: 'mniej = lepiej',
     // Decision-tile A/B stats (design 4a; PL drops the /kg to stay one-line).
@@ -432,6 +434,8 @@ export const pl = {
     relatedTitle: 'Powiązane artykuły',
     newestLabel: 'Najnowszy',
     readGuide: 'Czytaj przewodnik →',
+    // Landing teaser (GuidesTeaser.tsx) — section label above the cards.
+    teaserLabel: 'Z bazy wiedzy',
     allGuidesTitle: 'Wszystkie przewodniki',
     guidesCount: (n: number) =>
       `${n} ${plPlural(n, 'przewodnik', 'przewodniki', 'przewodników')}`,
