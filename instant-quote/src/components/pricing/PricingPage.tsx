@@ -35,6 +35,19 @@ import {
   pricingValues,
 } from '@/content/pricing/data'
 
+/**
+ * Calendar-week offset (Monday-based) between two ISO dates, so the ship
+ * label can say "next week" / "in two weeks" and disambiguate lead times
+ * that land on the same weekday.
+ */
+function weeksBetween(fromIso: string, toIso: string): number {
+  const mondayOf = (iso: string) => {
+    const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`)
+    return d.getTime() - ((d.getUTCDay() + 6) % 7) * 86_400_000
+  }
+  return Math.round((mondayOf(toIso) - mondayOf(fromIso)) / (7 * 86_400_000))
+}
+
 /** The published rate card (seo_prompts/03) — every number from the engine. */
 export function PricingPage() {
   const strings = useStrings()
@@ -254,6 +267,10 @@ export function PricingPage() {
                               leadNames[lead.id] ?? lead.id,
                               lead.businessDays,
                               formatWeekday(example.shipIso[lead.id], locale),
+                              weeksBetween(
+                                example.orderIso,
+                                example.shipIso[lead.id],
+                              ),
                             )}
                           </dt>
                           <dd className="text-muted-foreground font-mono text-[0.6875rem] tabular-nums">

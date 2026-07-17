@@ -43,7 +43,7 @@ export const plPricingCopy: PricingCopy = {
   discountIntro: (v) =>
     `Rabat od sztuki rośnie liniowo między progami, do ${v.maxDiscountPct}% przy 50 sztukach i więcej. Ten sam rabat stosuje formularz — poniżej dokładne progi i przeliczony przykład.`,
   leadIntro: (v) =>
-    `Trzy terminy realizacji, jeden mnożnik ceny. Zamówienia złożone do ${v.cutoffHour}:00 czasu warszawskiego wchodzą do produkcji tego samego dnia roboczego; poniżej dwa konkretne scenariusze.`,
+    `Trzy terminy realizacji, jeden mnożnik ceny. Dni robocze odliczamy od dnia zamówienia (sam dzień zamówienia nie wlicza się do terminu); zamówienie po ${v.cutoffHour}:00 czasu warszawskiego przesuwa start odliczania na następny dzień roboczy. Poniżej dwa konkretne scenariusze.`,
   minimumsIntro: (v) =>
     `Minimalna wartość zamówienia to ${v.minOrderPln} zł (dopłata wyrównująca, naliczana raz na zamówienie). Do tego stała opłata ${v.orderFeePln} zł i wysyłka ${v.shippingFlatPln} zł — darmowa od ${v.freeShippingThresholdPln} zł. Dostawa D+1 w Polsce i Niemczech, D+2 w pozostałej UE.`,
   minOrderExampleNote: (v) =>

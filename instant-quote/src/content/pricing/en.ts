@@ -20,7 +20,7 @@ export const enPricingCopy: PricingCopy = {
   discountIntro: (v) =>
     `The per-unit discount grows linearly between tiers, up to ${v.maxDiscountPct}% at 50 units and above. The quote form applies the identical discount — exact tiers and a worked example below.`,
   leadIntro: (v) =>
-    `Three lead times, one price multiplier. Orders placed before ${v.cutoffHour}:00 Warsaw time enter production the same business day; two concrete scenarios below.`,
+    `Three lead times, one price multiplier. Business days are counted from the order day (the order day itself is not one of them); ordering after ${v.cutoffHour}:00 Warsaw time moves the start of the countdown to the next business day. Two concrete scenarios below.`,
   minimumsIntro: (v) =>
     `The minimum order value is ${v.minOrderPln} zł (a one-time top-up per order). On top of that: a flat ${v.orderFeePln} zł order fee and ${v.shippingFlatPln} zł shipping — free from ${v.freeShippingThresholdPln} zł. Delivery D+1 in Poland and Germany, D+2 across the rest of the EU.`,
   minOrderExampleNote: (v) =>

@@ -248,8 +248,10 @@ export const en = {
     headerMultiplier: 'Multiplier',
     orderedLabel: (weekday: string, time: string) =>
       `Ordered: ${weekday}, ${time}`,
-    shipsLabel: (lead: string, days: number, weekday: string) =>
-      `${lead} · ${days} business days → ships ${weekday}`,
+    shipsLabel: (lead: string, days: number, weekday: string, weeks: number) =>
+      `${lead} · ${days} business days → ships ${weekday}${
+        weeks === 1 ? ' next week' : weeks >= 2 ? ' in two weeks' : ''
+      }`,
     minimumsTitle: 'Minimums & shipping',
     minOrderExampleTitle: 'When the minimum binds',
     fullRateCardLink: 'Full rate card →',
