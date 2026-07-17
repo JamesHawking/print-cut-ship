@@ -68,8 +68,9 @@ export function ComparePage({ slug }: { slug: CompareSlug }) {
             <h1 className="mt-8 text-[clamp(2.2rem,6vw,4.5rem)] leading-[0.95] font-black tracking-[-0.03em] uppercase">
               {copy.h1}
             </h1>
-            <aside className="bg-card mt-8 max-w-3xl rounded-lg border p-6">
-              <p className="text-primary-text font-mono text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+            {/* light verdict callout (design 4c) */}
+            <aside className="bg-primary/5 mt-8 max-w-3xl rounded-lg border p-6">
+              <p className="text-primary-text font-mono text-[0.65rem] font-bold tracking-[0.16em] uppercase">
                 {s.verdictTitle}
               </p>
               {copy.verdict(values).map((paragraph) => (
@@ -96,11 +97,13 @@ export function ComparePage({ slug }: { slug: CompareSlug }) {
         {hasSpecSection && (
           <section className="border-b">
             <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-              <SectionHeading n="01" title={s.specTitle} />
               {slug === 'asa-vs-petg' ? (
                 <MaterialPairSpecs />
               ) : (
-                <PaCfVsAluminumSpecs />
+                <>
+                  <SectionHeading n="01" title={s.specTitle} />
+                  <PaCfVsAluminumSpecs />
+                </>
               )}
             </div>
           </section>
@@ -252,68 +255,142 @@ export function ComparePage({ slug }: { slug: CompareSlug }) {
   )
 }
 
-/** Two-material property grid: ASA and PETG from the shared material card. */
+/**
+ * ASA vs PETG §01 as a "tale of the tape" (design 4c): numeric metrics as
+ * paired value bars (A primary, B ink — legend beside the heading), the
+ * qualitative properties as compact rows below. Bars are proportional to
+ * the larger value in each pair.
+ */
 function MaterialPairSpecs() {
   const strings = useStrings()
   const locale = useLocale()
+  const s = strings.comparePages
   const m = strings.materialsPages
-  const columns = ['asa', 'petg'] as const
+  const asa = MATERIALS.find((c) => c.id === 'asa')!
+  const petg = MATERIALS.find((c) => c.id === 'petg')!
 
-  const rows: Array<[string, (id: (typeof columns)[number]) => string]> = [
-    [m.propertyLabels.tensile, (id) => `${MATERIAL_DATA[id].tensileMPa} MPa`],
-    [m.propertyLabels.hdt, (id) => `${MATERIAL_DATA[id].hdtC} °C`],
-    [m.propertyLabels.uv, (id) => m.ratings[MATERIAL_DATA[id].uv]],
+  const barMetrics: Array<{
+    label: string
+    hint: string
+    a: [number, string]
+    b: [number, string]
+  }> = [
+    {
+      label: m.propertyLabels.tensile,
+      hint: s.higherBetter,
+      a: [MATERIAL_DATA.asa.tensileMPa, `${MATERIAL_DATA.asa.tensileMPa} MPa`],
+      b: [
+        MATERIAL_DATA.petg.tensileMPa,
+        `${MATERIAL_DATA.petg.tensileMPa} MPa`,
+      ],
+    },
+    {
+      label: m.propertyLabels.hdt,
+      hint: s.higherBetter,
+      a: [MATERIAL_DATA.asa.hdtC, `${MATERIAL_DATA.asa.hdtC} °C`],
+      b: [MATERIAL_DATA.petg.hdtC, `${MATERIAL_DATA.petg.hdtC} °C`],
+    },
+    {
+      label: m.propertyLabels.rate,
+      hint: s.lowerBetter,
+      a: [asa.plnPerKg, `${asa.plnPerKg} zł/kg`],
+      b: [petg.plnPerKg, `${petg.plnPerKg} zł/kg`],
+    },
+  ]
+
+  const compactRows: Array<[string, string, string]> = [
+    [
+      m.propertyLabels.uv,
+      m.ratings[MATERIAL_DATA.asa.uv],
+      m.ratings[MATERIAL_DATA.petg.uv],
+    ],
     [
       m.propertyLabels.layerAdhesion,
-      (id) => m.ratings[MATERIAL_DATA[id].layerAdhesion],
+      m.ratings[MATERIAL_DATA.asa.layerAdhesion],
+      m.ratings[MATERIAL_DATA.petg.layerAdhesion],
     ],
     [
       m.propertyLabels.tolerance,
-      (id) =>
-        `±${formatDecimal(MATERIAL_DATA[id].toleranceMm, locale, 2)} mm / 100 mm`,
+      `±${formatDecimal(MATERIAL_DATA.asa.toleranceMm, locale, 2)} mm / 100 mm`,
+      `±${formatDecimal(MATERIAL_DATA.petg.toleranceMm, locale, 2)} mm / 100 mm`,
     ],
     [
       m.propertyLabels.density,
-      (id) =>
-        `${formatDecimal(MATERIALS.find((c) => c.id === id)!.densityGCm3, locale, 2, 2)} g/cm³`,
-    ],
-    [
-      m.propertyLabels.rate,
-      (id) => `${MATERIALS.find((c) => c.id === id)!.plnPerKg} zł/kg`,
+      `${formatDecimal(asa.densityGCm3, locale, 2, 2)} g/cm³`,
+      `${formatDecimal(petg.densityGCm3, locale, 2, 2)} g/cm³`,
     ],
   ]
 
   return (
-    <div className="mt-10 overflow-x-auto">
-      <div className="min-w-[520px]">
-        <div className="text-muted-foreground grid grid-cols-[minmax(180px,2fr)_repeat(2,minmax(120px,1fr))] gap-4 border-b pb-3 font-mono text-[0.6rem] tracking-[0.16em] uppercase">
-          <span />
-          {columns.map((id) => (
-            <span key={id} className="text-foreground text-right font-bold">
-              {MATERIALS.find((c) => c.id === id)!.label}
-            </span>
-          ))}
-        </div>
-        {rows.map(([label, valueFor]) => (
+    <>
+      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-4 border-b pb-5">
+        <SectionHeading
+          n="01"
+          title={s.specTitle}
+          className="border-b-0 pb-0"
+        />
+        <span className="text-muted-foreground flex gap-5 font-mono text-[0.6rem] tracking-[0.14em] uppercase sm:ml-auto">
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden className="bg-primary size-2.5" />
+            {asa.label}
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden className="bg-foreground size-2.5" />
+            {petg.label}
+          </span>
+        </span>
+      </div>
+      <div className="mt-8 max-w-4xl">
+        {barMetrics.map((metric) => {
+          const max = Math.max(metric.a[0], metric.b[0])
+          return (
+            <div key={metric.label} className="border-b py-4.5">
+              <div className="text-muted-foreground flex items-baseline justify-between gap-4 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+                <span>{metric.label}</span>
+                <span>{metric.hint}</span>
+              </div>
+              {(
+                [
+                  [metric.a, 'bg-primary'],
+                  [metric.b, 'bg-foreground'],
+                ] as Array<[[number, string], string]>
+              ).map(([[value, display], fill]) => (
+                <div
+                  key={fill}
+                  className="mt-2.5 grid grid-cols-[1fr_90px] items-center gap-4"
+                >
+                  <div className="bg-secondary h-3.5 overflow-hidden rounded-[3px]">
+                    <div
+                      className={`h-full ${fill}`}
+                      style={{ width: `${Math.round((value / max) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-right font-mono text-[12.5px] font-bold whitespace-nowrap tabular-nums">
+                    {display}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )
+        })}
+        {compactRows.map(([label, aValue, bValue]) => (
           <div
             key={label}
-            className="grid grid-cols-[minmax(180px,2fr)_repeat(2,minmax(120px,1fr))] gap-4 border-b py-3.5"
+            className="grid grid-cols-[minmax(140px,2fr)_repeat(2,minmax(100px,1fr))] gap-4 border-b py-3.5"
           >
             <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
               {label}
             </span>
-            {columns.map((id) => (
-              <span
-                key={id}
-                className="text-right font-mono text-sm font-bold tabular-nums"
-              >
-                {valueFor(id)}
-              </span>
-            ))}
+            <span className="text-right font-mono text-sm font-bold tabular-nums">
+              {aValue}
+            </span>
+            <span className="text-right font-mono text-sm font-bold tabular-nums">
+              {bValue}
+            </span>
           </div>
         ))}
       </div>
-    </div>
+    </>
   )
 }
 

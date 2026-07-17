@@ -282,6 +282,16 @@ export const en = {
     indexIntro:
       'The three decisions we help with most often. The numbers come from our material card and quoting engine — where we cite someone else’s market, we say so plainly.',
     verdictTitle: 'The short answer',
+    readVerdict: 'Read the verdict →',
+    higherBetter: 'higher is better',
+    lowerBetter: 'lower is better',
+    tileStatAsa: (hdtC: number) => `${hdtC} °C · UV+`,
+    tileStatPetg: (mpa: number, ratePlnPerKg: number) =>
+      `${mpa} MPa · ${ratePlnPerKg} zł/kg`,
+    tilePrintedQty1: 'Printed · qty 1',
+    tileCncQty1: 'CNC · qty 1 [2]',
+    tileInHouse: 'In-house, costed',
+    tileOrdered: 'Ordered, delivered',
     specTitle: 'Side-by-side specs',
     assumptionsTitle: 'Assumptions',
     costTitle: 'Cost comparison',

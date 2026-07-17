@@ -297,6 +297,17 @@ export const pl = {
     indexIntro:
       'Trzy decyzje, przy których pomagamy najczęściej. Liczby pochodzą z naszej karty materiałowej i silnika wyceny — tam, gdzie cytujemy cudzy rynek, mówimy to wprost.',
     verdictTitle: 'W skrócie',
+    readVerdict: 'Przeczytaj werdykt →',
+    higherBetter: 'więcej = lepiej',
+    lowerBetter: 'mniej = lepiej',
+    // Decision-tile A/B stats (design 4a; PL drops the /kg to stay one-line).
+    tileStatAsa: (hdtC: number) => `${hdtC} °C · UV+`,
+    tileStatPetg: (mpa: number, ratePlnPerKg: number) =>
+      `${mpa} MPa · ${ratePlnPerKg} zł`,
+    tilePrintedQty1: 'Druk · 1 szt.',
+    tileCncQty1: 'CNC · 1 szt. [2]',
+    tileInHouse: 'Sam, z kosztem pracy',
+    tileOrdered: 'Zamówione, z dostawą',
     specTitle: 'Specyfikacja obok siebie',
     assumptionsTitle: 'Założenia',
     costTitle: 'Porównanie kosztów',
