@@ -6,8 +6,18 @@ import { join } from 'node:path'
 // is a string literal in the page source". Every zł amount must interpolate
 // from the engine dataset — a digit directly before `zł` in these sources is
 // a hardcoded price that will go stale silently.
+//
+// The compare tree (seo_prompts/04) is scanned under the same rule: its
+// static cited figures (aluminum ranges, TCO inputs) are bare numbers with
+// Pln-suffixed names in compare/data.ts, so any rendered `zł` amount is
+// still necessarily an interpolation.
 
-const SCANNED_DIRS = ['src/content/pricing', 'src/components/pricing']
+const SCANNED_DIRS = [
+  'src/content/pricing',
+  'src/components/pricing',
+  'src/content/compare',
+  'src/components/compare',
+]
 const LITERAL_PRICE = /\d(?:[\d\s.,]*)\s?zł/u
 
 describe('no literal prices in pricing-page sources', () => {

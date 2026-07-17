@@ -1,7 +1,9 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { MaterialPage } from '@/components/materials/MaterialPage'
+import { ComparePage } from '@/components/compare/ComparePage'
 import { DEFAULT_LOCALE, getStrings, isLocale, type Locale } from '@/lib/i18n'
 import {
+  articleJsonLd,
   breadcrumbJsonLd,
   faqPageJsonLd,
   jsonLd,
@@ -19,17 +21,30 @@ import {
   materialsIndexPath,
   type MaterialSlug,
 } from '@/content/materials/slugs'
+import { compareCopy } from '@/content/compare/copy'
+import { COMPARE_DATES } from '@/content/compare/data'
+import { compareFaq } from '@/content/compare/faq'
+import {
+  compareAlternates,
+  compareIndexPath,
+  comparePath,
+  isCompareSlug,
+  type CompareSlug,
+} from '@/content/compare/slugs'
 import { MATERIALS } from '@/lib/catalog-static'
 
 // The one dynamic child of $section (TanStack allows a single param segment
 // per directory), shared by every section with detail pages. Branches on the
-// section key: materials → MaterialPage; compare lands in the pages commit.
+// section key: materials → MaterialPage, compare → ComparePage.
 export const Route = createFileRoute('/$locale/$section/$detail')({
   beforeLoad: ({ params }) => {
     if (!isLocale(params.locale)) return // $locale layout redirects
     switch (sectionKeyFor(params.locale, params.section)) {
       case 'materials':
         if (!isMaterialSlug(params.detail)) throw notFound()
+        return
+      case 'compare':
+        if (!isCompareSlug(params.detail)) throw notFound()
         return
       default:
         // Sections without detail pages (/pl/cennik/x 404s).
@@ -38,11 +53,12 @@ export const Route = createFileRoute('/$locale/$section/$detail')({
   },
   head: ({ params }) => {
     const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE
-    if (
-      sectionKeyFor(locale, params.section) === 'materials' &&
-      isMaterialSlug(params.detail)
-    ) {
+    const key = sectionKeyFor(locale, params.section)
+    if (key === 'materials' && isMaterialSlug(params.detail)) {
       return materialHead(locale, params.detail)
+    }
+    if (key === 'compare' && isCompareSlug(params.detail)) {
+      return compareHead(locale, params.detail)
     }
     return {}
   },
@@ -88,8 +104,48 @@ function materialHead(locale: Locale, slug: MaterialSlug) {
   }
 }
 
+// Editorial page: Article (not Product) + FAQPage + BreadcrumbList.
+function compareHead(locale: Locale, slug: CompareSlug) {
+  const copy = compareCopy(locale)[slug]
+  const s = getStrings(locale)
+  const path = comparePath(locale, slug)
+
+  const head = seoHead({
+    locale,
+    path,
+    title: copy.metaTitle,
+    description: copy.metaDescription,
+    alternates: compareAlternates(slug),
+  })
+  return {
+    meta: [
+      ...head.meta,
+      jsonLd(
+        articleJsonLd({
+          headline: copy.h1,
+          description: copy.metaDescription,
+          path,
+          locale,
+          datePublished: COMPARE_DATES[slug].datePublished,
+          dateModified: COMPARE_DATES[slug].dateModified,
+        }),
+      ),
+      jsonLd(faqPageJsonLd(compareFaq(locale, slug))),
+      jsonLd(
+        breadcrumbJsonLd([
+          { name: s.materialsPages.breadcrumbHome, path: `/${locale}` },
+          { name: s.comparePages.breadcrumb, path: compareIndexPath(locale) },
+          { name: copy.title, path },
+        ]),
+      ),
+    ],
+    links: head.links,
+  }
+}
+
 function DetailRoute() {
   const { detail } = Route.useParams()
-  if (!isMaterialSlug(detail)) return null
-  return <MaterialPage slug={detail} />
+  if (isMaterialSlug(detail)) return <MaterialPage slug={detail} />
+  if (isCompareSlug(detail)) return <ComparePage slug={detail} />
+  return null
 }

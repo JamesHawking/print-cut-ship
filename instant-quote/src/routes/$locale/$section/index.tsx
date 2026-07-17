@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { MaterialsIndex } from '@/components/materials/MaterialsIndex'
 import { PricingPage } from '@/components/pricing/PricingPage'
+import { ComparisonsIndex } from '@/components/compare/ComparisonsIndex'
 import {
   DEFAULT_LOCALE,
   getStrings,
@@ -26,7 +27,9 @@ export const Route = createFileRoute('/$locale/$section/')({
   head: ({ params }) => {
     const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE
     const key = sectionKeyFor(locale, params.section) ?? 'materials'
-    return key === 'pricing' ? pricingHead(locale) : materialsHead(locale)
+    if (key === 'pricing') return pricingHead(locale)
+    if (key === 'compare') return compareIndexHead(locale)
+    return materialsHead(locale)
   },
   component: SectionIndex,
 })
@@ -86,9 +89,38 @@ function pricingHead(locale: Locale) {
   }
 }
 
+function compareIndexHead(locale: Locale) {
+  const s = getStrings(locale).comparePages
+  const path = sectionPath(locale, 'compare')
+  const head = seoHead({
+    locale,
+    path,
+    title: s.indexTitle,
+    description: s.indexDescription,
+    alternates: sectionAlternates('compare'),
+  })
+  return {
+    meta: [
+      ...head.meta,
+      jsonLd(
+        breadcrumbJsonLd([
+          {
+            name: getStrings(locale).materialsPages.breadcrumbHome,
+            path: `/${locale}`,
+          },
+          { name: s.breadcrumb, path },
+        ]),
+      ),
+    ],
+    links: head.links,
+  }
+}
+
 function SectionIndex() {
   const locale = useLocale()
   const { section } = Route.useParams()
   const key: SectionKey = sectionKeyFor(locale, section) ?? 'materials'
-  return key === 'pricing' ? <PricingPage /> : <MaterialsIndex />
+  if (key === 'pricing') return <PricingPage />
+  if (key === 'compare') return <ComparisonsIndex />
+  return <MaterialsIndex />
 }
