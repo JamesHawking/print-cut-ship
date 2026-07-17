@@ -10,7 +10,6 @@ here — see `../Plans/DECISIONS.md`.
 ```sh
 make dev                    # from the repo root: this API + the frontend together
 go run ./cmd/api            # just the API, :8080 (PORT to override)
-air                         # hot-reload alternative
 ```
 
 Env:
@@ -122,11 +121,14 @@ make test       # go test ./...
 
 Endpoints: `POST /api/v1/price`, `GET /api/v1/config`,
 `GET /api/v1/ship-dates`, `POST /api/v1/quotes`, `GET /api/v1/quotes/{id}`,
-`POST /api/v1/step-quotes`, `POST /api/v1/makerworld/fetch`, `GET /healthz`.
+`GET /api/v1/orders`, `POST /api/v1/step-quotes`, `POST /api/v1/files`,
+`POST /api/v1/files/{fileId}/confirm`, `POST /api/v1/makerworld/fetch`,
+`GET /healthz`.
 
-`quotes` and `step-quotes` are still honest stubs (log + generated ID — no
-persistence yet; that's roadmap topic 1), but prices are recomputed
-server-side and never trusted from the client.
+`quotes` and `step-quotes` persist to Postgres (plan 01): prices are
+recomputed server-side from stored file bytes, stored as integer grosze, and
+pinned to the active pricing-config snapshot. The client is never trusted for
+money.
 
 ## Pricing engine and golden fixtures
 
