@@ -79,11 +79,11 @@ export function MaterialsIndex() {
                 return (
                   <Link
                     key={material.id}
-                    to="/$locale/$section/$materialId"
+                    to="/$locale/$section/$detail"
                     params={{
                       locale,
                       section: MATERIALS_SECTION[locale],
-                      materialId: published.slug,
+                      detail: published.slug,
                     }}
                     className="group bg-card hover:border-primary/60 flex flex-col rounded-lg border p-6 transition-[border-color,box-shadow] hover:shadow-lg"
                   >

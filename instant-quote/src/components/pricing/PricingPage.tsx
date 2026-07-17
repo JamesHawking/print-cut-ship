@@ -142,11 +142,11 @@ export function PricingPage() {
                   )
                   const name = published ? (
                     <Link
-                      to="/$locale/$section/$materialId"
+                      to="/$locale/$section/$detail"
                       params={{
                         locale,
                         section: MATERIALS_SECTION[locale],
-                        materialId: published.slug,
+                        detail: published.slug,
                       }}
                       className="text-primary-text hover:text-foreground font-bold transition-colors"
                     >

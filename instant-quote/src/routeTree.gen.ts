@@ -17,7 +17,7 @@ import { Route as LocaleOrdersRouteImport } from './routes/$locale/orders'
 import { Route as LocaleLoginRouteImport } from './routes/$locale/login'
 import { Route as LocaleSectionRouteRouteImport } from './routes/$locale/$section/route'
 import { Route as LocaleSectionIndexRouteImport } from './routes/$locale/$section/index'
-import { Route as LocaleSectionMaterialIdRouteImport } from './routes/$locale/$section/$materialId'
+import { Route as LocaleSectionDetailRouteImport } from './routes/$locale/$section/$detail'
 
 const LocaleRouteRoute = LocaleRouteRouteImport.update({
   id: '/$locale',
@@ -59,9 +59,9 @@ const LocaleSectionIndexRoute = LocaleSectionIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LocaleSectionRouteRoute,
 } as any)
-const LocaleSectionMaterialIdRoute = LocaleSectionMaterialIdRouteImport.update({
-  id: '/$materialId',
-  path: '/$materialId',
+const LocaleSectionDetailRoute = LocaleSectionDetailRouteImport.update({
+  id: '/$detail',
+  path: '/$detail',
   getParentRoute: () => LocaleSectionRouteRoute,
 } as any)
 
@@ -73,7 +73,7 @@ export interface FileRoutesByFullPath {
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale/': typeof LocaleIndexRoute
-  '/$locale/$section/$materialId': typeof LocaleSectionMaterialIdRoute
+  '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
 }
 export interface FileRoutesByTo {
@@ -82,7 +82,7 @@ export interface FileRoutesByTo {
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale': typeof LocaleIndexRoute
-  '/$locale/$section/$materialId': typeof LocaleSectionMaterialIdRoute
+  '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
   '/$locale/$section': typeof LocaleSectionIndexRoute
 }
 export interface FileRoutesById {
@@ -94,7 +94,7 @@ export interface FileRoutesById {
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale/': typeof LocaleIndexRoute
-  '/$locale/$section/$materialId': typeof LocaleSectionMaterialIdRoute
+  '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
 }
 export interface FileRouteTypes {
@@ -107,7 +107,7 @@ export interface FileRouteTypes {
     | '/$locale/orders'
     | '/$locale/quote'
     | '/$locale/'
-    | '/$locale/$section/$materialId'
+    | '/$locale/$section/$detail'
     | '/$locale/$section/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,7 +116,7 @@ export interface FileRouteTypes {
     | '/$locale/orders'
     | '/$locale/quote'
     | '/$locale'
-    | '/$locale/$section/$materialId'
+    | '/$locale/$section/$detail'
     | '/$locale/$section'
   id:
     | '__root__'
@@ -127,7 +127,7 @@ export interface FileRouteTypes {
     | '/$locale/orders'
     | '/$locale/quote'
     | '/$locale/'
-    | '/$locale/$section/$materialId'
+    | '/$locale/$section/$detail'
     | '/$locale/$section/'
   fileRoutesById: FileRoutesById
 }
@@ -194,23 +194,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleSectionIndexRouteImport
       parentRoute: typeof LocaleSectionRouteRoute
     }
-    '/$locale/$section/$materialId': {
-      id: '/$locale/$section/$materialId'
-      path: '/$materialId'
-      fullPath: '/$locale/$section/$materialId'
-      preLoaderRoute: typeof LocaleSectionMaterialIdRouteImport
+    '/$locale/$section/$detail': {
+      id: '/$locale/$section/$detail'
+      path: '/$detail'
+      fullPath: '/$locale/$section/$detail'
+      preLoaderRoute: typeof LocaleSectionDetailRouteImport
       parentRoute: typeof LocaleSectionRouteRoute
     }
   }
 }
 
 interface LocaleSectionRouteRouteChildren {
-  LocaleSectionMaterialIdRoute: typeof LocaleSectionMaterialIdRoute
+  LocaleSectionDetailRoute: typeof LocaleSectionDetailRoute
   LocaleSectionIndexRoute: typeof LocaleSectionIndexRoute
 }
 
 const LocaleSectionRouteRouteChildren: LocaleSectionRouteRouteChildren = {
-  LocaleSectionMaterialIdRoute: LocaleSectionMaterialIdRoute,
+  LocaleSectionDetailRoute: LocaleSectionDetailRoute,
   LocaleSectionIndexRoute: LocaleSectionIndexRoute,
 }
 

@@ -235,11 +235,11 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
                 return (
                   <Link
                     key={otherId}
-                    to="/$locale/$section/$materialId"
+                    to="/$locale/$section/$detail"
                     params={{
                       locale,
                       section: MATERIALS_SECTION[locale],
-                      materialId: other.slug,
+                      detail: other.slug,
                     }}
                     className="text-primary-text hover:text-foreground font-bold transition-colors"
                   >

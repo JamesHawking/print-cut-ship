@@ -9,6 +9,7 @@ import type { Locale } from '@/lib/i18n'
 export const SECTIONS = {
   materials: { pl: 'materialy', en: 'materials' },
   pricing: { pl: 'cennik', en: 'pricing' },
+  compare: { pl: 'porownanie', en: 'compare' },
 } as const
 
 export type SectionKey = keyof typeof SECTIONS

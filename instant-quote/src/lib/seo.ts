@@ -171,6 +171,25 @@ interface ProductSchema {
   }
 }
 
+interface ArticleSchema {
+  '@context': 'https://schema.org'
+  '@type': 'Article'
+  headline: string
+  description: string
+  inLanguage: string
+  /** ISO dates, static in content data so prerender stays deterministic. */
+  datePublished: string
+  dateModified: string
+  mainEntityOfPage: string
+  image: string
+  author: { '@type': 'Organization'; name: string }
+  publisher: {
+    '@type': 'Organization'
+    name: string
+    logo: { '@type': 'ImageObject'; url: string }
+  }
+}
+
 interface FAQPageSchema {
   '@context': 'https://schema.org'
   '@type': 'FAQPage'
@@ -186,6 +205,7 @@ type JsonLdSchema =
   | WebSiteSchema
   | BreadcrumbListSchema
   | ProductSchema
+  | ArticleSchema
   | FAQPageSchema
 
 /** Wraps a schema for a head() meta array entry. */
@@ -241,6 +261,38 @@ export function productJsonLd(opts: {
       priceCurrency: 'PLN',
       availability: 'https://schema.org/InStock',
       url: `${SITE_URL}${opts.path}`,
+    },
+  }
+}
+
+/**
+ * Comparison landing pages: editorial content, so Article rather than an
+ * offer. Dates come from the page's content data (COMPARE_DATES).
+ */
+export function articleJsonLd(opts: {
+  headline: string
+  description: string
+  path: string
+  locale: Locale
+  datePublished: string
+  dateModified: string
+  image?: string
+}): ArticleSchema {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: opts.headline,
+    description: opts.description,
+    inLanguage: opts.locale,
+    datePublished: opts.datePublished,
+    dateModified: opts.dateModified,
+    mainEntityOfPage: `${SITE_URL}${opts.path}`,
+    image: `${SITE_URL}${opts.image ?? '/og.png'}`,
+    author: { '@type': 'Organization', name: SITE_NAME },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo512.png` },
     },
   }
 }
