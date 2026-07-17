@@ -204,6 +204,37 @@ export const en = {
       },
     ],
   },
+  // Landing FAQ (section 04) — mirror of pl.ts.
+  landingFaq: {
+    n: '04',
+    heading: 'Frequently asked questions',
+    items: [
+      {
+        q: 'What happens to my file?',
+        a: 'The file lands on our EU server only to prepare your quote. If you never order, it is deleted automatically. Nobody reviews it and we never share it.',
+      },
+      {
+        q: 'How can the price be instant?',
+        a: 'Your browser measures the geometry and the same engine that prices orders does the math — slicer-style weight plus machine time. At checkout the engine recomputes everything from the stored file, so the price can never drift from the model.',
+      },
+      {
+        q: 'What accuracy should I expect?',
+        a: 'Typically ±0.3 mm per 100 mm in the XY plane — what a well-tuned FDM machine delivers. If a part needs tighter fits, design in clearance or plan to post-machine the interfaces.',
+      },
+      {
+        q: 'How fast will my order arrive?',
+        a: 'Standard lead is 3–10 business days, express is faster. Orders placed by 14:00 enter production the same day; the courier delivers D+1 in PL/DE and D+2 across the rest of the EU.',
+      },
+      {
+        q: 'Do I need an account?',
+        a: 'No. Quoting is anonymous and ordering only needs an email — you get a confirmation and a one-time code to track status. No password, no sales rep.',
+      },
+      {
+        q: 'What does shipping cost?',
+        a: 'A flat 20 zł EU-wide, free on orders of 500 zł or more. Minimum order is 30 zł — every price is gross, incl. 23% VAT.',
+      },
+    ],
+  },
   footer: {
     note: 'Prototype · illustrative rates · every quote is fully itemized',
     meta: 'EU · FDM · PLN · 23% VAT',

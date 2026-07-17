@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 import { Hero } from '@/components/Hero'
 import { HowItWorks } from '@/components/HowItWorks'
+import { LandingFaq } from '@/components/LandingFaq'
 import { Materials } from '@/components/Materials'
 import { PricingFormula } from '@/components/PricingFormula'
 import { RateTicker } from '@/components/RateTicker'
@@ -9,7 +10,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { SiteHeader } from '@/components/SiteHeader'
 import { useParts } from '@/hooks/useParts'
 import { DEFAULT_LOCALE, getStrings, isLocale, useLocale } from '@/lib/i18n'
-import { seoHead } from '@/lib/seo'
+import { faqPageJsonLd, jsonLd, seoHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/$locale/')({
   // CTA attribution: QuoteCta deep-links here with ?source=<page>; the
@@ -20,12 +21,16 @@ export const Route = createFileRoute('/$locale/')({
   head: ({ params, match }) => {
     const locale = isLocale(params.locale) ? params.locale : DEFAULT_LOCALE
     const s = getStrings(locale)
-    return seoHead({
+    const head = seoHead({
       locale,
       path: match.pathname,
       title: s.meta.title,
       description: s.meta.description,
     })
+    return {
+      meta: [...head.meta, jsonLd(faqPageJsonLd(s.landingFaq.items))],
+      links: head.links,
+    }
   },
   component: Landing,
 })
@@ -73,6 +78,7 @@ function Landing() {
         <HowItWorks />
         <Materials />
         <PricingFormula />
+        <LandingFaq />
       </main>
       <SiteFooter />
     </>

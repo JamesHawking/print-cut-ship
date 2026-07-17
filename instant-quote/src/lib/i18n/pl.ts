@@ -217,6 +217,38 @@ export const pl = {
       },
     ],
   },
+  // Landing FAQ (section 04, LandingFaq.tsx) — also feeds the route's
+  // FAQPage JSON-LD, so items stay {q, a}-shaped.
+  landingFaq: {
+    n: '04',
+    heading: 'Częste pytania',
+    items: [
+      {
+        q: 'Co dzieje się z moim plikiem?',
+        a: 'Plik trafia na nasz serwer w UE wyłącznie po to, by przygotować wycenę. Jeśli nie zamówisz, jest usuwany automatycznie. Nikt go nie przegląda i nikomu go nie udostępniamy.',
+      },
+      {
+        q: 'Skąd cena w kilka sekund?',
+        a: 'Geometrię mierzy twoja przeglądarka, a cenę liczy ten sam silnik co przy zamówieniu — waga jak w slicerze plus czas maszynowy. Przy zamówieniu silnik przelicza wszystko ponownie z zapisanego pliku, więc cena nigdy nie rozmija się z modelem.',
+      },
+      {
+        q: 'Jakiej dokładności mogę oczekiwać?',
+        a: 'Typowo ±0,3 mm na 100 mm w płaszczyźnie XY — tyle daje dobrze zestrojony FDM. Jeśli część wymaga ciaśniejszych pasowań, zaprojektuj zapas albo dopracuj pasowania po druku.',
+      },
+      {
+        q: 'Jak szybko dotrze zamówienie?',
+        a: 'Standardowo 3–10 dni roboczych, ekspres szybciej. Zamówienie złożone do 14:00 wchodzi w produkcję tego samego dnia; kurier dowozi D+1 w PL/DE i D+2 w reszcie UE.',
+      },
+      {
+        q: 'Czy muszę zakładać konto?',
+        a: 'Nie. Wycena jest anonimowa, a do zamówienia wystarczy e-mail — dostajesz na niego potwierdzenie i jednorazowy kod do śledzenia statusu. Żadnego hasła, żadnego handlowca.',
+      },
+      {
+        q: 'Ile kosztuje wysyłka?',
+        a: 'Stałe 20 zł do całej UE, gratis przy zamówieniu od 500 zł. Minimalna wartość zamówienia to 30 zł — wszystkie ceny brutto, z 23% VAT.',
+      },
+    ],
+  },
   footer: {
     note: 'Prototyp · stawki poglądowe · każda wycena jest w pełni rozbita na pozycje',
     meta: 'UE · FDM · PLN · 23% VAT',
