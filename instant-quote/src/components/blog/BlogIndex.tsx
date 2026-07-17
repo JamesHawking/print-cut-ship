@@ -38,10 +38,7 @@ export function BlogIndex() {
           <div className="mx-auto max-w-6xl px-4 pt-10 pb-14 sm:px-6 md:pt-16">
             <ContentBreadcrumb
               items={[
-                {
-                  label: strings.materialsPages.breadcrumbHome,
-                  href: `/${locale}`,
-                },
+                { label: strings.materialsPages.breadcrumbHome, to: 'home' },
                 { label: s.breadcrumb },
               ]}
             />

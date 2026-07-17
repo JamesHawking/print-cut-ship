@@ -19,7 +19,6 @@ import { materialsCopy } from '@/content/materials/copy'
 import {
   MATERIALS_SECTION,
   materialIdForSlug,
-  materialsIndexPath,
   PUBLISHED_MATERIALS,
   type MaterialSlug,
 } from '@/content/materials/slugs'
@@ -81,11 +80,8 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
           <div className="mx-auto max-w-6xl px-4 pt-10 pb-12 sm:px-6 md:pt-16 md:pb-14">
             <ContentBreadcrumb
               items={[
-                { label: s.breadcrumbHome, href: `/${locale}` },
-                {
-                  label: s.breadcrumbMaterials,
-                  href: materialsIndexPath(locale),
-                },
+                { label: s.breadcrumbHome, to: 'home' },
+                { label: s.breadcrumbMaterials, to: 'materials' },
                 { label: catalog.label },
               ]}
             />

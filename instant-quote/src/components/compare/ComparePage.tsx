@@ -30,7 +30,6 @@ import { compareFaq } from '@/content/compare/faq'
 import {
   COMPARE_SECTION,
   COMPARISONS,
-  compareIndexPath,
   compareMaterials,
   type CompareSlug,
 } from '@/content/compare/slugs'
@@ -60,8 +59,8 @@ export function ComparePage({ slug }: { slug: CompareSlug }) {
           <div className="mx-auto max-w-6xl px-4 pt-10 pb-14 sm:px-6 md:pt-16">
             <ContentBreadcrumb
               items={[
-                { label: m.breadcrumbHome, href: `/${locale}` },
-                { label: s.breadcrumb, href: compareIndexPath(locale) },
+                { label: m.breadcrumbHome, to: 'home' },
+                { label: s.breadcrumb, to: 'compare' },
                 { label: copy.title },
               ]}
             />

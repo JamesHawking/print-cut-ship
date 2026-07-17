@@ -8,15 +8,19 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { useLocale } from '@/lib/i18n'
+import { SECTIONS, type SectionKey } from '@/content/sections'
 
 export interface CrumbItem {
   label: string
-  /** Resolved localized path (slugs module); omitted on the current page. */
-  href?: string
+  /** 'home' → the locale landing; a section key → its localized index.
+      Omitted on the current page. */
+  to?: 'home' | SectionKey
 }
 
 /** Content-page breadcrumb in the site's mono-caption voice. */
 export function ContentBreadcrumb({ items }: { items: CrumbItem[] }) {
+  const locale = useLocale()
   return (
     <Breadcrumb>
       <BreadcrumbList className="font-mono text-[0.65rem] tracking-[0.14em] uppercase">
@@ -24,16 +28,25 @@ export function ContentBreadcrumb({ items }: { items: CrumbItem[] }) {
           <Fragment key={item.label}>
             {i > 0 && <BreadcrumbSeparator />}
             <BreadcrumbItem>
-              {item.href ? (
-                <BreadcrumbLink asChild>
-                  {/* Crumb paths come pre-localized from the slugs module —
-                      cast past the router's literal route-id typing. */}
-                  <Link to={item.href as '/'}>{item.label}</Link>
-                </BreadcrumbLink>
-              ) : (
+              {item.to === undefined ? (
                 <BreadcrumbPage className="text-foreground font-bold">
                   {item.label}
                 </BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink asChild>
+                  {item.to === 'home' ? (
+                    <Link to="/$locale" params={{ locale }}>
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/$locale/$section"
+                      params={{ locale, section: SECTIONS[item.to][locale] }}
+                    >
+                      {item.label}
+                    </Link>
+                  )}
+                </BreadcrumbLink>
               )}
             </BreadcrumbItem>
           </Fragment>

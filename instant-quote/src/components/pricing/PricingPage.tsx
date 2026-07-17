@@ -22,6 +22,7 @@ import {
   MATERIALS_SECTION,
   PUBLISHED_MATERIALS,
 } from '@/content/materials/slugs'
+import { SECTIONS } from '@/content/sections'
 import { pricingCopy } from '@/content/pricing/copy'
 import { pricingFaq } from '@/content/pricing/faq'
 import {
@@ -71,10 +72,7 @@ export function PricingPage() {
           <div className="mx-auto max-w-6xl px-4 pt-10 pb-16 sm:px-6 md:pt-16">
             <ContentBreadcrumb
               items={[
-                {
-                  label: strings.materialsPages.breadcrumbHome,
-                  href: `/${locale}`,
-                },
+                { label: strings.materialsPages.breadcrumbHome, to: 'home' },
                 { label: s.breadcrumb },
               ]}
             />
@@ -428,6 +426,25 @@ export function PricingPage() {
                 </AccordionItem>
               ))}
             </Accordion>
+
+            {/* see also: the sibling content-page families (ComparePage idiom) */}
+            <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t pt-6 font-mono text-[0.7rem] tracking-[0.14em] uppercase">
+              <span className="text-muted-foreground">{s.seeAlso}</span>
+              <Link
+                to="/$locale/$section"
+                params={{ locale, section: SECTIONS.materials[locale] }}
+                className="text-primary-text hover:text-foreground font-bold transition-colors"
+              >
+                {strings.nav.materials} →
+              </Link>
+              <Link
+                to="/$locale/$section"
+                params={{ locale, section: SECTIONS.compare[locale] }}
+                className="text-primary-text hover:text-foreground font-bold transition-colors"
+              >
+                {strings.nav.compare} →
+              </Link>
+            </div>
           </div>
         </section>
       </main>

@@ -3,7 +3,7 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { ContentBreadcrumb } from '@/components/materials/ContentBreadcrumb'
 import { useLocale, useStrings } from '@/lib/i18n'
-import { BLOG_SECTION, blogIndexPath } from '@/content/blog/paths'
+import { BLOG_SECTION } from '@/content/blog/paths'
 import { getBlogPost, relatedTo } from '@/content/blog/registry'
 import { flattenToc } from '@/content/blog/toc'
 import { mdxComponents } from './mdx-components'
@@ -57,11 +57,8 @@ export function BlogArticle({ slug }: { slug: string }) {
           <div className="mx-auto max-w-6xl px-4 pt-10 pb-12 sm:px-6 md:pt-16 md:pb-14">
             <ContentBreadcrumb
               items={[
-                {
-                  label: strings.materialsPages.breadcrumbHome,
-                  href: `/${locale}`,
-                },
-                { label: s.breadcrumb, href: blogIndexPath(locale) },
+                { label: strings.materialsPages.breadcrumbHome, to: 'home' },
+                { label: s.breadcrumb, to: 'blog' },
                 { label: post.fm.title },
               ]}
             />
