@@ -1,4 +1,4 @@
-// Locale resolution — no i18n framework (Plans/DECISIONS.md).
+// Locale resolution — no i18n framework (plans/engineering/DECISIONS.md).
 //
 // Two access paths, one invariant:
 // - RENDER paths (components) MUST use useStrings()/useLocale() — React

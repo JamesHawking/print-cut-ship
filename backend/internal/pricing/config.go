@@ -91,7 +91,7 @@ const MaxParts = 5
 const MaxQuantity = 10_000
 
 // Default mirrors PRICING in src/lib/pricing-config.ts. Rates anchor to
-// mapi-tech.pl reference quotes; see instant-quote/references/.
+// mapi-tech.pl reference quotes; see research/competitors/.
 var Default = Config{
 	Processes: []ProcessDef{
 		{ID: "pla", Label: "PLA", DensityGCm3: 1.25, PlnPerKg: 50, Factor: 1.0, PlnPerHour: 1.8, Build: H2SPlate},

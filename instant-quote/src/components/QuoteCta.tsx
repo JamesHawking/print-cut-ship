@@ -3,7 +3,7 @@ import { useLocale, useStrings } from '@/lib/i18n'
 import { track } from '@/lib/funnel'
 
 /**
- * The shared upload CTA (seo_prompts/01): every content page ends in it — the
+ * The shared upload CTA (plans/seo/01): every content page ends in it — the
  * quote tool is the CTA. Deep-links to the landing intake with ?source= so
  * content-page conversion is attributable; fires cta_upload_clicked on click.
  *

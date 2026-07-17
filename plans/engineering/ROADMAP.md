@@ -225,7 +225,7 @@ Not launch gates. Plan each when it reaches the top of the queue.
 
 ### 16. Feature backlog (customer-facing)
 
-Candidates, each its own mini-plan when picked: customer dashboard improvements (re-order past parts, saved addresses); quote sharing links; STEP quoting hardening (auto-quoting works today; the manual-email card is the parse-failure fallback — reduce how often it triggers); more processes beyond FDM (the pricing engine's `PROCESS_IDS` structure anticipates this); DFM feedback expansion (wall-thickness analysis exists — surface fixes/suggestions); MakerWorld import hardening (official API unlikely — monitor the undocumented endpoints, degrade gracefully); accessibility audit against the WCAG 2.2 AA commitment in PRODUCT.md (keyboard, contrast, reduced-motion, non-WebGL fallback — partially built, never audited).
+Candidates, each its own mini-plan when picked: customer dashboard improvements (re-order past parts, saved addresses); quote sharing links; STEP quoting hardening (auto-quoting works today; the manual-email card is the parse-failure fallback — reduce how often it triggers); more processes beyond FDM (the pricing engine's `PROCESS_IDS` structure anticipates this); DFM feedback expansion (wall-thickness analysis exists — surface fixes/suggestions); MakerWorld import hardening (official API unlikely — monitor the undocumented endpoints, degrade gracefully); accessibility audit against the WCAG 2.2 AA commitment in business/product.md (keyboard, contrast, reduced-motion, non-WebGL fallback — partially built, never audited).
 
 ---
 

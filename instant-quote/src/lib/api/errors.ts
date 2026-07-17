@@ -1,6 +1,6 @@
 // Maps the backend's machine-code error envelope (ApiError{code, params})
 // to localized copy — the dictionary owns all human text; the wire carries
-// only codes (Plans/08-i18n.md localization contract).
+// only codes (plans/engineering/08-i18n.md localization contract).
 
 import type { Dictionary } from '@/lib/i18n'
 import type { components } from './schema'

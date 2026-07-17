@@ -48,7 +48,7 @@ function weeksBetween(fromIso: string, toIso: string): number {
   return Math.round((mondayOf(toIso) - mondayOf(fromIso)) / (7 * 86_400_000))
 }
 
-/** The published rate card (seo_prompts/03) — every number from the engine. */
+/** The published rate card (plans/seo/03) — every number from the engine. */
 export function PricingPage() {
   const strings = useStrings()
   const locale = useLocale()

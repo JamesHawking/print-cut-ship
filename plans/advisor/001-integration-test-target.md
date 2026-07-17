@@ -4,7 +4,7 @@
 > verification command and confirm the expected result before moving to the
 > next step. If anything in the "STOP conditions" section occurs, stop and
 > report — do not improvise. When done, update the status row for this plan
-> in `advisor-plans/README.md` — unless a reviewer dispatched you and told you
+> in `plans/advisor/README.md` — unless a reviewer dispatched you and told you
 > they maintain the index.
 >
 > **Drift check (run first)**: `git diff --stat 64dfb98..HEAD -- backend/Makefile Makefile backend/README.md`
@@ -109,7 +109,7 @@ one Makefile target. Plans 002 and 003 rely on this target for their verificatio
 **Out of scope** (do NOT touch):
 - Any `_test.go` file — the skip-gating stays as is.
 - `docker-compose.yml` — services are already correct.
-- CI configuration — none exists; plan 03 in `Plans/` owns it.
+- CI configuration — none exists; plan 03 in `plans/engineering/` owns it.
 
 ## Git workflow
 
@@ -201,7 +201,7 @@ ALL must hold:
 - [ ] Step 2's grep shows `--- PASS` for `TestRunSweep` and `TestSubmitQuotePersists`, zero `--- SKIP`
 - [ ] `make test` still works unchanged (unit-only, no compose requirement beyond what it had)
 - [ ] `git status` shows only the three in-scope files modified
-- [ ] `advisor-plans/README.md` status row updated
+- [ ] `plans/advisor/README.md` status row updated
 
 ## STOP conditions
 
@@ -215,7 +215,7 @@ Stop and report back if:
 
 ## Maintenance notes
 
-- Plan 03 (`Plans/03-deploy-ci.md`) will wire CI; the CI job should call this
+- Plan 03 (`plans/engineering/03-deploy-ci.md`) will wire CI; the CI job should call this
   same target so local and CI semantics stay identical.
 - Plans 002/003 in this folder use `make -C backend test-integration` as their
   verification gate.

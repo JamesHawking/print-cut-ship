@@ -156,7 +156,7 @@ func TestGoldenPacking(t *testing.T) {
 	}
 }
 
-// Anchor from the mapi-tech.pl calibration (references/mapi-tech-pricing.md):
+// Anchor from the mapi-tech.pl calibration (research/competitors/mapi-tech-pricing.md):
 // Basket.3mf, thin-walled ribbed PLA, quoted 21.64 zł by the real widget.
 // Mirrors the tolerance test in the original tests/pricing.test.ts. (The
 // second anchor, test_object.step at 33.67 zł PETG, depends on client-side

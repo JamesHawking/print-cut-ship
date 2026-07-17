@@ -4,7 +4,7 @@ import { buildRssXml } from '@/lib/rss'
 import { blogIndexPath, blogPath, rssPath } from '@/content/blog/paths'
 import { blogPosts } from '@/content/blog/registry'
 
-// Per-locale blog feed (seo_prompts/05). A static route segment out-ranks
+// Per-locale blog feed (plans/seo/05). A static route segment out-ranks
 // the dynamic /$locale/$section tree, and the prerenderer writes the
 // response to .output/public/en/blog/rss.xml at build (the rssPages entry
 // in vite.config). Twin: src/routes/pl/baza-wiedzy/rss[.]xml.ts.

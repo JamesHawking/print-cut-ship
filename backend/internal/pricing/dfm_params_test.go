@@ -2,7 +2,7 @@ package pricing
 
 import "testing"
 
-// The localization contract (Plans/08-i18n.md): every parameterized DFM flag
+// The localization contract (plans/engineering/08-i18n.md): every parameterized DFM flag
 // carries structured params so the frontend renders localized copy without
 // parsing the debug message.
 

@@ -9,7 +9,7 @@
 > _tolerance-based authoritative_, not the brief's bit-exact `VerifyOrderPricing`
 > — the server is authoritative, so no convex-hull port and non-watertight
 > meshes defer to client metrics + a flag (see `backend/README.md` mesh section
-> and `instant-quote/references/seekmake-public-api.md` for the rationale);
+> and `research/competitors/seekmake-public-api.md` for the rationale);
 > (2) placed in `httpapi/verify.go` (not `internal/orders`) — plan 05 extracts
 > the order-time call site mechanically; (3) STEP `manual_verify` remains
 > plans 05/07 as designed; (4) the `files.kind` migration comment (`'mesh'|'step'`)

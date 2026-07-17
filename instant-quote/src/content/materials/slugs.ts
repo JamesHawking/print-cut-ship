@@ -1,4 +1,4 @@
-// URL identity for the material landing pages (seo_prompts/02): the section
+// URL identity for the material landing pages (plans/seo/02): the section
 // word is localized (registered in src/content/sections.ts); material slugs
 // are technical names, identical in both locales.
 

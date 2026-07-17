@@ -3,7 +3,7 @@ import type { pl } from './pl'
 /**
  * The dictionary shape, inferred from the Polish source of truth. en.ts must
  * `satisfies Dictionary` — a key present in one locale but not the other is a
- * compile error (Plans/08-i18n.md phase A).
+ * compile error (plans/engineering/08-i18n.md phase A).
  */
 export type Dictionary = typeof pl
 

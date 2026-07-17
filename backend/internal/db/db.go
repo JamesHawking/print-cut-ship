@@ -1,6 +1,6 @@
 // Package db owns the Postgres connection pool and schema migrations for the
 // instant-quote backend. Migrations are embedded SQL run by goose; the serve
-// path uses a pgx pool. See Plans/01-persistence.md.
+// path uses a pgx pool. See plans/engineering/01-persistence.md.
 package db
 
 import (

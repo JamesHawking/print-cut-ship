@@ -2,12 +2,12 @@ import { describe, expect, test } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-// seo_prompts/03 DoD: "a test must fail if any [currency] value on this page
+// plans/seo/03 DoD: "a test must fail if any [currency] value on this page
 // is a string literal in the page source". Every zł amount must interpolate
 // from the engine dataset — a digit directly before `zł` in these sources is
 // a hardcoded price that will go stale silently.
 //
-// The compare tree (seo_prompts/04) is scanned under the same rule: its
+// The compare tree (plans/seo/04) is scanned under the same rule: its
 // static cited figures (aluminum ranges, TCO inputs) are bare numbers with
 // Pln-suffixed names in compare/data.ts, so any rendered `zł` amount is
 // still necessarily an interpolation.

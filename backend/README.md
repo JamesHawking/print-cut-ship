@@ -3,7 +3,7 @@
 Canonical backend for the instant-quote app (`../instant-quote` is
 frontend-only). Owns pricing, ship dates, quote intake, and the MakerWorld
 download proxy. All future API surface (auth, orders, payments, admin) lands
-here — see `../Plans/DECISIONS.md`.
+here — see `../plans/engineering/DECISIONS.md`.
 
 ## Run
 

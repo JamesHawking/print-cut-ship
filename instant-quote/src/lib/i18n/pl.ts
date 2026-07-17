@@ -5,7 +5,7 @@
 // the English file can carry different text under the same shape.
 //
 // TODO(launch): machine-drafted Polish — native-speaker review required
-// before launch; schedule alongside plan 09's lawyer pass (Plans/08-i18n.md §6).
+// before launch; schedule alongside plan 09's lawyer pass (plans/engineering/08-i18n.md §6).
 
 import type { components } from '@/lib/api/schema'
 import { formatDecimal } from '@/lib/format'
@@ -16,7 +16,7 @@ export type MaterialFamily = 'standard' | 'engineering' | 'specialty'
 
 // All three derived from the generated contract — a new backend code or
 // status without copy here is a compile error (localization contract,
-// Plans/08-i18n.md).
+// plans/engineering/08-i18n.md).
 type OrderStatus = components['schemas']['OrderSummary']['status']
 type DfmCode = components['schemas']['DfmFlag']['code']
 type ApiErrorCode = components['schemas']['ApiErrorCode']

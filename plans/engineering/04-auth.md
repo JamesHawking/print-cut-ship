@@ -14,7 +14,7 @@ This topic adds real identity: email+password registration with verification and
 
 ## 2. Decisions applied
 
-From `Plans/DECISIONS.md` (pinned, incl. amendment):
+From `plans/engineering/DECISIONS.md` (pinned, incl. amendment):
 
 - **Auth lives in Go** — better-auth (TS) is retired by the amendment. See topic-local decision below for the approach.
 - **DB = Postgres via plan 01's store layer** (pgx + sqlc); this plan EXTENDS plan 01's `users` table and adds sibling tables via additive goose migrations — never redefines.

@@ -159,7 +159,7 @@ func TestSubmitQuoteEndpoint(t *testing.T) {
 	})
 
 	// Each rejection carries a stable machine code + params — the frontend
-	// dictionary owns the human copy (Plans/08-i18n.md localization contract).
+	// dictionary owns the human copy (plans/engineering/08-i18n.md localization contract).
 	bad := map[string]struct {
 		body string
 		code ApiErrorCode

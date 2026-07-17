@@ -4,7 +4,7 @@
 > verification command and confirm the expected result before moving to the
 > next step. If anything in the "STOP conditions" section occurs, stop and
 > report — do not improvise. When done, update the status row for this plan
-> in `advisor-plans/README.md` — unless a reviewer dispatched you and told you
+> in `plans/advisor/README.md` — unless a reviewer dispatched you and told you
 > they maintain the index.
 >
 > **Drift check (run first)**: `git diff --stat 64dfb98..HEAD -- instant-quote/src/hooks/useMeshWorker.ts instant-quote/src/workers/mesh.worker.ts`
@@ -246,7 +246,7 @@ ALL must hold:
       the worker's positions hash (confirm by reading the final diff)
 - [ ] STL/OBJ/STEP behavior unchanged (no diff outside the 3MF branch + helper)
 - [ ] `git status` shows only in-scope files modified
-- [ ] `advisor-plans/README.md` status row updated
+- [ ] `plans/advisor/README.md` status row updated
 
 ## STOP conditions
 
@@ -264,9 +264,9 @@ Stop and report back if:
 - **Dedup-key migration**: any 3MF rows already in the local dev DB are keyed
   by the old positions-hash and will simply never dedup-match again; the
   retention sweep reclaims them (unreferenced) after the window. No production
-  deployment exists (Plans/03 unstarted), so no data migration is needed — but
+  deployment exists (plans/engineering/03 unstarted), so no data migration is needed — but
   if this lands *after* a production launch, revisit.
-- The deferred mesh-recompute work (`Plans/02-file-storage.md`, before plan 05)
+- The deferred mesh-recompute work (`plans/engineering/02-file-storage.md`, before plan 05)
   will re-hash stored bytes server-side at order time; with this fix, its hash
   comparison becomes meaningful for 3MF.
 - Reviewer should scrutinize: the hash is computed **before**

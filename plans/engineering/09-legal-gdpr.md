@@ -44,7 +44,7 @@ This is an absolute launch gate — the first real order must not be taken witho
 ### Phase D — Processor diligence + registers
 
 - DPA checklist per processor (Stripe, Resend, PostHog EU, Sentry, Fakturownia, host provider — all offer standard DPAs; record signed/accepted status). Note Bambu Cloud has **no DPA** — MakerWorld imports send a URL to an undocumented API; disclose in the policy and treat imported-model metadata as leaving the EEA-controlled surface.
-- Minimal RODO records: processing-activities register (Art. 30 — a simple table in `Plans/runbooks/rodo-register.md`) and the retention table shared with the privacy policy.
+- Minimal RODO records: processing-activities register (Art. 30 — a simple table in `plans/engineering/runbooks/rodo-register.md`) and the retention table shared with the privacy policy.
 - **Verify:** every third-party service in `DECISIONS.md` appears in the processor list + register; retention table values match plans 02/05 constants.
 
 ## 4. Dependencies

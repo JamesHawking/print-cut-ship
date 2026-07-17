@@ -87,7 +87,7 @@ function dateFmt(
 /**
  * Localized ship date from the API's structured CalDate — the response's
  * `label` is the engine's canonical EN form and is never displayed
- * (Plans/08-i18n.md phase D).
+ * (plans/engineering/08-i18n.md phase D).
  */
 export function formatShipDate(
   d: { y: number; m: number; d: number },

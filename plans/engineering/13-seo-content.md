@@ -1,6 +1,6 @@
 # 13 — SEO, content & trust surface
 
-> **Status: 🟨 Phases 1–2 largely pre-built** (2026-07-16, via seo_prompts/01
+> **Status: 🟨 Phases 1–2 largely pre-built** (2026-07-16, via plans/seo/01
 > "SEO foundation"): per-route localized meta + canonical + OG/Twitter
 > (`src/lib/seo.ts` seoHead), Organization/WebSite JSON-LD, sitemap.xml with
 > hreflang alternates + robots.txt, /pl + /en prerendered, manifest/branding

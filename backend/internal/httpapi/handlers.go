@@ -41,7 +41,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 // apiError writes the localization-contract error envelope: a machine code
 // (+ structured params) the frontend dictionary maps to copy, plus English
-// debug prose that is never displayed (Plans/08-i18n.md).
+// debug prose that is never displayed (plans/engineering/08-i18n.md).
 func apiError(w http.ResponseWriter, status int, code ApiErrorCode, msg string, params map[string]any) {
 	e := ApiError{Code: code, Error: msg}
 	if len(params) > 0 {

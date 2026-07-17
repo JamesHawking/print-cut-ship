@@ -12,7 +12,7 @@ import (
 )
 
 // Reference-part price tables for the material landing pages
-// (seo_prompts/02). The frontend must never re-implement the engine, and the
+// (plans/seo/02). The frontend must never re-implement the engine, and the
 // prerendered pages can't call the API at build time — so this DB-free
 // subcommand computes the tables through internal/pricing and the result is
 // committed as instant-quote/src/content/reference-prices.json
@@ -130,7 +130,7 @@ type referencePricesDoc struct {
 	LeadTime    string                                   `json:"leadTime"`
 	Parts       []referencePart                          `json:"parts"`
 	Prices      map[string]map[string]map[string]float64 `json:"prices"`
-	// Pricing-page dataset (seo_prompts/03):
+	// Pricing-page dataset (plans/seo/03):
 	Catalog          catalogSection                `json:"catalog"`
 	RateCard         map[string]map[string]float64 `json:"rateCard"`
 	DiscountExample  []discountExampleRow          `json:"discountExample"`

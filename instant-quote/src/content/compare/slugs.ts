@@ -1,4 +1,4 @@
-// URL identity for the comparison landing pages (seo_prompts/04): the section
+// URL identity for the comparison landing pages (plans/seo/04): the section
 // word is localized (registered in src/content/sections.ts); comparison slugs
 // are technical names, identical in both locales.
 

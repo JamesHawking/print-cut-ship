@@ -10,7 +10,7 @@ import (
 
 // The committed frontend JSON must always equal what the current pricing
 // config produces — a rate change without `make gen-reference-prices` would
-// otherwise silently publish stale marketing prices (seo_prompts/02 DoD).
+// otherwise silently publish stale marketing prices (plans/seo/02 DoD).
 func TestReferencePricesJSONInSync(t *testing.T) {
 	doc, err := buildReferencePrices()
 	if err != nil {

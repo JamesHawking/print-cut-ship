@@ -21,7 +21,7 @@ Repo shape: not a JS monorepo — `instant-quote/` and `backend/` are sibling pr
 
 ## 2. Decisions applied
 
-**From `Plans/DECISIONS.md` (pinned):**
+**From `plans/engineering/DECISIONS.md` (pinned):**
 
 - **CI/CD:** GitHub Actions → Coolify webhook deploy. Per the amendment: **two containers**, reverse proxy routes `/api` to Go. The frontend Dockerfile is Bun-runtime with a documented Node fallback; the backend Dockerfile already exists (distroless).
 - **Error tracking:** Sentry SaaS, release tags from CI — supplied to **both** builds (frontend `VITE_SENTRY_RELEASE` build arg; backend `-ldflags "-X main.release=$SHA"`). Plan 11 finishes SDK wiring.
@@ -101,7 +101,7 @@ Branch protection: both jobs required on `main`.
 
 - **Coolify env (per environment):** backend — `DATABASE_URL`, `S3_*`, `REDIS_URL`, `BAMBU_CLOUD_TOKEN`, `SENTRY_DSN`, later `STRIPE_*`/`RESEND_*`/`FAKTUROWNIA_*` (plans 05/06); frontend — `VITE_SENTRY_RELEASE`, public keys only (PostHog key), optionally `API_PROXY`.
 - **GitHub:** `secrets.COOLIFY_TOKEN`; `vars.COOLIFY_URL`, four app UUIDs, staging/production URLs.
-- **Rotation runbook** (`Plans/runbooks/secrets.md` or backend README): where each secret lives, how to rotate the Coolify token and `BAMBU_CLOUD_TOKEN` (~90-day expiry; monitoring job is plan 10's, procedure documented here).
+- **Rotation runbook** (`plans/engineering/runbooks/secrets.md` or backend README): where each secret lives, how to rotate the Coolify token and `BAMBU_CLOUD_TOKEN` (~90-day expiry; monitoring job is plan 10's, procedure documented here).
 
 **Verify:** `git grep` finds no secret values in tracked files; both staging apps boot entirely from Coolify env.
 

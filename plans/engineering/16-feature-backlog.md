@@ -10,7 +10,7 @@ Candidates that improve the customer surface but gate nothing. The quoting core 
 
 ## 2. Backlog (triaged)
 
-1. **Accessibility audit (WCAG 2.2 AA)** — first pick: it's a stated commitment in `PRODUCT.md`, partially built (keyboard dropzone, reduced-motion, non-WebGL fallback) but never audited. Scope: keyboard pass over the full quote→checkout flow, contrast sweep of the TE-palette tokens, screen-reader labels on the viewer/config controls, focus management in dialogs. Exit: axe-core clean + manual SR pass documented in the verify skill.
+1. **Accessibility audit (WCAG 2.2 AA)** — first pick: it's a stated commitment in `business/product.md`, partially built (keyboard dropzone, reduced-motion, non-WebGL fallback) but never audited. Scope: keyboard pass over the full quote→checkout flow, contrast sweep of the TE-palette tokens, screen-reader labels on the viewer/config controls, focus management in dialogs. Exit: axe-core clean + manual SR pass documented in the verify skill.
 2. **Quote sharing links** — mostly done by plan 14's `/q/{shortId}` page; the increment is a "copy link" affordance + OG card for shared quotes. Small.
 3. **Customer dashboard improvements** — re-order past parts (files retained per plan 02 → one-click re-quote at current prices), saved addresses (extends plan 04's account), invoice list. Pick when repeat-customer rate justifies it (plan 11 data).
 4. **STEP quoting hardening** — auto-quoting works (client-side occt WASM); the manual-email card is the parse-failure fallback. Increment: server-side STEP recompute story (closes plan 02's `manual_verify` gap — occt in a sidecar/WASM runtime), plus telemetry on parse-failure rate to size the problem first.

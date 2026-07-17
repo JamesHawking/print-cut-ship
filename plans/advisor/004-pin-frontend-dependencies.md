@@ -4,7 +4,7 @@
 > verification command and confirm the expected result before moving to the
 > next step. If anything in the "STOP conditions" section occurs, stop and
 > report — do not improvise. When done, update the status row for this plan
-> in `advisor-plans/README.md` — unless a reviewer dispatched you and told you
+> in `plans/advisor/README.md` — unless a reviewer dispatched you and told you
 > they maintain the index.
 >
 > **Drift check (run first)**: `git diff --stat 64dfb98..HEAD -- instant-quote/package.json instant-quote/bun.lock`
@@ -175,7 +175,7 @@ ALL must hold:
 - [ ] `bun run typecheck && bun run lint && bun test && bun run build` all exit 0
 - [ ] Dev server renders `/pl` with no plugin errors
 - [ ] `git status` shows only `package.json` + `bun.lock` modified
-- [ ] `advisor-plans/README.md` status row updated
+- [ ] `plans/advisor/README.md` status row updated
 
 ## STOP conditions
 
@@ -197,7 +197,7 @@ Stop and report back if:
   as a follow-up (out of scope here; MED risk).
 - `nitro-nightly` remains a pre-release chain (rolldown/h3-rc/alpha transitive
   deps) — pinned, it's stable; the real exit is adopting a stable Nitro release
-  once TanStack Start supports one. Revisit when `Plans/03-deploy-ci.md`
+  once TanStack Start supports one. Revisit when `plans/engineering/03-deploy-ci.md`
   (production build) starts.
 - Reviewer should scrutinize: the `bun.lock` diff (must be bookkeeping-only)
   and that no `^` crept into the new pins.

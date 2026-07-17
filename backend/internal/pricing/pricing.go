@@ -36,7 +36,7 @@ type DfmFlag struct {
 	Code     string `json:"code"`
 	Severity string `json:"severity"`
 	// Message is English debug prose; clients localize from Code+Params
-	// (Plans/08-i18n.md localization contract).
+	// (plans/engineering/08-i18n.md localization contract).
 	Message            string         `json:"message"`
 	Params             map[string]any `json:"params,omitempty"`
 	SuggestedProcesses []string       `json:"suggestedProcesses,omitempty"`

@@ -1,4 +1,4 @@
-// Blog frontmatter contract (seo_prompts/05). `locale` and `slug` are NOT
+// Blog frontmatter contract (plans/seo/05). `locale` and `slug` are NOT
 // frontmatter — both derive from the file path src/content/blog/{locale}/
 // {slug}.mdx, so they can never disagree with it. Translations across
 // locales share a `translationKey` (symmetric and rename-proof, unlike a

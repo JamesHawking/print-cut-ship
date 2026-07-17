@@ -74,7 +74,7 @@ golden-fixture tests — see `backend/README.md`.)
 
 Rates and structure follow the Polish FDM service **mapi-tech.pl** (quoted
 through its SeekMake widget); the reverse-engineered model is documented in
-[`references/mapi-tech-pricing.md`](references/mapi-tech-pricing.md). Currency is
+[`research/competitors/mapi-tech-pricing.md`](../research/competitors/mapi-tech-pricing.md). Currency is
 PLN (zł).
 
 **Per-part unit price**
@@ -174,7 +174,7 @@ paths in `vite.config.ts` `localizedPages` (sitemap + prerender). Prices on
 content pages come ONLY from the generated `reference-prices.json` — never
 call the API from a prerendered page.
 
-**Comparison pages** (seo_prompts/04) share that segment too
+**Comparison pages** (plans/seo/04) share that segment too
 (`/pl/porownanie/asa-vs-petg` ↔ `/en/compare/asa-vs-petg`; slugs identical
 across locales). Adding one: register it in `COMPARISONS`
 (`src/content/compare/slugs.ts`, with the material ids it should backlink
@@ -185,7 +185,7 @@ files (`pl.ts` is the `CompareCopy` type source), extend the slug switch in
 `localizedPages`. Engine numbers only via the `reference-prices` accessors;
 cited external figures stay in `data.ts` and are labelled as not our quote.
 
-**Blog** (seo_prompts/05) lives at `/pl/baza-wiedzy` ↔ `/en/blog`. Articles
+**Blog** (plans/seo/05) lives at `/pl/baza-wiedzy` ↔ `/en/blog`. Articles
 are MDX files at `src/content/blog/{locale}/{slug}.mdx` — the file name IS
 the (per-locale, localized) slug, and a shared frontmatter `translationKey`
 pairs the pl/en versions for hreflang and the locale switch; an article

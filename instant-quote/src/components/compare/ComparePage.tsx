@@ -34,7 +34,7 @@ import {
   type CompareSlug,
 } from '@/content/compare/slugs'
 
-/** One template for every comparison landing page (seo_prompts/04). */
+/** One template for every comparison landing page (plans/seo/04). */
 export function ComparePage({ slug }: { slug: CompareSlug }) {
   const strings = useStrings()
   const locale = useLocale()

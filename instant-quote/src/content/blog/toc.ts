@@ -12,7 +12,7 @@ export interface TocEntry {
 
 /**
  * h2/h3 entries with anchors, flattened in document order. The article
- * shows a ToC only when this yields 4+ entries (seo_prompts/05).
+ * shows a ToC only when this yields 4+ entries (plans/seo/05).
  */
 export function flattenToc(entries: ReadonlyArray<TocEntry>): TocEntry[] {
   const flat: TocEntry[] = []

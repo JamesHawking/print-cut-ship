@@ -46,7 +46,7 @@ This is coherent _for them_: the API key holder is the business being priced,
 so fabricated inputs only cheat yourself, and marketplace orders get human
 review. It does **not** transfer to our anonymous-browser + automated-Stripe
 flow — which is why our backend keeps the quote-time recompute from stored
-bytes (see `Plans/02-file-storage.md` and the plan-02 completion sequence).
+bytes (see `plans/engineering/02-file-storage.md` and the plan-02 completion sequence).
 
 ## What we adopted / rejected (decision record, 2026-07-17)
 

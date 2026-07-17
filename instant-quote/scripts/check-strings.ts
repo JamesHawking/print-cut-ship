@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// No-hardcoded-copy gate (Plans/08-i18n.md phase C): every user-facing string
+// No-hardcoded-copy gate (plans/engineering/08-i18n.md phase C): every user-facing string
 // must live in src/lib/i18n. Scans JSX text and prose-bearing string props in
 // components and routes; fails with file:line on any hit. Plan 03's CI runs
 // this next to lint/typecheck. Escape hatch for deliberate exceptions:

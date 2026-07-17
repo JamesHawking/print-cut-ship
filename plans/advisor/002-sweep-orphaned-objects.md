@@ -4,7 +4,7 @@
 > verification command and confirm the expected result before moving to the
 > next step. If anything in the "STOP conditions" section occurs, stop and
 > report — do not improvise. When done, update the status row for this plan
-> in `advisor-plans/README.md` — unless a reviewer dispatched you and told you
+> in `plans/advisor/README.md` — unless a reviewer dispatched you and told you
 > they maintain the index.
 >
 > **Drift check (run first)**: `git diff --stat 64dfb98..HEAD -- backend/internal/storage/retention.go backend/internal/store/queries/files.sql backend/internal/storage/retention_test.go`
@@ -17,7 +17,7 @@
 - **Priority**: P1
 - **Effort**: S
 - **Risk**: LOW
-- **Depends on**: advisor-plans/001-integration-test-target.md (verification gate)
+- **Depends on**: plans/advisor/001-integration-test-target.md (verification gate)
 - **Category**: bug
 - **Planned at**: commit `64dfb98`, 2026-07-17
 
@@ -228,7 +228,7 @@ ALL must hold:
 - [ ] `cd backend && go build ./... && go vet ./...` exit 0
 - [ ] `make -C backend test-integration` exits 0, `TestRunSweep` PASSes (not SKIP)
 - [ ] `git status` shows only the four in-scope files modified
-- [ ] `advisor-plans/README.md` status row updated
+- [ ] `plans/advisor/README.md` status row updated
 
 ## STOP conditions
 
@@ -242,7 +242,7 @@ Stop and report back if:
 
 ## Maintenance notes
 
-- The mesh-recompute follow-up (deferred half of `Plans/02-file-storage.md`)
+- The mesh-recompute follow-up (deferred half of `plans/engineering/02-file-storage.md`)
   will add content verification at confirm time; it does not change this
   reclaim path.
 - Reviewer should scrutinize: the object key is *derived* (`Key(hash, kind)`),

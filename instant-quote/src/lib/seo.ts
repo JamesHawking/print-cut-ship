@@ -1,4 +1,4 @@
-// SEO head plumbing (seo_prompts/01, feeds Plans/13): canonical origin,
+// SEO head plumbing (plans/seo/01, feeds plans/engineering/13): canonical origin,
 // per-page meta/OG/Twitter, hreflang alternates, and JSON-LD builders.
 // Routes call seoHead()/jsonLd() from their head() option; TanStack merges
 // deepest-match-wins for title/named meta and concatenates links.

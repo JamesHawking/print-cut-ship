@@ -4,10 +4,10 @@
 > verification command and confirm the expected result before moving to the
 > next step. If anything in the "STOP conditions" section occurs, stop and
 > report — do not improvise. When done, update the status row for this plan
-> in `advisor-plans/README.md` — unless a reviewer dispatched you and told you
+> in `plans/advisor/README.md` — unless a reviewer dispatched you and told you
 > they maintain the index.
 >
-> **Drift check (run first)**: `git diff --stat 64dfb98..HEAD -- Plans/02-file-storage.md Plans/ROADMAP.md backend/README.md`
+> **Drift check (run first)**: `git diff --stat 64dfb98..HEAD -- plans/engineering/02-file-storage.md plans/engineering/ROADMAP.md backend/README.md`
 > If any of these changed since this plan was written, compare the "Current
 > state" excerpts against the live files; a mismatch means the docs may have
 > been partially corrected already — reconcile rather than blindly apply.
@@ -17,14 +17,14 @@
 - **Priority**: P2
 - **Effort**: S
 - **Risk**: LOW
-- **Depends on**: advisor-plans/001-integration-test-target.md (documents its new target; if 001 hasn't landed, skip that one sentence and say so in your report)
+- **Depends on**: plans/advisor/001-integration-test-target.md (documents its new target; if 001 hasn't landed, skip that one sentence and say so in your report)
 - **Category**: docs / dx
 - **Planned at**: commit `64dfb98`, 2026-07-17
 
 ## Why this matters
 
-This repo is executed largely by agents working from the `Plans/` corpus, and
-the corpus's own status system is now actively wrong: `Plans/02` says "Not
+This repo is executed largely by agents working from the `plans/engineering/` corpus, and
+the corpus's own status system is now actively wrong: `plans/engineering/02` says "Not
 started" though its storage half is shipped and documented; the ROADMAP's
 roll-up says "02–16 not started" though 08 is ✅ Done and 13 is 🟨; the
 ROADMAP's "current state" paragraph and the backend README still describe a
@@ -37,7 +37,7 @@ match reality and gives agents a stable entry point.
 
 ## Current state (the wrong lines, verified 2026-07-17)
 
-- `Plans/02-file-storage.md:3`:
+- `plans/engineering/02-file-storage.md:3`:
 
   ```
   > **Status: ⬜ Not started** (as of 2026-07-16).
@@ -48,16 +48,16 @@ match reality and gives agents a stable entry point.
   `backend/README.md` has a "File storage (plan 02)" section; the Go mesh port
   + `VerifyOrderPricing` remain deferred (required before/with plan 05).
 
-- `Plans/ROADMAP.md` (~line 13), the roll-up:
+- `plans/engineering/ROADMAP.md` (~line 13), the roll-up:
 
   ```
   ... Current: ✅ **01 Persistence** done ... ⬜ **02–16** not started — with committed groundwork noted in 03 ...
   ```
 
-  Reality: 02 is 🟨 half-done; `Plans/08-i18n.md:3` says "✅ Done (2026-07-16
-  ...)"; `Plans/13-seo-content.md:3` says "🟨 Phases 1–2 largely pre-built".
+  Reality: 02 is 🟨 half-done; `plans/engineering/08-i18n.md:3` says "✅ Done (2026-07-16
+  ...)"; `plans/engineering/13-seo-content.md:3` says "🟨 Phases 1–2 largely pre-built".
 
-- `Plans/ROADMAP.md` (~line 17), "Current state in one paragraph" still claims:
+- `plans/engineering/ROADMAP.md` (~line 17), "Current state in one paragraph" still claims:
   "no database ... `submitQuote`/`requestStepQuote` are console-stubs ... all
   copy is English-only in `src/lib/strings.ts` ... Tests (109 passing) cover
   only the pure pricing/mesh/packing libs." All of that is stale: Postgres
@@ -93,7 +93,7 @@ match reality and gives agents a stable entry point.
     `TEST_DATABASE_URL`, `TEST_S3_ENDPOINT`.
   - frontend: `API_PROXY` (dev proxy target override), `VITE_SITE_URL`
     (canonical origin for SEO).
-  - **Never put a real value in any example file** (`Plans/DECISIONS.md`
+  - **Never put a real value in any example file** (`plans/engineering/DECISIONS.md`
     records "nothing in the repo" for secrets). Placeholders only.
 
 - Key repo invariants for the CLAUDE.md (all verifiable in the repo):
@@ -110,8 +110,8 @@ match reality and gives agents a stable entry point.
   - i18n: `src/lib/i18n/pl.ts` is the source of truth, `en.ts` mirrors it,
     `bun run check-strings` gates hardcoded strings; backend errors return
     machine codes + params, frontend renders localized copy.
-  - Plan status banners in `Plans/*.md` are the source of truth for what's
-    done, mirrored in `Plans/ROADMAP.md`.
+  - Plan status banners in `plans/engineering/*.md` are the source of truth for what's
+    done, mirrored in `plans/engineering/ROADMAP.md`.
 
 ## Commands you will need
 
@@ -119,13 +119,13 @@ match reality and gives agents a stable entry point.
 |---------|---------|---------------------|
 | Frontend gates | `cd instant-quote && bun run check-strings && bun run format:check` | exit 0 |
 | Backend build (docs shouldn't break it) | `cd backend && go build ./...` | exit 0 |
-| Link sanity | `grep -c "strings.ts" Plans/ROADMAP.md` | 0 after Step 2 |
+| Link sanity | `grep -c "strings.ts" plans/engineering/ROADMAP.md` | 0 after Step 2 |
 
 ## Scope
 
 **In scope** (the only files you should modify/create):
-- `Plans/02-file-storage.md` (status banner only)
-- `Plans/ROADMAP.md` (roll-up line + current-state paragraph only)
+- `plans/engineering/02-file-storage.md` (status banner only)
+- `plans/engineering/ROADMAP.md` (roll-up line + current-state paragraph only)
 - `backend/README.md` (air line, stubs paragraph, endpoint list, one
   test-integration sentence)
 - `README.md` (create, repo root)
@@ -151,19 +151,19 @@ match reality and gives agents a stable entry point.
 
 ## Steps
 
-### Step 1: Fix the `Plans/02` banner
+### Step 1: Fix the `plans/engineering/02` banner
 
-Replace line 3 of `Plans/02-file-storage.md` with:
+Replace line 3 of `plans/engineering/02-file-storage.md` with:
 
 ```
 > **Status: 🟨 Storage half done** (2026-07-16, commit `a5cc39d`) — MinIO client, presigned upload-on-drop, file↔quote linkage, MakerWorld tee, and retention sweep shipped. The Go mesh port + order-time `VerifyOrderPricing` are **deferred** and required before/with plan 05.
 ```
 
-**Verify**: `sed -n '3p' Plans/02-file-storage.md` shows the new banner.
+**Verify**: `sed -n '3p' plans/engineering/02-file-storage.md` shows the new banner.
 
 ### Step 2: Fix the ROADMAP roll-up and current-state paragraph
 
-In `Plans/ROADMAP.md`:
+In `plans/engineering/ROADMAP.md`:
 
 1. In the "Implementation status" line (~13): change the date stamp to
    2026-07-17 and replace the `⬜ **02–16** not started` clause with a truthful
@@ -179,8 +179,8 @@ In `Plans/ROADMAP.md`:
    unauthenticated endpoint, real auth in plans 04/05); still **no** CI/deploy,
    payments, email, or admin.
 
-**Verify**: `grep -n "02–16\|02-16" Plans/ROADMAP.md` → no "not started"
-roll-up match; `grep -c "strings.ts" Plans/ROADMAP.md` → 0.
+**Verify**: `grep -n "02–16\|02-16" plans/engineering/ROADMAP.md` → no "not started"
+roll-up match; `grep -c "strings.ts" plans/engineering/ROADMAP.md` → 0.
 
 ### Step 3: Fix `backend/README.md`
 
@@ -209,8 +209,8 @@ roll-up match; `grep -c "strings.ts" Plans/ROADMAP.md` → 0.
 
 Short — ~30 lines. Contents: one-paragraph product description (instant
 3D-printing quotes, PL/EN, PLN, EU shipping; prototype heading toward
-production per `Plans/ROADMAP.md`); the repo map (`backend/` Go API ·
-`instant-quote/` frontend · `Plans/` roadmap corpus · `seo_prompts/` content
+production per `plans/engineering/ROADMAP.md`); the repo map (`backend/` Go API ·
+`instant-quote/` frontend · `plans/engineering/` roadmap corpus · `plans/seo/` content
 briefs); quickstart:
 
 ```sh
@@ -221,7 +221,7 @@ make test-integration           # + DB/S3 integration tests (plan 001)
 ```
 
 and pointers to `backend/README.md`, `instant-quote/README.md`,
-`Plans/ROADMAP.md`. No duplication of their content — links only.
+`plans/engineering/ROADMAP.md`. No duplication of their content — links only.
 
 **Verify**: `test -f README.md && head -5 README.md` → file exists with title.
 
@@ -230,7 +230,7 @@ and pointers to `backend/README.md`, `instant-quote/README.md`,
 Content: the invariants block from "Current state" above, written as directives
 for an agent, in this shape (~40 lines):
 
-- Repo map + "start at README.md; plan status banners in `Plans/*.md` are the
+- Repo map + "start at README.md; plan status banners in `plans/engineering/*.md` are the
   source of truth — read the banner before executing any plan."
 - **Never hand-edit generated files** (list them: `backend/internal/httpapi/gen.go`,
   `backend/internal/store/*.sql.go`, `instant-quote/src/lib/api/schema.d.ts`,
@@ -273,7 +273,7 @@ ALL must hold:
 - [ ] No secret values in any created file (Step 6 grep clean)
 - [ ] `bun run format:check` and `go build ./...` exit 0
 - [ ] `git status` shows only in-scope files
-- [ ] `advisor-plans/README.md` status row updated
+- [ ] `plans/advisor/README.md` status row updated
 
 ## STOP conditions
 

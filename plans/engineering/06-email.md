@@ -78,7 +78,7 @@ CREATE INDEX ON email_log (order_id);
 
 ### Phase 4 — Domain authentication (SPF / DKIM / DMARC)
 
-- Consumes the external prerequisites (Resend account, domain) + plan 03's DNS control. Checklist doc (`Plans/runbooks/email-dns.md` or backend README): Resend DKIM CNAMEs, SPF include, DMARC `p=quarantine` → `p=reject` after monitoring.
+- Consumes the external prerequisites (Resend account, domain) + plan 03's DNS control. Checklist doc (`plans/engineering/runbooks/email-dns.md` or backend README): Resend DKIM CNAMEs, SPF include, DMARC `p=quarantine` → `p=reject` after monitoring.
 - **Verify:** test message to Gmail + Outlook shows `dkim=pass`, `spf=pass`, `dmarc=pass`, lands in **inbox, not spam** (the brief's deliverability gate).
 
 ### Phase 5 — Support inbox + reply-to + site contact point

@@ -1,4 +1,4 @@
-// Locale-neutral facts for the comparison pages (seo_prompts/04). TWO kinds
+// Locale-neutral facts for the comparison pages (plans/seo/04). TWO kinds
 // of numbers live here and ONLY here:
 //  - engine-derived values, read from reference-prices.json via the typed
 //    accessors (never call the API — these pages prerender at build time);

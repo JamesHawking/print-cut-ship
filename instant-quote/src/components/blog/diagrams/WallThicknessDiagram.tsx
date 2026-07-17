@@ -1,4 +1,4 @@
-// Article diagram (seo_prompts/05): a wall cross-section built from whole
+// Article diagram (plans/seo/05): a wall cross-section built from whole
 // extrusion beads. Every visible label arrives via props from the MDX file,
 // so the component stays locale-free (and invisible to check-strings).
 
