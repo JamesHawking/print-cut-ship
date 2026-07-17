@@ -26,6 +26,8 @@ import { MAX_PARTS } from '@/lib/upload'
 import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
 import { track } from '@/lib/funnel'
 import { useWarsawClock } from '@/hooks/useWarsawClock'
+import { useCatalog, useShipDates } from '@/hooks/useApi'
+import { formatShipWeekday } from '@/lib/format'
 import {
   DEFAULT_LOCALE,
   getStrings,
@@ -140,6 +142,29 @@ function QuoteWorkspace() {
     ? (quotesById.get(selectedPart.id) ?? null)
     : null
 
+  // Running-quote summary for the header sub-bar. Reflects the selected part's
+  // material/lead/ship (parts can differ) and the order total; shown only once
+  // a price exists — the same gate as OrderPanel.
+  const catalog = useCatalog()
+  const shipDates = useShipDates()
+  const summaryShip = selectedPart
+    ? shipDates?.find((s) => s.leadTime === selectedPart.config.leadTime)
+    : undefined
+  const summary =
+    totals && selectedPart
+      ? {
+          partCount: orderableEntries.length,
+          materialLabel:
+            catalog?.processes.find((p) => p.id === selectedPart.config.process)
+              ?.label ?? '',
+          leadLabel: strings.config[selectedPart.config.leadTime],
+          shipLabel: summaryShip
+            ? formatShipWeekday(summaryShip.date, locale)
+            : undefined,
+          grossTotalPln: totals.grossTotalPln,
+        }
+      : undefined
+
   async function handleMoreFiles(files: File[]) {
     const added = await handleFiles(files)
     const last = added[added.length - 1]
@@ -161,7 +186,7 @@ function QuoteWorkspace() {
 
   return (
     <>
-      <SiteHeader variant="quote" />
+      <SiteHeader variant="quote" summary={summary} />
       <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 sm:px-6">
         <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">

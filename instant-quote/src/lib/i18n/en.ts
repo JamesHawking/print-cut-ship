@@ -83,36 +83,10 @@ export const en = {
     heading: 'File to ship date in three steps',
     intro:
       'Not a request form. The machine takes your file down the line — measured, priced, and committed to a ship date in under a minute.',
-    // Trace lines read like a machine log: trace2 renders as
-    // pre + accented span + post (accent tone is per-station design).
     steps: [
-      {
-        n: '01',
-        kicker: 'UPLOAD',
-        title: 'Drop the file',
-        trace1: 'bracket_v2.stl · 1.8 MB',
-        trace2Pre: 'measured in-browser ',
-        trace2Accent: 'OK',
-        trace2Post: '',
-      },
-      {
-        n: '02',
-        kicker: 'PRICE',
-        title: 'Read the numbers',
-        trace1: 'material + machine × qty × lead',
-        trace2Pre: '',
-        trace2Accent: '123,60 zł',
-        trace2Post: ' incl. VAT · itemized',
-      },
-      {
-        n: '03',
-        kicker: 'ORDER',
-        title: 'Lock the date',
-        trace1: 'no account · no sales call',
-        trace2Pre: 'confirmed 09:41:38',
-        trace2Accent: '',
-        trace2Post: '',
-      },
+      { n: '01', kicker: 'UPLOAD', title: 'Drop the file' },
+      { n: '02', kicker: 'PRICE', title: 'Read the numbers' },
+      { n: '03', kicker: 'ORDER', title: 'Lock the date' },
     ],
     ships: 'SHIPS',
     // "D+1" is the courier-transit claim from the ticker; the weekday is the
@@ -120,6 +94,37 @@ export const en = {
     shipsDate: (weekday: string) => `${weekday} · D+1`,
     shipsDateFallback: 'D+1',
     shipsCutoff: 'PL / DE · 14:00 cutoff',
+    // The live demo run's machine log (buildScript in how-it-works/demo.ts).
+    // Every number arrives pre-formatted per locale; the PRICE line is the
+    // real engine answer. Log tags stay untranslated — it's a machine log.
+    demo: {
+      cmd: (file: string) => `$ quote ${file}`,
+      tags: {
+        recv: 'RECV',
+        measure: 'MEASURE',
+        price: 'PRICE',
+        order: 'ORDER',
+        ship: 'SHIP',
+        done: 'DONE',
+      },
+      recv: (file: string, size: string) => `${file} · ${size}`,
+      measureMesh: (triangles: string) =>
+        `${triangles} triangles · watertight OK`,
+      measureDims: (volume: string, dims: string) => `${volume} · ${dims}`,
+      priceConfig: 'PETG · 1 pc · standard',
+      priceResult: (total: string, weight: string, hours: string) =>
+        `${total} incl. VAT · ${weight} g · ${hours} h print`,
+      order1: 'no account · no sales call',
+      order2: 'ship date locks at checkout',
+      ship: (weekday: string) => `${weekday} · D+1 · PL/DE · 14:00 cutoff`,
+      shipFallback: 'D+1 · PL/DE · 14:00 cutoff',
+      done: 'quote complete — the machine answered',
+      replay: 'Replay',
+      engineLabel: 'quote-engine v1',
+      cta: 'Now run yours →',
+      srSummary: (total: string, weekday: string) =>
+        `A sample bracket measured in the browser and priced by the live engine at ${total} incl. VAT, shipping ${weekday}, D+1 to PL/DE.`,
+    },
   },
   materialsSection: {
     n: '02',

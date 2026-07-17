@@ -238,19 +238,32 @@
   }
 }
 
-/* Process conveyor band (Process Section Redesign.dc.html): dashed track
-   crawl, a dot that travels station to station, and station squares that
-   flash orange exactly while the dot dwells on them (7s shared cycle,
-   station delays 0 / 2.8 / 5.6s). All applied behind motion-safe variants.
-   The dot keyframes derive station centers from the same grid the stations
-   use — 1fr 1fr 1fr 190px with 40px gaps — so they never drift: station k
-   sits at k*((100% - 310px)/3 + 40px), and the 14px dot is offset +4px to
-   center on the 22px station square. */
+/* Header wordmark status LED (Site Header - Faceplate.dc.html): a slow opacity
+   pulse on the signal-green dot, applied behind motion-safe. */
+@theme {
+  --animate-led: led 2.4s ease-in-out infinite;
+
+  @keyframes led {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+}
+
+/* Process demo band (live demo run, components/how-it-works/): ambient
+   dashed-track crawl, the SHIPS pulse, the terminal caret blink, and the
+   per-line log reveal. The traveling dot and station states are JS-driven
+   (measured anchors + CSS transitions in ConveyorRail.tsx) — no positional
+   keyframes here. All applied behind motion-safe variants. */
 @theme {
   --animate-conveyor: conveyor 1.2s linear infinite;
-  --animate-conveyor-dot: conveyor-dot 7s cubic-bezier(0.5, 0, 0.3, 1) infinite;
-  --animate-station-flash: station-flash 7s infinite;
   --animate-ship-pulse: ship-pulse 2s infinite;
+  --animate-caret: caret 1s step-end infinite;
+  --animate-log-line: log-line 240ms ease-out both;
 
   @keyframes conveyor {
     from {
@@ -260,36 +273,23 @@
       background-position: 32px 0;
     }
   }
-  @keyframes conveyor-dot {
+  @keyframes caret {
     0%,
-    8% {
-      left: 4px;
-    }
-    40%,
-    48% {
-      left: calc((100% - 310px) / 3 + 44px);
-    }
-    80%,
-    88% {
-      left: calc(((100% - 310px) / 3) * 2 + 84px);
-    }
-    98%,
     100% {
-      left: calc(100% - 14px);
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
     }
   }
-  @keyframes station-flash {
-    0%,
-    8% {
-      background: var(--primary);
-      border-color: var(--primary);
-      transform: scale(1.3);
+  @keyframes log-line {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
     }
-    14%,
-    100% {
-      background: var(--background);
-      border-color: var(--muted-foreground);
-      transform: scale(1);
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
   @keyframes ship-pulse {
@@ -307,6 +307,15 @@
 @utility conveyor-track {
   background: repeating-linear-gradient(
     90deg,
+    var(--color-muted-foreground) 0 16px,
+    transparent 16px 32px
+  );
+}
+
+/* Vertical variant for the mobile rail. */
+@utility conveyor-track-y {
+  background: repeating-linear-gradient(
+    180deg,
     var(--color-muted-foreground) 0 16px,
     transparent 16px 32px
   );

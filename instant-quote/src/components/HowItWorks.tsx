@@ -1,98 +1,112 @@
+import { useMemo } from 'react'
+import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+
 import { useShipDates } from '@/hooks/useApi'
-import { formatShipWeekday } from '@/lib/format'
+import { api, toApiMetrics } from '@/lib/api/client'
+import { formatPln, formatShipWeekday } from '@/lib/format'
+import { track } from '@/lib/funnel'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { SectionHeading } from './SectionHeading'
-
-// Station flash delays match the traveling dot's dwell windows (0/40/80% of
-// the shared 7s cycle — see the conveyor keyframes in styles.css).
-const STATION_DELAYS = ['0s', '2.8s', '5.6s']
-// Per-station tone of the accented trace-2 span: OK green, price orange,
-// none (Process Section Redesign.dc.html, card 3a).
-const TRACE_ACCENT = ['text-signal', 'text-primary-text', '']
+import {
+  DEMO_CONFIG,
+  FALLBACK_QUOTE,
+  SAMPLE_METRICS,
+  STAGE_ANCHOR,
+  buildScript,
+} from './how-it-works/demo'
+import { useDemoRun } from './how-it-works/useDemoRun'
+import { ConveyorRail } from './how-it-works/ConveyorRail'
+import { DemoTerminal } from './how-it-works/DemoTerminal'
 
 /**
- * Landing process section as a conveyor + trace band: a dot travels along a
- * dashed production track, dwelling on three station markers that flash in
- * sync, and runs off to a SHIPS chip carrying the engine's real express
- * ship date.
+ * Landing process section as a LIVE DEMO RUN: scrolling it into view plays a
+ * machine log that quotes the sample bracket for real — mesh numbers are
+ * drift-pinned to generated geometry (demo.spec.ts), the PRICE line comes
+ * from POST /api/v1/price, the ship date from GET /api/v1/ship-dates. The
+ * dot travels the rail as the log advances. "The machine answers", proven.
  */
 export function HowItWorks() {
   const strings = useStrings()
   const locale = useLocale()
-  const { n, heading, intro, steps } = strings.process
+  const { n, heading, intro, demo } = strings.process
+
   // Client-mounted only (React Query never fetches during prerender), so the
-  // static HTML carries the D+1 fallback and hydration never mismatches.
+  // static HTML carries the fallback numbers and hydration never mismatches.
   const express = useShipDates()?.find((s) => s.leadTime === 'express')
+  const expressWeekday = express
+    ? formatShipWeekday(express.date, locale)
+    : undefined
+
+  // The demo's real engine call — same request the quote page would send for
+  // this part. Fired on mount (client-only by construction): by the time the
+  // user scrolls here, the PRICE line answers with live numbers.
+  const priceQuery = useQuery({
+    queryKey: ['demo-price'],
+    queryFn: async () => {
+      const res = await api.POST('/api/v1/price', {
+        body: {
+          parts: [{ metrics: toApiMetrics(SAMPLE_METRICS), ...DEMO_CONFIG }],
+        },
+      })
+      if (!res.data) throw new Error('demo price fetch failed')
+      return res.data
+    },
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: 1,
+  })
+  const part = priceQuery.data?.parts[0]
+
+  const script = useMemo(
+    () => buildScript(demo, locale, part, expressWeekday),
+    [demo, locale, part, expressWeekday],
+  )
+  const { status, visible, stage, replay, sectionRef } = useDemoRun(script)
+  const anchorIdx = status === 'idle' ? null : STAGE_ANCHOR[stage]
 
   return (
-    <section id="how-it-works" className="scroll-mt-14">
+    <section id="how-it-works" ref={sectionRef} className="scroll-mt-14">
       <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
         <SectionHeading n={n} title={heading} className="border-b-0 pb-0" />
         <p className="text-muted-foreground mt-4 max-w-[560px] text-[13.5px] leading-[1.55] text-pretty">
           {intro}
         </p>
         <div className="dark bg-background text-foreground mt-12 px-6 py-10 md:px-16 md:pt-14 md:pb-16">
-          <div className="relative">
-            <div
-              aria-hidden
-              className="conveyor-track motion-safe:animate-conveyor absolute inset-x-0 top-[11px] hidden h-0.5 md:block"
-            />
-            <div
-              aria-hidden
-              className="bg-primary motion-safe:animate-conveyor-dot absolute top-[5px] left-1 z-[1] hidden size-3.5 rounded-full md:block"
-            />
-            <div className="relative grid gap-10 md:grid-cols-[1fr_1fr_1fr_190px]">
-              {steps.map((step, i) => (
-                <div key={step.n} className="relative pt-11">
-                  <span
-                    aria-hidden
-                    className="bg-background border-muted-foreground motion-safe:animate-station-flash absolute top-1 left-0 size-[22px] border-[3px]"
-                    style={{ animationDelay: STATION_DELAYS[i] }}
-                  />
-                  <p className="text-primary-text font-mono text-xs font-bold tracking-[0.14em]">
-                    {step.n} · {step.kicker}
-                  </p>
-                  <h3 className="mt-2.5 text-[19px] leading-[1.2] font-extrabold">
-                    {step.title}
-                  </h3>
-                  <p className="text-muted-foreground mt-3 font-mono text-[10.5px] leading-[1.9]">
-                    {step.trace1}
-                    <br />
-                    {step.trace2Pre}
-                    {step.trace2Accent && (
-                      <span className={TRACE_ACCENT[i]}>
-                        {step.trace2Accent}
-                      </span>
-                    )}
-                    {step.trace2Post}
-                  </p>
-                </div>
-              ))}
-              <div className="md:pt-9">
-                <div className="border-foreground/20 flex flex-col gap-1.5 border px-5 py-[18px]">
-                  <div className="flex items-center gap-2">
-                    <span
-                      aria-hidden
-                      className="bg-signal motion-safe:animate-ship-pulse size-2 rounded-full"
-                    />
-                    <span className="font-mono text-[10.5px] font-bold tracking-[0.14em]">
-                      {strings.process.ships}
-                    </span>
-                  </div>
-                  <div className="text-[22px] leading-none font-extrabold">
-                    {express
-                      ? strings.process.shipsDate(
-                          formatShipWeekday(express.date, locale),
-                        )
-                      : strings.process.shipsDateFallback}
-                  </div>
-                  <div className="text-muted-foreground font-mono text-[10px]">
-                    {strings.process.shipsCutoff}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ConveyorRail
+            anchorIdx={anchorIdx}
+            shipsDateLabel={
+              expressWeekday
+                ? strings.process.shipsDate(expressWeekday)
+                : strings.process.shipsDateFallback
+            }
+          />
+          {/* The animated log is aria-hidden; this carries its substance. */}
+          <p className="sr-only">
+            {demo.srSummary(
+              formatPln((part ?? FALLBACK_QUOTE).lineTotalPln, locale),
+              expressWeekday ?? strings.process.shipsDateFallback,
+            )}
+          </p>
+          <DemoTerminal
+            lines={script}
+            visible={visible}
+            running={status === 'running'}
+            onReplay={replay}
+          />
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Link
+            to="/$locale"
+            params={{ locale }}
+            hash="top"
+            onClick={() =>
+              track('cta_upload_clicked', { source_page: 'how-it-works-demo' })
+            }
+            className="text-primary-text hover:text-foreground font-mono text-xs font-bold tracking-widest uppercase transition-colors"
+          >
+            {demo.cta}
+          </Link>
         </div>
       </div>
     </section>

@@ -56,6 +56,32 @@ describe('dfm and api-error rendering', () => {
     ).toContain('piece')
   })
 
+  test('every demo log key renders in both locales', () => {
+    for (const dict of [pl, en]) {
+      const d = dict.process.demo
+      const rendered = [
+        d.cmd('bracket_v2.stl'),
+        d.recv('bracket_v2.stl', '1,5 KB'),
+        d.measureMesh('28'),
+        d.measureDims('67,2 cm³', '96 × 64 × 24 mm'),
+        d.priceConfig,
+        d.priceResult('7,78 zł', '29', '2,7'),
+        d.order1,
+        d.order2,
+        d.ship('CZW'),
+        d.shipFallback,
+        d.done,
+        d.replay,
+        d.engineLabel,
+        d.cta,
+        d.srSummary('7,78 zł', 'CZW'),
+      ]
+      for (const text of rendered) expect(text.length).toBeGreaterThan(2)
+      for (const tag of Object.values(d.tags))
+        expect(tag.length).toBeGreaterThan(2)
+    }
+  })
+
   test('every API error code has copy in both locales', () => {
     for (const dict of [pl, en]) {
       for (const entry of Object.values(dict.apiError)) {

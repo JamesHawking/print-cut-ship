@@ -145,6 +145,74 @@ export function openBoxBinaryStl(s: number): ArrayBuffer {
   return buffer
 }
 
+/** Pack flat [ntri*9] triangle coordinates into a binary STL buffer. */
+function packBinaryStl(tris: number[]): ArrayBuffer {
+  const triCount = tris.length / 9
+  const buffer = new ArrayBuffer(84 + triCount * 50)
+  const view = new DataView(buffer)
+  view.setUint32(80, triCount, true)
+  let offset = 84
+  for (let t = 0; t < triCount; t++) {
+    offset += 12 // zero normal
+    for (let k = 0; k < 9; k++) {
+      view.setFloat32(offset, tris[t * 9 + k], true)
+      offset += 4
+    }
+    offset += 2 // attribute
+  }
+  return buffer
+}
+
+// L-bracket profile (mm, CCW viewed from +Z): a 96×20 horizontal arm and a
+// 20×64 vertical arm. [0,20] and [20,20] appear as explicit vertices so the
+// three cap rectangles share full edges — no T-junctions, mesh stays
+// edge-manifold (watertight). Index 7 (0,20) is colinear on the x=0 edge.
+const BRACKET_PROFILE: [number, number][] = [
+  [0, 0],
+  [20, 0],
+  [96, 0],
+  [96, 20],
+  [20, 20],
+  [20, 64],
+  [0, 64],
+  [0, 20],
+]
+// Cap rectangles (CCW): corner arm, horizontal arm, vertical arm.
+const BRACKET_RECTS = [
+  [0, 1, 4, 7],
+  [1, 2, 3, 4],
+  [7, 4, 5, 6],
+]
+const BRACKET_DEPTH = 24
+
+/**
+ * Watertight L-bracket prism, binary STL — the landing demo's sample part
+ * (SAMPLE_METRICS in src/components/how-it-works/demo.ts is drift-pinned to
+ * this geometry). 28 triangles, 96×64×24 mm bbox, 67.2 cm³.
+ */
+export function bracketBinaryStl(): ArrayBuffer {
+  const p = BRACKET_PROFILE
+  const d = BRACKET_DEPTH
+  const tris: number[] = []
+  const at = (i: number, z: number): V3 => [p[i][0], p[i][1], z]
+  const push = (a: V3, b: V3, c: V3) => tris.push(...a, ...b, ...c)
+  for (const [q0, q1, q2, q3] of BRACKET_RECTS) {
+    // Top cap (+Z) keeps the CCW order; bottom cap (−Z) reverses it.
+    push(at(q0, d), at(q1, d), at(q2, d))
+    push(at(q0, d), at(q2, d), at(q3, d))
+    push(at(q0, 0), at(q2, 0), at(q1, 0))
+    push(at(q0, 0), at(q3, 0), at(q2, 0))
+  }
+  for (let i = 0; i < p.length; i++) {
+    // Side wall per boundary edge a→b; CCW profile makes this winding outward.
+    const a = i
+    const b = (i + 1) % p.length
+    push(at(a, 0), at(b, 0), at(b, d))
+    push(at(a, 0), at(b, d), at(a, d))
+  }
+  return packBinaryStl(tris)
+}
+
 /** A regular tetrahedron-ish set of 4 points with a known volume. */
 export function tetraPoints(): [number, number, number][] {
   // Volume of tetra with vertices at origin and axis points = (a*b*c)/6.

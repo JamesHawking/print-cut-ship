@@ -1,4 +1,3 @@
-import { useStrings } from '@/lib/i18n'
 import { MATERIALS } from '@/lib/catalog-static'
 
 export function RateTicker() {
@@ -7,20 +6,21 @@ export function RateTicker() {
       <div className="motion-safe:animate-ticker flex w-max font-mono text-[11px] font-semibold tracking-[0.14em] uppercase">
         <TickerRun />
         <TickerRun />
+        <TickerRun />
+        <TickerRun />
       </div>
     </section>
   )
 }
 
-/** One full pass of the items — rendered twice so the -50% loop is seamless. */
+/** One full pass of the items — rendered four times (two per half) so the
+    -50% loop is seamless and each half outspans wide viewports. */
 function TickerRun() {
-  const strings = useStrings()
-  // Material rates plus service slogans, looped as a marquee. Decorative — the
-  // same figures live in the Materials table, so the whole strip is aria-hidden.
-  const items = [
-    ...MATERIALS.map((m) => `${m.label} ${m.plnPerKg} zł/kg`),
-    ...strings.ticker,
-  ]
+  // Material rates looped as a marquee. Decorative — the same figures live in
+  // the Materials table, so the whole strip is aria-hidden. The service
+  // slogans moved to the header trust strip (SiteHeader), their primary
+  // carrier.
+  const items = MATERIALS.map((m) => `${m.label} ${m.plnPerKg} zł/kg`)
   return (
     <span className="flex shrink-0 items-center">
       {items.map((t, i) => (

@@ -21,6 +21,9 @@ export type FunnelEvent =
   | 'file_upload_started'
   | 'file_upload_succeeded'
   | 'file_upload_failed'
+  // Landing how-it-works live demo run (plays once per visit / manual replay).
+  | 'demo_played'
+  | 'demo_replayed'
 
 let sessionId: string | null = null
 

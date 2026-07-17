@@ -94,36 +94,10 @@ export const pl = {
     heading: 'Od pliku do daty wysyłki w trzech krokach',
     intro:
       'To nie formularz zapytania. Maszyna prowadzi Twój plik przez linię — zmierzony, wyceniony i z wiążącą datą wysyłki w niecałą minutę.',
-    // Trace lines read like a machine log: trace2 renders as
-    // pre + accented span + post (accent tone is per-station design).
     steps: [
-      {
-        n: '01',
-        kicker: 'WGRAJ',
-        title: 'Upuść plik',
-        trace1: 'bracket_v2.stl · 1,8 MB',
-        trace2Pre: 'zmierzono w przeglądarce ',
-        trace2Accent: 'OK',
-        trace2Post: '',
-      },
-      {
-        n: '02',
-        kicker: 'WYCEŃ',
-        title: 'Zobacz liczby',
-        trace1: 'materiał + maszyna × ilość × termin',
-        trace2Pre: '',
-        trace2Accent: '123,60 zł',
-        trace2Post: ' z VAT · rozbicie na pozycje',
-      },
-      {
-        n: '03',
-        kicker: 'ZAMÓW',
-        title: 'Zablokuj termin',
-        trace1: 'bez konta · bez telefonu od handlowca',
-        trace2Pre: 'potwierdzono 09:41:38',
-        trace2Accent: '',
-        trace2Post: '',
-      },
+      { n: '01', kicker: 'WGRAJ', title: 'Upuść plik' },
+      { n: '02', kicker: 'WYCEŃ', title: 'Zobacz liczby' },
+      { n: '03', kicker: 'ZAMÓW', title: 'Zablokuj termin' },
     ],
     ships: 'WYSYŁKA',
     // "D+1" is the courier-transit claim from the ticker; the weekday is the
@@ -131,6 +105,38 @@ export const pl = {
     shipsDate: (weekday: string) => `${weekday} · D+1`,
     shipsDateFallback: 'D+1',
     shipsCutoff: 'PL / DE · zamówienia do 14:00',
+    // The live demo run's machine log (buildScript in how-it-works/demo.ts).
+    // Every number arrives pre-formatted per locale; the PRICE line is the
+    // real engine answer. Log tags stay untranslated — it's a machine log.
+    demo: {
+      cmd: (file: string) => `$ wycena ${file}`,
+      tags: {
+        recv: 'RECV',
+        measure: 'MEASURE',
+        price: 'PRICE',
+        order: 'ORDER',
+        ship: 'SHIP',
+        done: 'DONE',
+      },
+      recv: (file: string, size: string) => `${file} · ${size}`,
+      measureMesh: (triangles: string) =>
+        `${triangles} trójkątów · szczelność OK`,
+      measureDims: (volume: string, dims: string) => `${volume} · ${dims}`,
+      priceConfig: 'PETG · 1 szt. · standard',
+      priceResult: (total: string, weight: string, hours: string) =>
+        `${total} z VAT · ${weight} g · ${hours} h druku`,
+      order1: 'bez konta · bez telefonu od handlowca',
+      order2: 'termin blokuje się przy zamówieniu',
+      ship: (weekday: string) =>
+        `${weekday} · D+1 · PL/DE · zamówienia do 14:00`,
+      shipFallback: 'D+1 · PL/DE · zamówienia do 14:00',
+      done: 'wycena gotowa — maszyna odpowiedziała',
+      replay: 'Odtwórz ponownie',
+      engineLabel: 'quote-engine v1',
+      cta: 'Teraz wyceń swoją część →',
+      srSummary: (total: string, weekday: string) =>
+        `Przykładowy wspornik zmierzony w przeglądarce i wyceniony przez silnik na ${total} z VAT, wysyłka ${weekday}, D+1 do PL/DE.`,
+    },
   },
   materialsSection: {
     n: '02',
