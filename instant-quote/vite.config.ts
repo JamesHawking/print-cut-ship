@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 
@@ -133,7 +134,12 @@ const publicPages = [
 ]
 
 const config = defineConfig({
-  resolve: { tsconfigPaths: true },
+  // tsconfigPaths resolves @/ for TS/TSX only — the explicit alias extends
+  // it to .mdx modules (articles import diagram components via @/).
+  resolve: {
+    tsconfigPaths: true,
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   plugins: [
     devtools(),
     // The Go backend owns /api (see ../backend); Nitro handles requests

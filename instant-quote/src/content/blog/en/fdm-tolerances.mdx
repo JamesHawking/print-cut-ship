@@ -1,0 +1,65 @@
+---
+title: 'What tolerances can you actually expect from FDM?'
+description: 'As-printed FDM tolerance classes, what drives the variance, and a reference clearance table for press, slide and loose fits.'
+date: '2026-07-17'
+author: MICRO_FACTORY
+tags: [fdm, tolerances, fits]
+translationKey: fdm-tolerances
+---
+
+Ask three print shops what tolerance FDM holds and you'll get three different answers, because the honest answer is conditional: it depends on the material, the feature, and the direction. This article gives the numbers we actually commit to on production parts — and a clearance table you can design against today.
+
+The short version: treat FDM as a **±0.3 mm per 100 mm** process, plan fits with deliberate clearance, and machine the one feature that genuinely needs better.
+
+## As-printed tolerance classes
+
+These are the bands we hold across real geometries — enclosures, brackets, housings — not best-case test cubes:
+
+| Feature                        | PETG / ASA        | PA12-CF           |
+| ------------------------------ | ----------------- | ----------------- |
+| General dimensions (per 100 mm) | ±0.3 mm          | ±0.25 mm          |
+| Small features (< 20 mm)       | ±0.15 mm          | ±0.12 mm          |
+| Vertical hole diameter         | −0.2 to −0.4 mm   | −0.2 to −0.3 mm   |
+| Flatness (per 100 mm)          | 0.3–0.5 mm        | 0.2–0.4 mm        |
+| Z height (per 100 mm)          | ±0.2 mm           | ±0.2 mm           |
+
+Read the hole row carefully: printed holes are systematically **undersize**, not randomly off. Systematic errors are the good kind — you compensate for them in CAD, as covered in [our FDM design guide](/en/blog/fdm-design-guide).
+
+Direction matters as much as size. XY dimensions ride on belt accuracy and shrinkage; Z dimensions are quantized to the 0.2 mm layer height, so a 10.1 mm tall feature prints as either 10.0 or 10.2 — never 10.1. If a height is critical, design it as a multiple of the layer height and you remove one error source entirely. And a caveat about the table itself: these are per-machine, per-material figures that assume a tuned shrinkage compensation profile. A generic slicer profile on an uncalibrated printer can easily double them, which explains most "FDM can't hold tolerance" stories.
+
+## What drives the variance
+
+Four effects dominate, and knowing them tells you which dimensions to trust.
+
+**Thermal shrinkage.** Polymer leaves the nozzle above 230 °C and cools to room temperature; the part contracts around 0.3–0.6% for PETG and ASA. Carbon fiber cuts that roughly in half for PA12-CF — around 0.1–0.3% — which is why the filled nylon holds the tightest band in the table. Shrinkage scales with length: it's why tolerance is quoted per 100 mm.
+
+**Corner and edge effects.** Contours pull inward at sharp external corners and swell slightly at internal ones. Large flat faces bow as upper layers shrink over lower ones — that's the flatness row.
+
+**First-layer squish.** The first layer is deliberately over-pressed into the bed for adhesion, flaring the bottom 0.2–0.5 mm of every wall outward by a tenth or two. Chamfer the bottom edge (0.5 mm is enough) and the flare disappears from your mating surfaces.
+
+**The seam.** Each perimeter starts and stops somewhere, leaving a small ridge — up to about 0.1–0.2 mm. On a cylindrical fit surface the seam is the local high point; if a shaft or pin must slide, plan the clearance for the seam, not the average diameter.
+
+<CtaBreak />
+
+## Clearances for press, slide and loose fits
+
+The table this article exists for. Diametral clearances between two printed parts (pin-in-hole; for printed-against-machined fits you can halve them):
+
+| Fit          | Diametral clearance | Behavior                                | Typical use                        |
+| ------------ | ------------------- | --------------------------------------- | ---------------------------------- |
+| Press fit    | −0.1 to 0.0 mm      | Assembled with force, permanent         | Bearing seats, pins, inserts       |
+| Snug fit     | +0.1 mm             | Hand pressure, holds position           | Locating bosses, lids that click   |
+| Slide fit    | +0.2 to +0.3 mm     | Moves freely, minimal play              | Sliding trays, hinges, guides      |
+| Loose fit    | +0.4 to +0.6 mm     | Always assembles, visible play          | Screw clearance, covers, hooks     |
+
+Two special cases deserve their own numbers. Threads: don't print anything finer than M6 — below that, tap a printed pilot hole or, better, use a heat-set brass insert (for M3 inserts, a Ø 4.0 mm hole in a boss at least 8 mm across). Snap fits: size the interference at 0.3–0.5 mm of deflection in PETG and keep the cantilever at least 8 mm long; ASA tolerates fewer cycles before the hook whitens at the layer seam.
+
+Three rules make the table work in practice. Test the fit at the actual size — a clearance that slides at Ø 5 mm binds at Ø 50 mm, because tolerance grew with the dimension while the clearance didn't. Put the adjustment in one part — fix the hole, tune the pin; iterating both doubles your variables. And remember materials move: PETG and PA12 absorb moisture and grow up to a tenth of a percent, so a press fit sized in a dry week can crack a boss in a humid one. When a press fit matters, add a printed crush rib — a 0.3 mm ridge that yields on assembly absorbs the whole tolerance band.
+
+## When FDM is the wrong answer
+
+FDM stops being the right process when a drawing carries machining expectations. ±0.05 mm across a part, flatness under 0.1 mm on a sealing face, bores that must be round to a few hundredths — that's CNC territory, and pretending otherwise wastes two prototype rounds. We wrote up the full decision, with costs, in [printed PA12-CF vs machined aluminum](/en/compare/pa-cf-vs-aluminum).
+
+The hybrid path is often the win: print the complex bracket in [PA12-CF](/en/materials/pa12-cf), then drill or ream the two bores that actually locate something. You get printed lead time and geometry freedom, and machined precision exactly where the function lives — at a fraction of a fully machined part's price.
+
+Design to ±0.3 mm, use the clearance table, and machine the single critical feature. Upload your model and you'll have a per-material quote and ship date before you finish your coffee.

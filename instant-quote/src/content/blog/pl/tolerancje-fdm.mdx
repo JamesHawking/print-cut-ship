@@ -1,0 +1,67 @@
+---
+title: 'Jakich tolerancji naprawdę oczekiwać od druku FDM?'
+description: 'Klasy tolerancji FDM prosto z maszyny, źródła rozrzutu i referencyjna tabela luzów dla pasowań wciskowych, suwliwych i luźnych.'
+date: '2026-07-17'
+author: MICRO_FACTORY
+tags: [fdm, tolerances, fits]
+translationKey: fdm-tolerances
+---
+
+{/* TODO(launch): machine-drafted Polish — native review before launch. */}
+
+Zapytaj trzy drukarnie, jaką tolerancję trzyma FDM, a dostaniesz trzy różne odpowiedzi — bo uczciwa odpowiedź jest warunkowa: zależy od materiału, cechy i kierunku. Ten artykuł podaje liczby, do których realnie się zobowiązujemy na częściach produkcyjnych — oraz tabelę luzów, według której można projektować od dziś.
+
+W skrócie: traktuj FDM jako proces **±0,3 mm na 100 mm**, planuj pasowania ze świadomym luzem, a tę jedną cechę, która naprawdę wymaga więcej, obrabiaj skrawaniem.
+
+## Klasy tolerancji prosto z maszyny
+
+To przedziały, które trzymamy na realnych geometriach — obudowach, uchwytach, korpusach — a nie na kostkach testowych:
+
+| Cecha                            | PETG / ASA        | PA12-CF           |
+| -------------------------------- | ----------------- | ----------------- |
+| Wymiary ogólne (na 100 mm)       | ±0,3 mm           | ±0,25 mm          |
+| Małe cechy (< 20 mm)             | ±0,15 mm          | ±0,12 mm          |
+| Średnica otworu pionowego        | −0,2 do −0,4 mm   | −0,2 do −0,3 mm   |
+| Płaskość (na 100 mm)             | 0,3–0,5 mm        | 0,2–0,4 mm        |
+| Wysokość Z (na 100 mm)           | ±0,2 mm           | ±0,2 mm           |
+
+Wiersz z otworami czytaj uważnie: drukowane otwory są **systematycznie** mniejsze, a nie losowo obok wymiaru. Błąd systematyczny to ten dobry rodzaj — kompensuje się go w CAD, co opisujemy w [przewodniku projektowania FDM](/pl/baza-wiedzy/projektowanie-czesci-fdm).
+
+Kierunek znaczy tyle samo co rozmiar. Wymiary XY zależą od dokładności pasów i skurczu; wymiary Z są skwantowane do wysokości warstwy 0,2 mm — cecha o wysokości 10,1 mm wydrukuje się jako 10,0 albo 10,2, nigdy 10,1. Jeśli wysokość jest krytyczna, projektuj ją jako wielokrotność wysokości warstwy i jedno źródło błędu znika całkowicie. I zastrzeżenie do samej tabeli: to wartości per maszyna i per materiał, przy dostrojonym profilu kompensacji skurczu. Generyczny profil slicera na nieskalibrowanej drukarce potrafi je z łatwością podwoić — stąd bierze się większość opowieści, że „FDM nie trzyma tolerancji”.
+
+## Skąd bierze się rozrzut
+
+Dominują cztery zjawiska — znajomość ich mówi, którym wymiarom ufać.
+
+**Skurcz termiczny.** Polimer opuszcza dyszę powyżej 230 °C i stygnie do temperatury pokojowej; część kurczy się o około 0,3–0,6% dla PETG i ASA. Włókno węglowe tnie to mniej więcej o połowę dla PA12-CF — do około 0,1–0,3% — dlatego napełniony nylon trzyma najciaśniejszy przedział w tabeli. Skurcz skaluje się z długością: właśnie dlatego tolerancję podaje się na 100 mm.
+
+**Efekty naroży i krawędzi.** Obrysy ściągają się do środka na ostrych narożach zewnętrznych i lekko pęcznieją na wewnętrznych. Duże płaskie ściany wybrzuszają się, gdy górne warstwy kurczą się nad dolnymi — stąd wiersz o płaskości.
+
+**Dociśnięta pierwsza warstwa.** Pierwsza warstwa jest celowo wgnieciona w stół dla przyczepności, przez co dolne 0,2–0,5 mm każdej ściany rozlewa się na zewnątrz o dziesiątkę–dwie. Sfazuj dolną krawędź (0,5 mm wystarczy), a wypływka znika z powierzchni pasowania.
+
+**Szew.** Każdy obrys gdzieś się zaczyna i kończy, zostawiając grzbiet do około 0,1–0,2 mm. Na cylindrycznej powierzchni pasowania szew jest lokalnym punktem wysokim; jeśli wałek albo kołek ma się przesuwać, licz luz na szew, nie na średnią średnicę.
+
+<CtaBreak />
+
+## Luzy dla pasowań: wciskowe, suwliwe, luźne
+
+Tabela, dla której powstał ten artykuł. Luzy średnicowe między dwiema drukowanymi częściami (kołek w otworze; dla pasowań druk–obróbka można je zmniejszyć o połowę):
+
+| Pasowanie   | Luz średnicowy    | Zachowanie                              | Typowe zastosowanie                 |
+| ----------- | ----------------- | ---------------------------------------- | ----------------------------------- |
+| Wciskowe    | −0,1 do 0,0 mm    | Montaż z siłą, trwały                    | Gniazda łożysk, kołki, inserty      |
+| Ciasne      | +0,1 mm           | Nacisk dłoni, trzyma pozycję             | Bazowanie, pokrywy na zatrzask      |
+| Suwliwe     | +0,2 do +0,3 mm   | Porusza się swobodnie, minimalny luz     | Prowadnice, zawiasy, szuflady       |
+| Luźne       | +0,4 do +0,6 mm   | Zawsze wejdzie, widoczny luz             | Otwory pod śruby, osłony, haki      |
+
+Dwa przypadki szczególne zasługują na własne liczby. Gwinty: nie drukuj nic drobniejszego niż M6 — poniżej gwintuj wydrukowany otwór pilotowy albo, lepiej, użyj mosiężnego insertu wgrzewanego (dla insertów M3 otwór Ø 4,0 mm w piaście o szerokości minimum 8 mm). Zatrzaski: wcisk projektuj na 0,3–0,5 mm ugięcia w PETG, a wspornik trzymaj na minimum 8 mm długości; ASA znosi mniej cykli, zanim haczyk zbieleje na spoinie warstwy.
+
+Trzy zasady sprawiają, że tabela działa w praktyce. Testuj pasowanie w docelowym rozmiarze — luz, który ślizga się przy Ø 5 mm, zakleszcza się przy Ø 50 mm, bo tolerancja urosła z wymiarem, a luz nie. Trzymaj regulację w jednej części — ustal otwór, stroj kołek; iterowanie obu podwaja liczbę zmiennych. I pamiętaj, że materiały żyją: PETG i PA12 chłoną wilgoć i rosną do jednej dziesiątej procenta, więc wcisk dobrany w suchy tydzień potrafi pęknąć piastę w wilgotny. Gdy wcisk jest krytyczny, dodaj drukowane żeberko zgniotu — grzbiet 0,3 mm, który ustępuje przy montażu, przejmuje cały przedział tolerancji.
+
+## Kiedy FDM to zły wybór
+
+FDM przestaje być właściwym procesem, gdy rysunek niesie oczekiwania obróbki skrawaniem. ±0,05 mm na całej części, płaskość poniżej 0,1 mm na powierzchni uszczelnianej, otwory okrągłe do kilku setnych — to terytorium CNC i udawanie, że jest inaczej, kosztuje dwie rundy prototypów. Pełną decyzję, z kosztami, rozpisaliśmy w [drukowany PA12-CF kontra frezowane aluminium](/pl/porownanie/pa-cf-vs-aluminum).
+
+Hybryda to często najlepsze wyjście: wydrukuj złożony korpus z [PA12-CF](/pl/materialy/pa12-cf), a potem rozwierć dwa otwory, które faktycznie coś pozycjonują. Dostajesz termin i swobodę geometrii druku oraz precyzję obróbki dokładnie tam, gdzie mieszka funkcja — za ułamek ceny części w pełni frezowanej.
+
+Projektuj na ±0,3 mm, korzystaj z tabeli luzów, a jedną krytyczną cechę obrabiaj. Wgraj model — wycenę per materiał i termin wysyłki zobaczysz, zanim dopijesz kawę.

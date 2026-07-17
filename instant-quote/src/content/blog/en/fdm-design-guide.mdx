@@ -1,0 +1,126 @@
+---
+title: "Designing FDM parts that don't fail: walls, orientation, tolerances"
+description: 'Minimum wall thickness by material, load direction vs layer bonds, realistic tolerance bands, hole sizing and ribs — the numbers, not the adjectives.'
+date: '2026-07-16'
+author: MICRO_FACTORY
+tags: [fdm, design, tolerances]
+translationKey: fdm-design-guide
+---
+
+import { WallThicknessDiagram } from '@/components/blog/diagrams/WallThicknessDiagram'
+import { AnisotropyDiagram } from '@/components/blog/diagrams/AnisotropyDiagram'
+import { OrientationStrengthDiagram } from '@/components/blog/diagrams/OrientationStrengthDiagram'
+import { HoleClearanceDiagram } from '@/components/blog/diagrams/HoleClearanceDiagram'
+
+Most FDM parts that fail in service fail for one of three design reasons: walls that ignore how the printer deposits material, loads that pull layer bonds apart instead of running along them, or fits specified as if the part were machined. None of these are printing defects. All of them are decided in CAD, before the file ever reaches a printer.
+
+This guide is the checklist we apply when a model lands in our queue. Everything below assumes a 0.4 mm nozzle and the materials from our [catalog](/en/materials) — [PETG](/en/materials/petg), [ASA](/en/materials/asa), and [PA12-CF](/en/materials/pa12-cf).
+
+## Walls: design in whole beads
+
+An FDM printer builds walls from extruded beads roughly 0.4–0.45 mm wide. The slicer fills your wall with as many whole beads as fit. A 1.0 mm wall doesn't get 2.5 beads — it gets two beads and a gap-fill pass, which is slower to print and weaker than the number in your CAD suggests.
+
+So design wall thickness in multiples of the bead width: 0.8, 1.2, 1.6, 2.0 mm. The practical minimums we hold to:
+
+| Material | Minimum wall | Structural recommendation |
+| -------- | ------------ | ------------------------- |
+| PETG     | 1.2 mm       | 1.6–2.0 mm                |
+| ASA      | 1.2 mm       | 1.6–2.0 mm                |
+| PA12-CF  | 1.0 mm       | 1.2–1.6 mm                |
+
+PA12-CF gets away with less because the fiber-filled bead is much stiffer; PETG and ASA below 1.2 mm flex visibly and transmit light. Below these minimums a wall isn't just weak — it's unpredictable, because a single missed bead is a large fraction of the cross-section.
+
+The same logic applies vertically. Top and bottom skins are stacks of 0.2 mm layers, and a horizontal face needs at least four of them — 0.8 mm — to close cleanly over infill. A 0.6 mm "floor" in CAD becomes three layers sagging into the infill grid, and you'll see the pattern telegraph through the surface.
+
+<figure>
+  <WallThicknessDiagram
+    title="Cross-section of an FDM wall built from three extrusion beads"
+    beadLabel="1 bead ≈ 0.4 mm"
+    totalLabel="3 beads = 1.2 mm wall"
+  />
+  <figcaption>
+    A wall is an integer number of beads. 1.2 mm prints as three clean
+    perimeters; 1.0 mm prints as two perimeters and a slow, weak gap fill.
+  </figcaption>
+</figure>
+
+## Strength is directional
+
+A printed part is a laminate. Within a layer, loads run along continuous beads of solid polymer. Between layers, loads cross a thermal weld that formed in a fraction of a second. That weld is the weak link: depending on material and settings, tensile strength across layers (Z) lands at roughly 50–80% of the in-plane (XY) figure — and fatigue performance drops further.
+
+The safe design assumption: **take the datasheet tensile number and halve it for any load that crosses layers.** PETG is the most forgiving of our materials here (its layer adhesion is the reason we recommend it as the default engineering choice); ASA and PA12-CF give up more in Z.
+
+<CtaBreak />
+
+<figure>
+  <AnisotropyDiagram
+    title="Layer stack with in-plane and cross-layer load directions"
+    xyLabel="XY — continuous beads"
+    zLabel="Z — layer bonds only"
+  />
+  <figcaption>
+    In-plane loads are carried by unbroken polymer. Cross-layer loads are
+    carried entirely by the inter-layer weld.
+  </figcaption>
+</figure>
+
+## Orient the part around the load
+
+Since strength is directional, orientation is a structural decision, not a slicing detail. The rule: put the dominant tensile or bending stress in the layer plane.
+
+The classic failure is an L-bracket printed upright. The corner — the highest-stress region — ends up made of layer seams, and the part snaps along one of them at a fraction of the expected load. Printed flat, the same geometry carries beads continuously around the corner and behaves close to the datasheet.
+
+<figure>
+  <OrientationStrengthDiagram
+    title="The same L-bracket printed flat and upright under the same load"
+    flatLabel="flat — beads bridge the corner"
+    uprightLabel="upright — load peels layers apart"
+    forceLabel="load"
+  />
+  <figcaption>
+    Same geometry, same material, same load — the orientation decides which
+    one survives.
+  </figcaption>
+</figure>
+
+Orientation also trades against surface finish and supports, and it's worth deciding consciously which one wins. Any face steeper than about 45° from vertical prints without support; anything shallower gets scaffolding, and the surface it touched will be visibly rougher. Down-facing cosmetic surfaces and support scars don't mix — so when a part has both a critical load path and a visible face, orient for the load and put the support scars on the face nobody sees. Strength first, cosmetics second is almost always the right order for a functional part.
+
+When function forces a bad orientation, compensate in geometry: add a fillet of at least 2 mm at internal corners (a sharp corner concentrates stress exactly on a layer seam), thicken the section that crosses layers, or split the part into two prints joined with fasteners so each piece prints in its strong direction.
+
+## What ±0.3 mm actually means
+
+Our as-printed general tolerance is ±0.3 mm per 100 mm for PETG and ASA, and ±0.25 mm per 100 mm for PA12-CF. That is the honest, achievable band for FDM across real geometries — not a best-case cube measured once.
+
+Two consequences follow. First, don't dimension mating features tighter than the process: a 0.1 mm clearance between two printed parts is a coin flip. Second, tolerance scales with size — a 200 mm enclosure lid can be 0.6 mm off end to end and still be in spec. If a single dimension truly needs ±0.05 mm, that feature wants machining, not printing; we cover the decision in [PA12-CF vs machined aluminum](/en/compare/pa-cf-vs-aluminum) and the full tolerance breakdown in [What tolerances can you actually expect from FDM?](/en/blog/fdm-tolerances)
+
+## Holes: model them oversize or drill them
+
+Printed holes come out undersize — typically by 0.2–0.4 mm on the diameter for vertical holes, more for small horizontal ones, which also sag into slight D-shapes. The polymer shrinks onto the bore, and the slicer's segment approximation of a circle removes a little more.
+
+<figure>
+  <HoleClearanceDiagram
+    title="A modeled hole and the smaller as-printed bore"
+    nominalLabel="modeled Ø 10.0 mm"
+    printedLabel="printed ≈ Ø 9.7 mm"
+  />
+  <figcaption>
+    Model holes 0.2–0.4 mm over the target diameter — or drill to size after
+    printing.
+  </figcaption>
+</figure>
+
+Practical numbers for screws: give M3 a 3.4 mm hole, M4 → 4.5 mm, M5 → 5.5 mm. For anything that locates a dowel, bearing, or shaft, model the hole 0.5 mm undersize and drill or ream to final dimension — a drilled hole in a printed boss is round, sized, and repeatable in a way no as-printed bore is.
+
+## Ribs beat thicker walls
+
+Bending stiffness grows with the cube of section depth, and only linearly with wall thickness. A 1.2 mm wall with 1.2 mm ribs 8–10 mm deep is stiffer than a solid 2.4 mm slab — at roughly half the material, less warp, and a shorter print. Since printed volume is what drives price (see [how our pricing works](/en/pricing)), ribs are also the cheapest stiffness you can buy.
+
+Proportions that work: make ribs the same thickness as the wall (unlike injection molding, FDM has no sink marks to hide, so there's no reason to thin them), keep depth under about eight times thickness before a rib wants buckling support of its own, and run ribs along the bending direction — a rib crossed by the load axis adds weight, not stiffness. A perimeter flange around an open face is the highest-value single rib you can add to any enclosure.
+
+Don't count on infill to do a rib's job. Sparse infill (15–25%) stabilizes skins and resists gentle compression; it carries bending and shear poorly. If a face needs to be stiff, give it geometry — ribs, corrugation, or a flange — not a higher infill percentage.
+
+## The checklist
+
+Walls in whole beads, 1.2 mm minimum. Datasheet strength halved across layers. Dominant stress in the layer plane, fillets where it can't be. ±0.3 mm per 100 mm as the design tolerance, holes modeled oversize or drilled, ribs before thickness. Follow those seven rules and FDM will carry more load than most people expect from a printed part.
+
+Upload your model and you'll see material, orientation-independent pricing, and a ship date in seconds — and if a wall or a fit looks marginal, we flag it before printing.

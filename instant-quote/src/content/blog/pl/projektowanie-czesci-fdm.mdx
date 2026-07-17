@@ -1,0 +1,128 @@
+---
+title: 'Projektowanie części FDM, które nie pękają: ściany, orientacja, tolerancje'
+description: 'Minimalne grubości ścian per materiał, kierunek obciążenia a spoiny warstw, realne tolerancje, otwory i żebra — konkretne liczby zamiast przymiotników.'
+date: '2026-07-16'
+author: MICRO_FACTORY
+tags: [fdm, design, tolerances]
+translationKey: fdm-design-guide
+---
+
+{/* TODO(launch): machine-drafted Polish — native review before launch. */}
+
+import { WallThicknessDiagram } from '@/components/blog/diagrams/WallThicknessDiagram'
+import { AnisotropyDiagram } from '@/components/blog/diagrams/AnisotropyDiagram'
+import { OrientationStrengthDiagram } from '@/components/blog/diagrams/OrientationStrengthDiagram'
+import { HoleClearanceDiagram } from '@/components/blog/diagrams/HoleClearanceDiagram'
+
+Większość części FDM, które zawodzą w użytkowaniu, zawodzi z jednego z trzech powodów projektowych: ściany zignorowały sposób, w jaki drukarka układa materiał, obciążenie rozrywa spoiny warstw zamiast biec wzdłuż nich, albo pasowania zwymiarowano tak, jakby część miała być frezowana. Żaden z nich nie jest wadą druku. Wszystkie rozstrzygają się w CAD, zanim plik trafi na maszynę.
+
+Ten przewodnik to lista kontrolna, którą stosujemy do każdego modelu w naszej kolejce. Wszystko poniżej zakłada dyszę 0,4 mm i materiały z naszego [katalogu](/pl/materialy) — [PETG](/pl/materialy/petg), [ASA](/pl/materialy/asa) i [PA12-CF](/pl/materialy/pa12-cf).
+
+## Ściany: projektuj w pełnych ścieżkach
+
+Drukarka FDM buduje ściany ze ścieżek o szerokości około 0,4–0,45 mm. Slicer mieści w ścianie tyle pełnych ścieżek, ile się zmieści. Ściana 1,0 mm nie dostaje 2,5 ścieżki — dostaje dwie ścieżki i dopełnienie szczeliny, które drukuje się wolniej i jest słabsze, niż sugeruje liczba w CAD.
+
+Dlatego grubości ścian projektuj w wielokrotnościach szerokości ścieżki: 0,8 / 1,2 / 1,6 / 2,0 mm. Minima, których się trzymamy:
+
+| Materiał | Minimalna ściana | Zalecenie konstrukcyjne |
+| -------- | ---------------- | ----------------------- |
+| PETG     | 1,2 mm           | 1,6–2,0 mm              |
+| ASA      | 1,2 mm           | 1,6–2,0 mm              |
+| PA12-CF  | 1,0 mm           | 1,2–1,6 mm              |
+
+PA12-CF może mniej, bo ścieżka z włóknem węglowym jest znacznie sztywniejsza; PETG i ASA poniżej 1,2 mm wyraźnie się uginają i prześwitują. Poniżej tych minimów ściana jest nie tylko słaba — jest nieprzewidywalna, bo jedna pominięta ścieżka to duży ułamek przekroju.
+
+Ta sama logika działa w pionie. Górne i dolne powłoki to stosy warstw 0,2 mm, a pozioma płaszczyzna potrzebuje co najmniej czterech — 0,8 mm — żeby domknąć się czysto nad wypełnieniem. „Podłoga” 0,6 mm w CAD to trzy warstwy zapadające się w kratkę wypełnienia, której wzór odbije się na powierzchni.
+
+<figure>
+  <WallThicknessDiagram
+    title="Przekrój ściany FDM zbudowanej z trzech ścieżek ekstruzji"
+    beadLabel="1 ścieżka ≈ 0,4 mm"
+    totalLabel="3 ścieżki = ściana 1,2 mm"
+  />
+  <figcaption>
+    Ściana to całkowita liczba ścieżek. 1,2 mm drukuje się jako trzy czyste
+    obrysy; 1,0 mm — jako dwa obrysy i wolne, słabe dopełnienie.
+  </figcaption>
+</figure>
+
+## Wytrzymałość ma kierunek
+
+Wydruk to laminat. Wewnątrz warstwy obciążenie biegnie wzdłuż ciągłych ścieżek litego polimeru. Między warstwami przechodzi przez termiczną spoinę, która powstała w ułamku sekundy. Ta spoina jest najsłabszym ogniwem: zależnie od materiału i ustawień wytrzymałość na rozciąganie w poprzek warstw (Z) to około 50–80% wartości w płaszczyźnie (XY) — a zmęczeniowo jest jeszcze gorzej.
+
+Bezpieczne założenie projektowe: **weź wytrzymałość z karty materiałowej i podziel przez dwa dla każdego obciążenia w poprzek warstw.** PETG wybacza tu najwięcej (adhezja międzywarstwowa to powód, dla którego polecamy go jako domyślny materiał inżynierski); ASA i PA12-CF tracą w osi Z więcej.
+
+<CtaBreak />
+
+<figure>
+  <AnisotropyDiagram
+    title="Stos warstw z kierunkami obciążenia w płaszczyźnie i w poprzek warstw"
+    xyLabel="XY — ciągłe ścieżki"
+    zLabel="Z — tylko spoiny warstw"
+  />
+  <figcaption>
+    Obciążenia w płaszczyźnie niesie nieprzerwany polimer. Obciążenia w
+    poprzek warstw niesie wyłącznie spoina międzywarstwowa.
+  </figcaption>
+</figure>
+
+## Orientuj część pod obciążenie
+
+Skoro wytrzymałość ma kierunek, orientacja jest decyzją konstrukcyjną, nie szczegółem slicingu. Zasada: dominujące naprężenie rozciągające lub zginające ma leżeć w płaszczyźnie warstw.
+
+Klasyczna porażka to kątownik drukowany na stojąco. Naroże — miejsce największych naprężeń — składa się wtedy z samych spoin i część pęka wzdłuż jednej z nich przy ułamku spodziewanego obciążenia. Ten sam kształt drukowany na płasko prowadzi ścieżki ciągiem przez naroże i zachowuje się blisko karty materiałowej.
+
+<figure>
+  <OrientationStrengthDiagram
+    title="Ten sam kątownik drukowany na płasko i na stojąco pod tym samym obciążeniem"
+    flatLabel="na płasko — ścieżki przechodzą przez naroże"
+    uprightLabel="na stojąco — obciążenie rozwarstwia spoiny"
+    forceLabel="siła"
+  />
+  <figcaption>
+    Ta sama geometria, materiał i siła — o tym, który przetrwa, decyduje
+    orientacja.
+  </figcaption>
+</figure>
+
+Orientacja gra też z jakością powierzchni i podporami — warto świadomie zdecydować, co wygrywa. Ściany bardziej strome niż około 45° od pionu drukują się bez podpór; wszystko płytsze dostaje rusztowanie, a dotknięta nim powierzchnia będzie wyraźnie szorstsza. Powierzchnie kosmetyczne i ślady po podporach nie idą w parze — więc gdy część ma i krytyczną ścieżkę obciążenia, i widoczną ścianę, orientuj pod obciążenie, a ślady podpór kieruj na stronę, której nikt nie ogląda. Najpierw wytrzymałość, potem kosmetyka — dla części funkcjonalnej to prawie zawsze właściwa kolejność.
+
+Gdy funkcja wymusza złą orientację, nadrób geometrią: dodaj zaokrąglenie minimum 2 mm w narożach wewnętrznych (ostre naroże koncentruje naprężenia dokładnie na spoinie), pogrub przekrój pracujący w poprzek warstw albo podziel część na dwa wydruki łączone śrubami — każdy w swoim mocnym kierunku.
+
+## Co naprawdę znaczy ±0,3 mm
+
+Nasza tolerancja ogólna „z maszyny” to ±0,3 mm na 100 mm dla PETG i ASA oraz ±0,25 mm na 100 mm dla PA12-CF. To uczciwy, osiągalny przedział dla FDM na realnych geometriach — nie najlepszy przypadek zmierzony raz na kostce testowej.
+
+Płyną z tego dwa wnioski. Po pierwsze, nie wymiaruj pasowań ciaśniej niż proces: luz 0,1 mm między dwiema drukowanymi częściami to rzut monetą. Po drugie, tolerancja skaluje się z rozmiarem — pokrywa obudowy 200 mm może odbiegać o 0,6 mm na całej długości i wciąż być w normie. Jeśli jeden wymiar naprawdę wymaga ±0,05 mm, ta cecha chce być frezowana, nie drukowana; decyzję rozkładamy na liczby w [PA12-CF kontra frezowane aluminium](/pl/porownanie/pa-cf-vs-aluminum), a pełne tabele w [Jakich tolerancji naprawdę oczekiwać od FDM?](/pl/baza-wiedzy/tolerancje-fdm)
+
+## Otwory: modeluj z naddatkiem albo wierć
+
+Drukowane otwory wychodzą mniejsze — zwykle o 0,2–0,4 mm na średnicy dla otworów pionowych, więcej dla małych poziomych, które dodatkowo osiadają w lekkie „D”. Polimer kurczy się na otwór, a segmentowe przybliżenie okręgu przez slicer zabiera jeszcze trochę.
+
+<figure>
+  <HoleClearanceDiagram
+    title="Otwór z modelu i mniejszy otwór po wydruku"
+    nominalLabel="model: Ø 10,0 mm"
+    printedLabel="wydruk: ≈ Ø 9,7 mm"
+  />
+  <figcaption>
+    Modeluj otwory 0,2–0,4 mm ponad wymiar docelowy — albo rozwierć po
+    wydruku.
+  </figcaption>
+</figure>
+
+Praktyczne liczby dla śrub: M3 — otwór 3,4 mm, M4 — 4,5 mm, M5 — 5,5 mm. Wszystko, co pozycjonuje kołek, łożysko lub wałek, modeluj 0,5 mm pod wymiar i wierć albo rozwiercaj na gotowo — wiercony otwór w drukowanej piaście jest okrągły, wymiarowy i powtarzalny w sposób nieosiągalny dla otworu z maszyny.
+
+## Żebra zamiast grubszych ścian
+
+Sztywność na zginanie rośnie z sześcianem wysokości przekroju, a z grubością ściany tylko liniowo. Ściana 1,2 mm z żebrami 1,2 mm o wysokości 8–10 mm jest sztywniejsza niż lita płyta 2,4 mm — przy mniej więcej połowie materiału, mniejszym wichrowaniu i krótszym druku. A że o cenie decyduje objętość wydruku (zobacz [jak liczymy ceny](/pl/cennik)), żebra to najtańsza sztywność, jaką można kupić.
+
+Proporcje, które działają: żebro tej samej grubości co ściana (inaczej niż przy wtrysku — FDM nie ma zapadnięć do ukrycia, więc nie ma powodu ich pocieniać), wysokość do około ośmiu grubości, zanim żebro samo zacznie wymagać podparcia przeciw wyboczeniu, i przebieg wzdłuż kierunku zginania — żebro w poprzek osi obciążenia dodaje masę, nie sztywność. Kołnierz po obwodzie otwartej ściany to najbardziej opłacalne pojedyncze żebro, jakie można dodać do obudowy.
+
+Nie licz, że wypełnienie zrobi robotę żebra. Rzadkie wypełnienie (15–25%) stabilizuje ścianki i znosi łagodny ścisk; zginanie i ścinanie przenosi słabo. Jeśli płaszczyzna ma być sztywna, daj jej geometrię — żebra, przetłoczenie albo kołnierz — a nie wyższy procent wypełnienia.
+
+## Lista kontrolna
+
+Ściany w pełnych ścieżkach, minimum 1,2 mm. Wytrzymałość z karty dzielona przez dwa w poprzek warstw. Dominujące naprężenie w płaszczyźnie warstw, zaokrąglenia tam, gdzie się nie da. ±0,3 mm na 100 mm jako tolerancja projektowa, otwory z naddatkiem albo wiercone, żebra przed grubością. Siedem zasad — i FDM przeniesie więcej, niż większość ludzi oczekuje po wydruku.
+
+Wgraj model, a w kilka sekund zobaczysz materiał, cenę i termin wysyłki — a jeśli któraś ściana albo pasowanie wygląda na graniczne, zgłosimy to przed drukiem.
