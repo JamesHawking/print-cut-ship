@@ -74,10 +74,13 @@ export const pl = {
     howItWorks: 'Jak to działa',
     materials: 'Materiały',
     pricing: 'Cennik',
+    compare: 'Porównania',
     blog: 'Baza wiedzy',
     trackOrder: 'Śledź zamówienie',
     menuLabel: 'Przełącz menu',
     resume: (n: number) => `Wróć do wyceny (${n}) →`,
+    // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
+    resumeShort: (n: number) => `Wycena (${n}) →`,
     newQuote: '← Nowa wycena',
   },
   ticker: [
@@ -210,6 +213,15 @@ export const pl = {
     note: 'Prototyp · stawki poglądowe · każda wycena jest w pełni rozbita na pozycje',
     meta: 'UE · FDM · PLN · 23% VAT',
     cutoff: 'zamówienia do 14:00',
+    navLabel: 'Nawigacja',
+    orderLabel: 'Zamówienie',
+  },
+  notFound: {
+    tag: 'Błąd 404',
+    heading: 'Nie ma takiej strony',
+    body: 'Ten adres nie pasuje do żadnej strony. Sprawdź pisownię albo zacznij od jednego z poniższych.',
+    linksLabel: 'Zobacz zamiast tego',
+    home: 'Strona główna',
   },
   // Material landing pages — UI chrome only; long-form prose lives in
   // src/content/materials/{pl,en}.ts.
@@ -305,6 +317,7 @@ export const pl = {
     noHiddenTitle: 'Bez ukrytych kosztów',
     comparisonTitle: 'Uczciwe porównanie',
     faqTitle: 'Częste pytania o ceny',
+    seeAlso: 'Zobacz też',
   },
   comparePages: {
     breadcrumb: 'Porównania',

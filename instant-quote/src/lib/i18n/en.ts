@@ -63,10 +63,13 @@ export const en = {
     howItWorks: 'How it works',
     materials: 'Materials',
     pricing: 'Pricing',
+    compare: 'Compare',
     blog: 'Blog',
     trackOrder: 'Track order',
     menuLabel: 'Toggle menu',
     resume: (n: number) => `Resume quote (${n}) →`,
+    // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
+    resumeShort: (n: number) => `Quote (${n}) →`,
     newQuote: '← New quote',
   },
   ticker: [
@@ -199,6 +202,15 @@ export const en = {
     note: 'Prototype · illustrative rates · every quote is fully itemized',
     meta: 'EU · FDM · PLN · 23% VAT',
     cutoff: '14:00 cutoff',
+    navLabel: 'Navigate',
+    orderLabel: 'Order',
+  },
+  notFound: {
+    tag: 'Error 404',
+    heading: 'Page not found',
+    body: "This address doesn't match any page. Check the spelling or start from one of the links below.",
+    linksLabel: 'Try instead',
+    home: 'Home',
   },
   // Material landing pages — UI chrome only; long-form prose lives in
   // src/content/materials/{pl,en}.ts.
@@ -290,6 +302,7 @@ export const en = {
     noHiddenTitle: 'No hidden costs',
     comparisonTitle: 'An honest comparison',
     faqTitle: 'Pricing FAQ',
+    seeAlso: 'See also',
   },
   comparePages: {
     breadcrumb: 'Comparisons',
