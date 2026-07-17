@@ -1,11 +1,11 @@
-import { Link } from '@tanstack/react-router'
-import { useLocale, useStrings } from '@/lib/i18n'
+import { useStrings } from '@/lib/i18n'
 import { track } from '@/lib/funnel'
+import { useFilePicker } from '@/hooks/useFilePicker'
 
 /**
  * The shared upload CTA (plans/seo/01): every content page ends in it — the
- * quote tool is the CTA. Deep-links to the landing intake with ?source= so
- * content-page conversion is attributable; fires cta_upload_clicked on click.
+ * quote tool is the CTA. Opens the native file picker in place (no detour
+ * via the landing dropzone); fires cta_upload_clicked on click.
  *
  * `full` = page-footer band (adopted by SiteFooter); `compact` = inline card
  * for prose (content pages, prompt 02+).
@@ -18,20 +18,20 @@ export function QuoteCta({
   sourcePage: string
 }) {
   const strings = useStrings()
-  const locale = useLocale()
+  const openFilePicker = useFilePicker()
   const { headline, trust, button } = strings.cta
 
-  const cta = (arrow: string) => (
-    <Link
-      to="/$locale"
-      params={{ locale }}
-      search={{ source: sourcePage }}
-      hash="top"
-      onClick={() => track('cta_upload_clicked', { source_page: sourcePage })}
-      className="bg-primary text-primary-foreground hover:shadow-primary/40 inline-flex shrink-0 items-center gap-2 rounded-md px-7 py-3.5 text-sm font-bold transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-lg"
+  const cta = (
+    <button
+      type="button"
+      onClick={() => {
+        track('cta_upload_clicked', { source_page: sourcePage })
+        openFilePicker()
+      }}
+      className="bg-primary text-primary-foreground hover:shadow-primary/40 inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-md px-7 py-3.5 text-sm font-bold transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-lg"
     >
-      {button} {arrow}
-    </Link>
+      {button} →
+    </button>
   )
 
   if (variant === 'full') {
@@ -45,7 +45,7 @@ export function QuoteCta({
             {trust}
           </p>
         </div>
-        {cta('↑')}
+        {cta}
       </div>
     )
   }
@@ -58,7 +58,7 @@ export function QuoteCta({
           {trust}
         </p>
       </div>
-      {cta('→')}
+      {cta}
     </div>
   )
 }

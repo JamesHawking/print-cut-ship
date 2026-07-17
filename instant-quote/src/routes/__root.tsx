@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { PartsProvider } from '@/hooks/useParts'
+import { FilePickerProvider } from '@/hooks/useFilePicker'
 
 // Type system (Anduril-inspired): Archivo grotesque for display/UI, Martian Mono
 // for technical labels & numerics. Self-hosted via @fontsource (no external CDN).
@@ -67,7 +68,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-sans antialiased">
         <QueryClientProvider client={queryClient}>
           <PartsProvider>
-            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+            <FilePickerProvider>
+              <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+            </FilePickerProvider>
           </PartsProvider>
           <Toaster richColors position="top-right" />
         </QueryClientProvider>

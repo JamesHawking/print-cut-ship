@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
 import { useShipDates } from '@/hooks/useApi'
+import { useFilePicker } from '@/hooks/useFilePicker'
 import { api, toApiMetrics } from '@/lib/api/client'
 import { formatPln, formatShipWeekday } from '@/lib/format'
 import { track } from '@/lib/funnel'
@@ -29,6 +29,7 @@ import { DemoTerminal } from './how-it-works/DemoTerminal'
 export function HowItWorks() {
   const strings = useStrings()
   const locale = useLocale()
+  const openFilePicker = useFilePicker()
   const { n, heading, intro, demo } = strings.process
 
   // Client-mounted only (React Query never fetches during prerender), so the
@@ -96,17 +97,16 @@ export function HowItWorks() {
           />
         </div>
         <div className="mt-6 flex justify-end">
-          <Link
-            to="/$locale"
-            params={{ locale }}
-            hash="top"
-            onClick={() =>
+          <button
+            type="button"
+            onClick={() => {
               track('cta_upload_clicked', { source_page: 'how-it-works-demo' })
-            }
-            className="text-primary-text hover:text-foreground font-mono text-xs font-bold tracking-widest uppercase transition-colors"
+              openFilePicker()
+            }}
+            className="bg-primary text-primary-foreground hover:shadow-primary/40 inline-flex cursor-pointer items-center gap-2 rounded-md px-6 py-3 text-sm font-bold transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-lg"
           >
             {demo.cta}
-          </Link>
+          </button>
         </div>
       </div>
     </section>
