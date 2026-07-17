@@ -78,47 +78,53 @@ export function PriceSlider() {
     gcTime: 10 * 60_000,
   })
 
+  // Compact strip (design 2b): label, slider and per-material readouts on
+  // one line at desktop; readouts wrap below on narrow screens. The parent
+  // section provides the bg-card band.
   return (
-    <div className="bg-card rounded-lg border p-6 shadow-xl shadow-black/[0.06] sm:p-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+    <div>
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
         <label
           htmlFor="volume-slider"
-          className="font-mono text-[0.7rem] font-bold tracking-[0.16em] uppercase"
+          className="font-mono text-[0.7rem] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
         >
           {s.sliderLabel(formatInt(volume, locale))}
         </label>
-        <span className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.14em] uppercase">
-          {s.sliderNote}
-        </span>
-      </div>
-      <Slider
-        id="volume-slider"
-        className="mt-5"
-        min={1}
-        max={200}
-        step={1}
-        value={[volume]}
-        onValueChange={([v]) => setVolume(v)}
-      />
-      <dl className="mt-7 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
-        {materials.map((material) => (
-          <div key={material.id}>
-            <dt className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.14em] uppercase">
-              {material.label}
-            </dt>
-            <dd
-              aria-live="polite"
-              className="mt-1 font-mono text-lg font-bold tracking-tight whitespace-nowrap tabular-nums"
+        <Slider
+          id="volume-slider"
+          className="min-w-[180px] flex-1 basis-48"
+          min={1}
+          max={200}
+          step={1}
+          value={[volume]}
+          onValueChange={([v]) => setVolume(v)}
+        />
+        <dl className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+          {materials.map((material) => (
+            <div
+              key={material.id}
+              className="flex items-baseline gap-1.5 whitespace-nowrap"
             >
-              {prices.data ? (
-                formatPln(prices.data[material.id], locale)
-              ) : (
-                <Skeleton className="h-6 w-20" />
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
+              <dt className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.1em] uppercase">
+                {material.label}
+              </dt>
+              <dd
+                aria-live="polite"
+                className="font-mono text-[13px] font-bold tabular-nums"
+              >
+                {prices.data ? (
+                  formatPln(prices.data[material.id], locale)
+                ) : (
+                  <Skeleton className="h-4 w-14" />
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <p className="text-muted-foreground mt-2.5 font-mono text-[0.6rem] tracking-[0.14em] uppercase">
+        {s.sliderNote}
+      </p>
     </div>
   )
 }

@@ -243,6 +243,11 @@ export const pl = {
   // Pricing page (cennik) — UI chrome only; prose in src/content/pricing.
   pricingPage: {
     breadcrumb: 'Cennik',
+    feeMinOrder: 'Minimum zamówienia',
+    feeOrderFee: 'Opłata za zamówienie',
+    feeShipping: (thresholdPln: number) =>
+      `Wysyłka · gratis ≥ ${thresholdPln} zł`,
+    feeVat: 'VAT w cenie',
     sliderTitle: 'Szybka wycena według objętości',
     sliderLabel: (volume: string) => `Objętość części: ${volume} cm³`,
     sliderNote:

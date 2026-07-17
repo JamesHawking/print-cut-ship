@@ -11,7 +11,7 @@ export const enPricingCopy: PricingCopy = {
   h1: 'Pricing',
   intro: [
     'Almost no European 3D printing service publishes real prices anymore — everything is "request a quote". We publish everything: rates, discounts, minimums and fees. These are exactly the numbers the quote form computes with; this page and the engine read one configuration.',
-    'Below: the formula, the full rate card for seven materials, quantity discounts with a worked example, lead times with concrete ship dates, and the complete list of fees. If it is not listed here, we do not charge it.',
+    'If it is not listed here, we do not charge it.',
   ],
   formulaIntro:
     'A part price is material plus machine time, scaled by the quantity discount and the lead-time multiplier. Weight is estimated like a slicer: a 0.9 mm shell over the surface plus 20% infill, converted by material density.',

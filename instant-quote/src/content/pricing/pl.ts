@@ -34,7 +34,7 @@ export const plPricingCopy: PricingCopy = {
   h1: 'Cennik',
   intro: [
     'Prawie żaden europejski serwis druku 3D nie publikuje już prawdziwych cen — wszędzie „wyślij zapytanie”. My publikujemy wszystko: stawki, rabaty, minima i opłaty. To dokładnie te same liczby, którymi liczy formularz wyceny; ta strona i silnik czytają jedną konfigurację.',
-    'Poniżej znajdziesz wzór, pełną kartę stawek dla siedmiu materiałów, rabaty ilościowe z przykładem, terminy z konkretnymi datami wysyłki i kompletną listę opłat. Jeśli czegoś tu nie ma — nie doliczamy tego.',
+    'Jeśli czegoś tu nie ma — nie doliczamy tego.',
   ],
   formulaIntro:
     'Cena części to materiał plus czas maszynowy, przeskalowane rabatem ilościowym i mnożnikiem terminu. Wagę liczymy jak slicer: powłoka 0,9 mm na powierzchni plus 20% wypełnienia, przeliczone gęstością materiału.',

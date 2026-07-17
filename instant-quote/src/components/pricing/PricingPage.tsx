@@ -1,4 +1,3 @@
-import { Fragment } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   Accordion,
@@ -66,9 +65,10 @@ export function PricingPage() {
     <>
       <SiteHeader variant="landing" />
       <main>
-        {/* hero + slider (the hook, right after the intro) */}
+        {/* poster hero (design 2b): the formula in display type, the
+            transparency claim + fee spec grid beside it */}
         <section className="border-b">
-          <div className="mx-auto max-w-6xl px-4 pt-10 pb-14 sm:px-6 md:pt-16">
+          <div className="mx-auto max-w-6xl px-4 pt-10 pb-16 sm:px-6 md:pt-16">
             <ContentBreadcrumb
               items={[
                 {
@@ -78,49 +78,89 @@ export function PricingPage() {
                 { label: s.breadcrumb },
               ]}
             />
-            <h1 className="mt-8 text-[clamp(2.2rem,6vw,4.5rem)] leading-[0.95] font-black tracking-[-0.03em] uppercase">
-              {copy.h1}
-            </h1>
-            <div className="mt-6 max-w-2xl space-y-4">
-              {copy.intro.map((paragraph) => (
-                <p
-                  key={paragraph.slice(0, 32)}
-                  className="text-muted-foreground text-[17px] leading-relaxed text-pretty"
-                >
-                  {paragraph}
+            <div className="mt-9 grid gap-x-16 gap-y-12 lg:grid-cols-[1.5fr_1fr]">
+              <div>
+                <p className="text-[clamp(2.4rem,6vw,4.75rem)] leading-[1.04] font-black tracking-[-0.035em] uppercase">
+                  <span className="block">
+                    {strings.pricing.formulaLead} {strings.pricing.terms[0].op}
+                  </span>
+                  {strings.pricing.terms.map((t, i) => (
+                    <span key={t.name} className="block">
+                      {i > 0 && `${t.op} `}
+                      <span className="[box-shadow:inset_0_-0.375rem_0_0_var(--color-primary)]">
+                        {t.name}
+                      </span>{' '}
+                      <span className="text-muted-foreground font-mono text-[15px] font-normal tracking-normal normal-case">
+                        {t.unit}
+                      </span>
+                    </span>
+                  ))}
                 </p>
-              ))}
-            </div>
-            <div className="mt-10">
-              <PriceSlider />
+                <p className="text-muted-foreground mt-8 max-w-xl text-[14px] leading-relaxed text-pretty">
+                  {copy.formulaIntro}
+                </p>
+              </div>
+              <div className="flex flex-col justify-between gap-8">
+                <div>
+                  <h1 className="text-primary-text font-mono text-[0.7rem] font-bold tracking-[0.16em] uppercase">
+                    {strings.pricing.heading}
+                  </h1>
+                  <div className="mt-4 space-y-3.5">
+                    {copy.intro.map((paragraph) => (
+                      <p
+                        key={paragraph.slice(0, 32)}
+                        className="text-muted-foreground text-[15px] leading-relaxed text-pretty"
+                      >
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+                <dl className="grid grid-cols-2 border-t">
+                  {(
+                    [
+                      [`${values.minOrderPln} zł`, s.feeMinOrder, true, true],
+                      [`${values.orderFeePln} zł`, s.feeOrderFee, false, true],
+                      [
+                        `${values.shippingFlatPln} zł`,
+                        s.feeShipping(values.freeShippingThresholdPln),
+                        true,
+                        false,
+                      ],
+                      [`${values.vatPct}%`, s.feeVat, false, false],
+                    ] as Array<[string, string, boolean, boolean]>
+                  ).map(([value, label, borderR, borderB]) => (
+                    <div
+                      key={label}
+                      className={`py-4 ${borderR ? 'border-r pr-4' : 'pl-4'} ${
+                        borderB ? 'border-b' : 'pb-0'
+                      }`}
+                    >
+                      <dd className="font-mono text-xl font-bold tabular-nums">
+                        {value}
+                      </dd>
+                      <dt className="text-muted-foreground mt-1.5 font-mono text-[0.5625rem] tracking-[0.14em] uppercase">
+                        {label}
+                      </dt>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* 01 — formula + per-material constants */}
-        <section className="border-b">
-          <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="01" title={s.formulaTitle} />
-            <p className="text-muted-foreground mt-8 max-w-2xl text-[15px] leading-relaxed text-pretty">
-              {copy.formulaIntro}
-            </p>
-            <p className="mt-8 max-w-[900px] font-mono text-[clamp(13px,1.9vw,19px)] leading-[2.15] font-semibold wrap-break-word md:leading-[1.9]">
-              {strings.pricing.formulaLead}
-              {strings.pricing.terms.map((t) => (
-                <Fragment key={t.name}>
-                  {` ${t.op} `}
-                  <span className="border-primary border-b-2">{t.name}</span>
-                  <span className="text-muted-foreground"> {t.unit}</span>
-                </Fragment>
-              ))}
-            </p>
+        {/* compact slider strip — the live instrument between poster and card */}
+        <section className="bg-card border-b">
+          <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+            <PriceSlider />
           </div>
         </section>
 
-        {/* 02 — rate card */}
+        {/* 01 — rate card */}
         <section className="dark bg-background text-foreground border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="02" title={s.rateCardTitle} />
+            <SectionHeading n="01" title={s.rateCardTitle} />
             <p className="text-muted-foreground mt-6 max-w-2xl text-[14px] leading-relaxed text-pretty">
               {copy.rateCardNote(values)}
             </p>
@@ -189,10 +229,10 @@ export function PricingPage() {
           </div>
         </section>
 
-        {/* 03 — quantity discounts + worked example */}
+        {/* 02 — quantity discounts + worked example */}
         <section className="border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="03" title={s.discountsTitle} />
+            <SectionHeading n="02" title={s.discountsTitle} />
             <p className="text-muted-foreground mt-6 max-w-2xl text-[14px] leading-relaxed text-pretty">
               {copy.discountIntro(values)}
             </p>
@@ -238,10 +278,10 @@ export function PricingPage() {
           </div>
         </section>
 
-        {/* 04 — lead times + anchored ship-date scenarios */}
+        {/* 03 — lead times + anchored ship-date scenarios */}
         <section className="border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="04" title={s.leadTimesTitle} />
+            <SectionHeading n="03" title={s.leadTimesTitle} />
             <p className="text-muted-foreground mt-6 max-w-2xl text-[14px] leading-relaxed text-pretty">
               {copy.leadIntro(values)}
             </p>
@@ -286,10 +326,10 @@ export function PricingPage() {
           </div>
         </section>
 
-        {/* 05 — minimums & shipping, worked example */}
+        {/* 04 — minimums & shipping, worked example */}
         <section className="border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="05" title={s.minimumsTitle} />
+            <SectionHeading n="04" title={s.minimumsTitle} />
             <p className="text-muted-foreground mt-6 max-w-2xl text-[14px] leading-relaxed text-pretty">
               {copy.minimumsIntro(values)}
             </p>
@@ -342,10 +382,10 @@ export function PricingPage() {
           </div>
         </section>
 
-        {/* 06 — no hidden costs + honest comparison */}
+        {/* 05 — no hidden costs + honest comparison */}
         <section className="border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="06" title={s.noHiddenTitle} />
+            <SectionHeading n="05" title={s.noHiddenTitle} />
             <div className="mt-8 max-w-3xl space-y-5">
               {copy.noHidden(values).map((paragraph) => (
                 <p
@@ -372,10 +412,10 @@ export function PricingPage() {
           </div>
         </section>
 
-        {/* 07 — FAQ */}
+        {/* 06 — FAQ */}
         <section className="border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="07" title={s.faqTitle} />
+            <SectionHeading n="06" title={s.faqTitle} />
             <Accordion type="single" collapsible className="mt-8 max-w-3xl">
               {faq.map((item) => (
                 <AccordionItem key={item.q} value={item.q}>

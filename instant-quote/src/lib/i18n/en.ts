@@ -232,6 +232,11 @@ export const en = {
   // Pricing page — UI chrome only; prose in src/content/pricing.
   pricingPage: {
     breadcrumb: 'Pricing',
+    feeMinOrder: 'Minimum order',
+    feeOrderFee: 'Order fee',
+    feeShipping: (thresholdPln: number) =>
+      `Shipping · free ≥ ${thresholdPln} zł`,
+    feeVat: 'VAT included',
     sliderTitle: 'Quick estimate by volume',
     sliderLabel: (volume: string) => `Part volume: ${volume} cm³`,
     sliderNote:
