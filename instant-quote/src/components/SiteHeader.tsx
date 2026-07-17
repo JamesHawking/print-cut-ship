@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { Dialog as DialogPrimitive } from 'radix-ui'
 import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useParts } from '@/hooks/useParts'
@@ -108,19 +109,74 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
                   {strings.nav.resume(parts.length)}
                 </Link>
               )}
-              <button
-                type="button"
-                aria-label={strings.nav.menuLabel}
-                aria-expanded={menuOpen}
-                onClick={() => setMenuOpen((open) => !open)}
-                className="text-foreground focus-visible:ring-ring -mr-2 inline-flex size-10 cursor-pointer items-center justify-center rounded-[7px] border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-              >
-                {menuOpen ? (
-                  <X className="size-5" />
-                ) : (
-                  <Menu className="size-5" />
-                )}
-              </button>
+              {/* Radix Dialog gives the dropdown its a11y contract for free:
+                  focus trap, Escape-to-close, body scroll lock, and focus
+                  return to this trigger. Visuals stay the Landing Page
+                  v2.dc.html nav menu. */}
+              <DialogPrimitive.Root open={menuOpen} onOpenChange={setMenuOpen}>
+                <DialogPrimitive.Trigger asChild>
+                  <button
+                    type="button"
+                    aria-label={strings.nav.menuLabel}
+                    className="text-foreground focus-visible:ring-ring -mr-2 inline-flex size-10 cursor-pointer items-center justify-center rounded-[7px] border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  >
+                    {menuOpen ? (
+                      <X className="size-5" />
+                    ) : (
+                      <Menu className="size-5" />
+                    )}
+                  </button>
+                </DialogPrimitive.Trigger>
+                <DialogPrimitive.Portal>
+                  <DialogPrimitive.Overlay className="motion-safe:animate-in motion-safe:fade-in bg-background/60 fixed inset-0 top-14 z-40 backdrop-blur-sm duration-[180ms] lg:hidden" />
+                  <DialogPrimitive.Content
+                    aria-describedby={undefined}
+                    className="motion-safe:animate-in fade-in slide-in-from-top-1.5 bg-background fixed inset-x-0 top-14 z-50 border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out lg:hidden"
+                  >
+                    <DialogPrimitive.Title className="sr-only">
+                      {strings.nav.menuLabel}
+                    </DialogPrimitive.Title>
+                    <Link
+                      to="/$locale"
+                      params={{ locale }}
+                      hash="how-it-works"
+                      onClick={() => setMenuOpen(false)}
+                      className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
+                    >
+                      {strings.nav.howItWorks}
+                      <span aria-hidden className="text-primary-text">
+                        01
+                      </span>
+                    </Link>
+                    {NAV_SECTIONS.map((key, i) => (
+                      <Link
+                        key={key}
+                        to="/$locale/$section"
+                        params={{ locale, section: SECTIONS[key][locale] }}
+                        onClick={() => setMenuOpen(false)}
+                        aria-current={activeKey === key ? 'page' : undefined}
+                        className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
+                      >
+                        {strings.nav[key]}
+                        <span aria-hidden className="text-primary-text">
+                          {`0${i + 2}`}
+                        </span>
+                      </Link>
+                    ))}
+                    <Link
+                      to="/$locale/login"
+                      params={{ locale }}
+                      onClick={() => setMenuOpen(false)}
+                      className="bg-primary text-primary-foreground mt-3.5 block rounded-[7px] px-2 py-[15px] text-center font-bold"
+                    >
+                      {strings.nav.trackOrder} →
+                    </Link>
+                    <div className="mt-3.5 flex justify-center">
+                      <LocaleSwitcher />
+                    </div>
+                  </DialogPrimitive.Content>
+                </DialogPrimitive.Portal>
+              </DialogPrimitive.Root>
             </div>
           </>
         ) : (
@@ -142,50 +198,6 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
           </nav>
         )}
       </div>
-
-      {/* mobile dropdown (landing only) — Landing Page v2.dc.html nav menu */}
-      {variant === 'landing' && menuOpen && (
-        <div className="animate-in fade-in slide-in-from-top-1.5 border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out lg:hidden">
-          <Link
-            to="/$locale"
-            params={{ locale }}
-            hash="how-it-works"
-            onClick={() => setMenuOpen(false)}
-            className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
-          >
-            {strings.nav.howItWorks}
-            <span aria-hidden className="text-primary-text">
-              01
-            </span>
-          </Link>
-          {NAV_SECTIONS.map((key, i) => (
-            <Link
-              key={key}
-              to="/$locale/$section"
-              params={{ locale, section: SECTIONS[key][locale] }}
-              onClick={() => setMenuOpen(false)}
-              aria-current={activeKey === key ? 'page' : undefined}
-              className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
-            >
-              {strings.nav[key]}
-              <span aria-hidden className="text-primary-text">
-                {`0${i + 2}`}
-              </span>
-            </Link>
-          ))}
-          <Link
-            to="/$locale/login"
-            params={{ locale }}
-            onClick={() => setMenuOpen(false)}
-            className="bg-primary text-primary-foreground mt-3.5 block rounded-[7px] px-2 py-[15px] text-center font-bold"
-          >
-            {strings.nav.trackOrder} →
-          </Link>
-          <div className="mt-3.5 flex justify-center">
-            <LocaleSwitcher />
-          </div>
-        </div>
-      )}
     </header>
   )
 }
