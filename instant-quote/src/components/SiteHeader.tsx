@@ -1,15 +1,30 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from '@tanstack/react-router'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useParts } from '@/hooks/useParts'
+import { useScrollSpy } from '@/hooks/useScrollSpy'
 import { LOCALES, useLocale, useStrings, type Locale } from '@/lib/i18n'
 import { setLocaleCookie } from '@/lib/i18n/detect'
 import { SECTIONS, sectionKeyFor } from '@/content/sections'
 
 /** Content sections in nav order — label keys align with strings.nav. */
 const NAV_SECTIONS = ['materials', 'pricing', 'compare', 'blog'] as const
+
+/** Landing section anchors the scroll-spy watches, and the nav item each
+    one lights up (the landing sections preview their content pages). */
+const LANDING_SECTION_IDS = ['how-it-works', 'materials', 'pricing'] as const
+const SPY_NAV_KEY = {
+  'how-it-works': 'howItWorks',
+  materials: 'materials',
+  pricing: 'pricing',
+} as const
 
 /**
  * Sticky site-wide header (design-handoff header bar, made navigational).
@@ -28,7 +43,16 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
   const [menuOpen, setMenuOpen] = useState(false)
   // Current content section, if any — SSR-stable (derived from URL params).
   const { section } = useParams({ strict: false })
-  const activeKey = section ? sectionKeyFor(locale, section) : null
+  const routeKey = section ? sectionKeyFor(locale, section) : null
+  // On the landing page the highlight follows the scroll instead; the spy
+  // starts null, so prerendered HTML never carries an active state.
+  const { pathname } = useLocation()
+  const isLanding = pathname.replace(/\/$/, '') === `/${locale}`
+  const spyId = useScrollSpy(LANDING_SECTION_IDS, isLanding)
+  const activeKey =
+    routeKey ?? (spyId ? SPY_NAV_KEY[spyId as keyof typeof SPY_NAV_KEY] : null)
+  // Route-derived = this IS the page; spy-derived = you're AT this section.
+  const ariaCurrent = routeKey ? ('page' as const) : ('location' as const)
 
   return (
     <header className="bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
@@ -50,7 +74,15 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
                 to="/$locale"
                 params={{ locale }}
                 hash="how-it-works"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-current={
+                  activeKey === 'howItWorks' ? 'location' : undefined
+                }
+                className={cn(
+                  'hover:text-foreground transition-colors',
+                  activeKey === 'howItWorks'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground',
+                )}
               >
                 {strings.nav.howItWorks}
               </Link>
@@ -59,7 +91,7 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
                   key={key}
                   to="/$locale/$section"
                   params={{ locale, section: SECTIONS[key][locale] }}
-                  aria-current={activeKey === key ? 'page' : undefined}
+                  aria-current={activeKey === key ? ariaCurrent : undefined}
                   className={cn(
                     'hover:text-foreground transition-colors',
                     activeKey === key
@@ -154,7 +186,7 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
                         to="/$locale/$section"
                         params={{ locale, section: SECTIONS[key][locale] }}
                         onClick={() => setMenuOpen(false)}
-                        aria-current={activeKey === key ? 'page' : undefined}
+                        aria-current={routeKey === key ? 'page' : undefined}
                         className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
                       >
                         {strings.nav[key]}
