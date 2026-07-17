@@ -102,6 +102,24 @@ export function formatShipDate(
   }).format(new Date(Date.UTC(d.y, d.m - 1, d.d)))
 }
 
+/**
+ * Uppercase short weekday from the API's structured CalDate, for the landing
+ * SHIPS chip (e.g. "THU" / "CZW").
+ */
+export function formatShipWeekday(
+  d: { y: number; m: number; d: number },
+  locale: Locale,
+): string {
+  return dateFmt(locale, {
+    key: 'ship-weekday',
+    weekday: 'short',
+    timeZone: 'UTC',
+  })
+    .format(new Date(Date.UTC(d.y, d.m - 1, d.d)))
+    .replace('.', '')
+    .toUpperCase()
+}
+
 /** Localized weekday name for an ISO date (pricing-page ship examples). */
 export function formatWeekday(isoDate: string, locale: Locale): string {
   return dateFmt(locale, {

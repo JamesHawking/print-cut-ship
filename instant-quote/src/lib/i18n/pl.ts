@@ -62,10 +62,6 @@ export const pl = {
     sample: 'Nie masz pliku pod ręką? Wypróbuj przykładową część →',
     privacy:
       'Prywatność — pliki służą wyłącznie do przygotowania wyceny i są usuwane automatycznie, jeśli nie zamówisz',
-    figCaption: 'Zautomatyzowana linia — druk · odbiór · pakowanie · wysyłka',
-    figAlt:
-      'Zautomatyzowana linia produkcyjna: część jest drukowana w 3D, przenoszona przez ramię robota i pakowana do wysyłki.',
-    figNo: 'Rys. 01',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
       'materiałów FDM',
@@ -93,23 +89,45 @@ export const pl = {
   process: {
     n: '01',
     heading: 'Od pliku do daty wysyłki w trzech krokach',
+    intro:
+      'To nie formularz zapytania. Maszyna prowadzi Twój plik przez linię — zmierzony, wyceniony i z wiążącą datą wysyłki w niecałą minutę.',
+    // Trace lines read like a machine log: trace2 renders as
+    // pre + accented span + post (accent tone is per-station design).
     steps: [
       {
         n: '01',
-        title: 'Wgraj',
-        body: 'Upuść plik STL, 3MF, OBJ lub STEP. Geometria jest mierzona bezpośrednio w przeglądarce, a plik przechowujemy bezpiecznie na potrzeby druku — usuniemy go automatycznie, jeśli nie zamówisz.',
+        kicker: 'WGRAJ',
+        title: 'Upuść plik',
+        trace1: 'bracket_v2.stl · 1,8 MB',
+        trace2Pre: 'zmierzono w przeglądarce ',
+        trace2Accent: 'OK',
+        trace2Post: '',
       },
       {
         n: '02',
-        title: 'Wyceń',
-        body: 'Przejrzysta wycena z rozbiciem na pozycje pojawia się w kilka sekund. Materiał, czas maszynowy, ilość, termin — każdą liczbę da się wyjaśnić.',
+        kicker: 'WYCEŃ',
+        title: 'Zobacz liczby',
+        trace1: 'materiał + maszyna × ilość × termin',
+        trace2Pre: '',
+        trace2Accent: '123,60 zł',
+        trace2Post: ' z VAT · rozbicie na pozycje',
       },
       {
         n: '03',
-        title: 'Zamów',
-        body: 'Wybierz materiał i ilość, zobacz realną datę wysyłki i złóż zamówienie. Bez konta, bez telefonu od handlowca, bez czekania.',
+        kicker: 'ZAMÓW',
+        title: 'Zablokuj termin',
+        trace1: 'bez konta · bez telefonu od handlowca',
+        trace2Pre: 'potwierdzono 09:41:38',
+        trace2Accent: '',
+        trace2Post: '',
       },
     ],
+    ships: 'WYSYŁKA',
+    // "D+1" is the courier-transit claim from the ticker; the weekday is the
+    // engine's real express ship date (GET /api/v1/ship-dates).
+    shipsDate: (weekday: string) => `${weekday} · D+1`,
+    shipsDateFallback: 'D+1',
+    shipsCutoff: 'PL / DE · zamówienia do 14:00',
   },
   materialsSection: {
     n: '02',

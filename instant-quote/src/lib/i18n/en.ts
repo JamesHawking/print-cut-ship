@@ -51,10 +51,6 @@ export const en = {
     sample: 'No file handy? Try a sample part →',
     privacy:
       'Private — files are used only to prepare your quote and auto-deleted if you don’t order',
-    figCaption: 'Automated line — print · pick · pack · ship',
-    figAlt:
-      'Automated production line: a part is 3D-printed, moved by a robot arm, then packed for shipping.',
-    figNo: 'Fig. 01',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
       'FDM materials',
@@ -82,23 +78,45 @@ export const en = {
   process: {
     n: '01',
     heading: 'File to ship date in three steps',
+    intro:
+      'Not a request form. The machine takes your file down the line — measured, priced, and committed to a ship date in under a minute.',
+    // Trace lines read like a machine log: trace2 renders as
+    // pre + accented span + post (accent tone is per-station design).
     steps: [
       {
         n: '01',
-        title: 'Upload',
-        body: 'Drop an STL, 3MF, OBJ or STEP. The geometry is measured right in your browser, and your file is stored securely so we can print it — auto-deleted if you don’t order.',
+        kicker: 'UPLOAD',
+        title: 'Drop the file',
+        trace1: 'bracket_v2.stl · 1.8 MB',
+        trace2Pre: 'measured in-browser ',
+        trace2Accent: 'OK',
+        trace2Post: '',
       },
       {
         n: '02',
-        title: 'Price',
-        body: 'A transparent, itemized quote appears in seconds. Material, machine time, quantity, lead time — every number is explainable.',
+        kicker: 'PRICE',
+        title: 'Read the numbers',
+        trace1: 'material + machine × qty × lead',
+        trace2Pre: '',
+        trace2Accent: '123,60 zł',
+        trace2Post: ' incl. VAT · itemized',
       },
       {
         n: '03',
-        title: 'Order',
-        body: 'Pick material and quantity, see a real ship date, and place the order. No account, no sales call, no waiting.',
+        kicker: 'ORDER',
+        title: 'Lock the date',
+        trace1: 'no account · no sales call',
+        trace2Pre: 'confirmed 09:41:38',
+        trace2Accent: '',
+        trace2Post: '',
       },
     ],
+    ships: 'SHIPS',
+    // "D+1" is the courier-transit claim from the ticker; the weekday is the
+    // engine's real express ship date (GET /api/v1/ship-dates).
+    shipsDate: (weekday: string) => `${weekday} · D+1`,
+    shipsDateFallback: 'D+1',
+    shipsCutoff: 'PL / DE · 14:00 cutoff',
   },
   materialsSection: {
     n: '02',

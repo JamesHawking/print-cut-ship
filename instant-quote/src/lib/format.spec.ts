@@ -5,6 +5,7 @@ import {
   formatPlacedDate,
   formatPln,
   formatShipDate,
+  formatShipWeekday,
   formatVolume,
 } from './format'
 
@@ -29,6 +30,14 @@ describe('formatShipDate', () => {
   test('localized weekday/day/month from CalDate', () => {
     expect(formatShipDate(d, 'en')).toBe('Thu 16 Jul')
     expect(formatShipDate(d, 'pl')).toBe('czw., 16 lip')
+  })
+})
+
+describe('formatShipWeekday', () => {
+  const d = { y: 2026, m: 7, d: 16 }
+  test('uppercase short weekday, PL abbreviation dot stripped', () => {
+    expect(formatShipWeekday(d, 'en')).toBe('THU')
+    expect(formatShipWeekday(d, 'pl')).toBe('CZW')
   })
 })
 
