@@ -248,7 +248,8 @@ export const en = {
     headerMultiplier: 'Multiplier',
     orderedLabel: (weekday: string, time: string) =>
       `Ordered: ${weekday}, ${time}`,
-    shipsLabel: (lead: string, weekday: string) => `${lead} → ships ${weekday}`,
+    shipsLabel: (lead: string, days: number, weekday: string) =>
+      `${lead} · ${days} business days → ships ${weekday}`,
     minimumsTitle: 'Minimums & shipping',
     minOrderExampleTitle: 'When the minimum binds',
     fullRateCardLink: 'Full rate card →',

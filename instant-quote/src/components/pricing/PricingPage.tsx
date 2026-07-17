@@ -252,6 +252,7 @@ export function PricingPage() {
                           <dt>
                             {s.shipsLabel(
                               leadNames[lead.id] ?? lead.id,
+                              lead.businessDays,
                               formatWeekday(example.shipIso[lead.id], locale),
                             )}
                           </dt>

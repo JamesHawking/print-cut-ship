@@ -258,8 +258,8 @@ export const pl = {
     headerMultiplier: 'Mnożnik',
     orderedLabel: (weekday: string, time: string) =>
       `Zamówienie: ${weekday}, ${time}`,
-    shipsLabel: (lead: string, weekday: string) =>
-      `${lead} → wysyłka ${weekday}`,
+    shipsLabel: (lead: string, days: number, weekday: string) =>
+      `${lead} · ${days} dni rob. → wysyłka ${weekday}`,
     minimumsTitle: 'Minima i wysyłka',
     minOrderExampleTitle: 'Kiedy minimum ma znaczenie',
     fullRateCardLink: 'Pełny cennik →',
