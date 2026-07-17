@@ -1,5 +1,6 @@
-import type { ComponentProps, ComponentType } from 'react'
+import type { ComponentProps, ComponentType, ReactNode } from 'react'
 import { QuoteCta } from '@/components/QuoteCta'
+import { useStrings } from '@/lib/i18n'
 
 /**
  * Element mapping for article MDX bodies, styled to the site's design
@@ -13,9 +14,13 @@ export function mdxComponents(
   sourcePage: string,
 ): Record<string, ComponentType<never>> {
   const components = {
+    // Numbered like the site's SectionHeading: the article wrapper sets
+    // [counter-reset:sec]; each h2 increments and prints 01, 02, … via its
+    // ::before (the rehype-autolink anchor wraps the text, so ::before sits
+    // outside the link).
     h2: (props: ComponentProps<'h2'>) => (
       <h2
-        className="[&>a:hover]:decoration-primary mt-14 scroll-mt-24 text-2xl font-extrabold tracking-tight [&>a]:text-inherit [&>a]:no-underline [&>a:hover]:underline [&>a:hover]:underline-offset-4"
+        className="[&>a:hover]:decoration-primary before:text-primary-text mt-14 flex scroll-mt-24 items-baseline gap-4 border-b pb-3.5 text-2xl font-extrabold tracking-tight [counter-increment:sec] before:font-mono before:text-xs before:font-bold before:tracking-[0.14em] before:tabular-nums before:content-[counter(sec,decimal-leading-zero)] [&>a]:text-inherit [&>a]:no-underline [&>a:hover]:underline [&>a:hover]:underline-offset-4"
         {...props}
       />
     ),
@@ -49,7 +54,10 @@ export function mdxComponents(
       </div>
     ),
     figure: (props: ComponentProps<'figure'>) => (
-      <figure className="mt-8" {...props} />
+      <figure
+        className="bg-primary/5 mt-8 rounded-lg border p-6 sm:p-8"
+        {...props}
+      />
     ),
     figcaption: (props: ComponentProps<'figcaption'>) => (
       <figcaption
@@ -84,6 +92,21 @@ export function mdxComponents(
         <QuoteCta variant="compact" sourcePage={sourcePage} />
       </div>
     ),
+    // Author-placed verdict panel ("the short version" of the article) —
+    // bolded phrases render as primary underlines, datasheet-style.
+    KeyTakeaway: ({ children }: { children?: ReactNode }) => {
+      const s = useStrings().blogPages
+      return (
+        <aside className="bg-primary/5 mt-8 rounded-lg border p-6 sm:p-7">
+          <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase">
+            {s.shortVersionLabel}
+          </span>
+          <div className="[&_strong]:border-primary mt-3 [&_p]:m-0 [&_p]:font-mono [&_p]:text-[15px] [&_p]:leading-loose [&_p]:font-semibold [&_strong]:border-b-2 [&_strong]:font-semibold">
+            {children}
+          </div>
+        </aside>
+      )
+    },
   }
   return components as Record<string, ComponentType<never>>
 }

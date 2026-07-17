@@ -26,9 +26,19 @@ export const blogFrontmatterSchema = z
     tags: z.array(z.string().regex(KEBAB)).min(1).max(5),
     /** Shared across a translation pair; unique within a locale. */
     translationKey: z.string().regex(KEBAB),
+    /** The article's one number, shown in the datasheet hero (e.g. "±0.3 mm"). */
+    keyFigure: z.string().min(1).max(16).optional(),
+    /** Label under keyFigure (e.g. "The number to design to"). */
+    keyFigureLabel: z.string().min(1).max(48).optional(),
   })
   .refine((fm) => !fm.updated || fm.updated >= fm.date, {
     message: 'updated must not precede date',
   })
+  .refine(
+    (fm) => (fm.keyFigure === undefined) === (fm.keyFigureLabel === undefined),
+    {
+      message: 'keyFigure and keyFigureLabel come together',
+    },
+  )
 
 export type BlogFrontmatter = z.infer<typeof blogFrontmatterSchema>

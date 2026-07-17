@@ -328,8 +328,31 @@ export const pl = {
     updatedLabel: 'Aktualizacja',
     authorRole: 'Zespół inżynierski MICRO_FACTORY',
     readingTime: (min: number) => `${min} min czytania`,
+    readingTimeLabel: 'Czas czytania',
+    tagsLabel: 'Tagi',
     tocTitle: 'Spis treści',
+    scrollHint: 'przewiń →',
+    shortVersionLabel: 'W skrócie',
     relatedTitle: 'Powiązane artykuły',
+    newestLabel: 'Najnowszy',
+    readGuide: 'Czytaj przewodnik →',
+    allGuidesTitle: 'Wszystkie przewodniki',
+    guidesCount: (n: number) =>
+      `${n} ${plPlural(n, 'przewodnik', 'przewodniki', 'przewodników')}`,
+    rssNote: 'nowe przewodniki przez',
+    rssLinkLabel: 'RSS ↗',
+    writtenBy: 'Pisane przez zespół inżynierski MICRO_FACTORY',
+    // Feature-panel figure caption + factual annotation, per translationKey.
+    featureFigures: {
+      'fdm-tolerances': {
+        caption: 'Rys. 01 — Klasy tolerancji',
+        annotation: '±0,3 MM / 100 MM',
+      },
+      'fdm-design-guide': {
+        caption: 'Rys. 01 — Anizotropia warstw',
+        annotation: 'Z ≈ 50–80% XY',
+      },
+    } as Record<string, { caption: string; annotation: string }>,
     rssTitle: 'Baza wiedzy MICRO_FACTORY (RSS)',
     rssDescription:
       'Nowe przewodniki inżynierskie po druku 3D FDM od MICRO_FACTORY.',
