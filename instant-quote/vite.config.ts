@@ -17,6 +17,11 @@ const SITE_URL = process.env.VITE_SITE_URL ?? 'https://microfactory.example'
 // have LOCALIZED slugs, so each entry names its per-locale paths explicitly
 // (mirrors src/content/materials/slugs.ts). New content routes go here.
 const MATERIAL_SLUGS = ['petg', 'asa', 'pa12-cf']
+const COMPARE_SLUGS = [
+  'asa-vs-petg',
+  'pa-cf-vs-aluminum',
+  'print-in-house-vs-order',
+]
 const localizedPages: Array<{
   paths: { pl: string; en: string }
   priority: number
@@ -27,6 +32,11 @@ const localizedPages: Array<{
   ...MATERIAL_SLUGS.map((slug) => ({
     paths: { pl: `/pl/materialy/${slug}`, en: `/en/materials/${slug}` },
     priority: 0.9,
+  })),
+  { paths: { pl: '/pl/porownanie', en: '/en/compare' }, priority: 0.7 },
+  ...COMPARE_SLUGS.map((slug) => ({
+    paths: { pl: `/pl/porownanie/${slug}`, en: `/en/compare/${slug}` },
+    priority: 0.8,
   })),
 ]
 const publicPages = localizedPages.flatMap(({ paths, priority }) =>

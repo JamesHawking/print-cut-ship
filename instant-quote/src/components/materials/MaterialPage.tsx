@@ -28,6 +28,8 @@ import {
   REFERENCE_QUANTITIES,
   referenceUnitPrice,
 } from '@/content/materials/prices'
+import { COMPARE_SECTION, comparisonsFor } from '@/content/compare/slugs'
+import { compareCopy } from '@/content/compare/copy'
 
 /** One template for every material landing page (seo_prompts/02). */
 export function MaterialPage({ slug }: { slug: MaterialSlug }) {
@@ -247,6 +249,20 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
                   </Link>
                 )
               })}
+              {comparisonsFor(id).map((compareSlug) => (
+                <Link
+                  key={compareSlug}
+                  to="/$locale/$section/$detail"
+                  params={{
+                    locale,
+                    section: COMPARE_SECTION[locale],
+                    detail: compareSlug,
+                  }}
+                  className="text-primary-text hover:text-foreground font-bold transition-colors"
+                >
+                  {compareCopy(locale)[compareSlug].title} →
+                </Link>
+              ))}
               <Link
                 to="/$locale/$section"
                 params={{ locale, section: SECTIONS.pricing[locale] }}

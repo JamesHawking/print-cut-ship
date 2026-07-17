@@ -153,14 +153,16 @@ placeholder) so prerendered HTML stays hydration-stable.
 referrer, source?}` fires from the router's `onResolved` subscription
 (`src/router.tsx`). Events stay console-only PostHog-shaped (`src/lib/funnel.ts`).
 
-**Content sections** (materials, pricing) live under the localized
+**Content sections** (materials, pricing, compare) live under the localized
 `$section` segment with per-locale URL words registered in
 `src/content/sections.ts` (`/pl/materialy`↔`/en/materials`,
-`/pl/cennik`↔`/en/pricing`; wrong-language words redirect). New sections
-register there, branch in `$section/index.tsx`, and add their paths to
-`vite.config.ts` `localizedPages`. The pricing page interpolates every zł
-amount from the engine dataset (`no-literal-prices.spec.ts` enforces it);
-its volume slider is the one content-page API consumer (client-side only).
+`/pl/cennik`↔`/en/pricing`, `/pl/porownanie`↔`/en/compare`; wrong-language
+words redirect). New sections register there, branch in `$section/index.tsx`
+and (for detail pages) in the shared `$section/$detail.tsx` param route, and
+add their paths to `vite.config.ts` `localizedPages`. The pricing and compare
+pages interpolate every zł amount from the engine dataset
+(`no-literal-prices.spec.ts` enforces it across both trees); the pricing
+volume slider is the one content-page API consumer (client-side only).
 
 **Material pages** live under the same segment.
 Adding one: append the slug to `PUBLISHED_MATERIALS`
@@ -171,6 +173,17 @@ the material to `MATERIAL_DATA` (`data.ts`) and both copy files (`pl.ts` /
 paths in `vite.config.ts` `localizedPages` (sitemap + prerender). Prices on
 content pages come ONLY from the generated `reference-prices.json` — never
 call the API from a prerendered page.
+
+**Comparison pages** (seo_prompts/04) share that segment too
+(`/pl/porownanie/asa-vs-petg` ↔ `/en/compare/asa-vs-petg`; slugs identical
+across locales). Adding one: register it in `COMPARISONS`
+(`src/content/compare/slugs.ts`, with the material ids it should backlink
+from), add `COMPARE_DATES` + any static cited figures to `data.ts` (bare
+`Pln`-named numbers, source comments, rendered footnotes), write both copy
+files (`pl.ts` is the `CompareCopy` type source), extend the slug switch in
+`ComparePage.tsx` if it needs its own table shape, and list the paths in
+`localizedPages`. Engine numbers only via the `reference-prices` accessors;
+cited external figures stay in `data.ts` and are labelled as not our quote.
 
 ## Intentional fakes (this is a prototype)
 
