@@ -26,24 +26,37 @@ export function localizedPath(pathname: string, locale: Locale): string {
  * rel=alternate for every locale plus x-default (→ the default locale).
  * Pages with localized slugs (e.g. /pl/materialy vs /en/materials) pass
  * explicit per-locale `alternates`; otherwise the /pl|/en prefix is swapped.
+ * An explicit alternates object may be PARTIAL (blog article without a
+ * translation): only the locales present are emitted — never an hreflang
+ * link to a 404 — and x-default falls back to whichever exists.
  */
 export function hreflangLinks(
   pathname: string,
-  alternates?: Record<Locale, string>,
+  alternates?: Partial<Record<Locale, string>>,
 ) {
+  const locales = alternates
+    ? LOCALES.filter((locale) => alternates[locale] !== undefined)
+    : LOCALES
   const pathFor = (locale: Locale) =>
     alternates?.[locale] ?? localizedPath(pathname, locale)
+  const xDefault = locales.includes(DEFAULT_LOCALE)
+    ? DEFAULT_LOCALE
+    : locales[0]
   return [
-    ...LOCALES.map((locale) => ({
+    ...locales.map((locale) => ({
       rel: 'alternate',
       hrefLang: locale,
       href: `${SITE_URL}${pathFor(locale)}`,
     })),
-    {
-      rel: 'alternate',
-      hrefLang: 'x-default',
-      href: `${SITE_URL}${pathFor(DEFAULT_LOCALE)}`,
-    },
+    ...(xDefault !== undefined
+      ? [
+          {
+            rel: 'alternate',
+            hrefLang: 'x-default',
+            href: `${SITE_URL}${pathFor(xDefault)}`,
+          },
+        ]
+      : []),
   ]
 }
 
@@ -55,8 +68,13 @@ export interface SeoOptions {
   description: string
   /** Absolute or site-relative OG image; defaults to the branded card. */
   image?: string
-  /** Explicit per-locale paths for localized slugs (hreflang + x-default). */
-  alternates?: Record<Locale, string>
+  /**
+   * Explicit per-locale paths for localized slugs (hreflang + x-default).
+   * May be partial when the page has no counterpart in some locale.
+   */
+  alternates?: Partial<Record<Locale, string>>
+  /** og:type; editorial pages (blog articles) pass 'article'. */
+  type?: 'website' | 'article'
   /** Transactional app screens: emit robots noindex, skip canonical/OG/hreflang. */
   noindex?: boolean
 }
@@ -73,6 +91,7 @@ export function seoHead({
   description,
   image = '/og.png',
   alternates,
+  type = 'website',
   noindex,
 }: SeoOptions): {
   meta: Array<Record<string, string>>
@@ -97,7 +116,7 @@ export function seoHead({
     meta: [
       { title },
       { name: 'description', content: description },
-      { property: 'og:type', content: 'website' },
+      { property: 'og:type', content: type },
       { property: 'og:site_name', content: SITE_NAME },
       { property: 'og:locale', content: OG_LOCALE[locale] },
       { property: 'og:title', content: title },

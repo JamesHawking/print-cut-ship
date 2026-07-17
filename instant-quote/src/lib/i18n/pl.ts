@@ -310,6 +310,29 @@ export const pl = {
     tcoTotalCosted: 'Razem, z kosztem pracy',
     tcoOrdered: 'Zamówienie u nas — 1 szt., brutto z wysyłką',
   },
+  // Blog / baza wiedzy — UI chrome only; article prose lives in
+  // src/content/blog/{pl,en}/*.mdx.
+  blogPages: {
+    breadcrumb: 'Baza wiedzy',
+    indexTitle: 'Baza wiedzy o druku 3D FDM | MICRO_FACTORY',
+    indexDescription:
+      'Przewodniki inżynierskie po druku FDM: grubości ścian, orientacja, tolerancje, pasowania. Konkretne liczby zamiast przymiotników.',
+    indexHeading: 'Baza wiedzy',
+    indexIntro:
+      'Praktyczne przewodniki po projektowaniu części do druku FDM — pisane przez inżynierów dla inżynierów, na podstawie tego, co naprawdę schodzi z naszych maszyn.',
+    tagFilterLabel: 'Filtruj po tagu',
+    allTag: 'wszystkie',
+    emptyFiltered: 'Brak artykułów z tym tagiem.',
+    publishedLabel: 'Opublikowano',
+    updatedLabel: 'Aktualizacja',
+    authorRole: 'Zespół inżynierski MICRO_FACTORY',
+    readingTime: (min: number) => `${min} min czytania`,
+    tocTitle: 'Spis treści',
+    relatedTitle: 'Powiązane artykuły',
+    rssTitle: 'Baza wiedzy MICRO_FACTORY (RSS)',
+    rssDescription:
+      'Nowe przewodniki inżynierskie po druku 3D FDM od MICRO_FACTORY.',
+  },
   // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
   cta: {
     headline: 'Masz część pod ręką?',

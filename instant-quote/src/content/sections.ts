@@ -10,6 +10,7 @@ export const SECTIONS = {
   materials: { pl: 'materialy', en: 'materials' },
   pricing: { pl: 'cennik', en: 'pricing' },
   compare: { pl: 'porownanie', en: 'compare' },
+  blog: { pl: 'baza-wiedzy', en: 'blog' },
 } as const
 
 export type SectionKey = keyof typeof SECTIONS

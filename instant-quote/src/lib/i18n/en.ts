@@ -296,6 +296,28 @@ export const en = {
     tcoTotalCosted: 'Total, with labor costed',
     tcoOrdered: 'Ordered from us — 1 pc, gross with shipping',
   },
+  // Blog — UI chrome only; article prose lives in src/content/blog.
+  blogPages: {
+    breadcrumb: 'Blog',
+    indexTitle: 'FDM 3D printing knowledge base | MICRO_FACTORY',
+    indexDescription:
+      'Engineering guides to FDM printing: wall thickness, orientation, tolerances, fits. Concrete numbers instead of adjectives.',
+    indexHeading: 'Knowledge base',
+    indexIntro:
+      'Practical guides to designing parts for FDM printing — written by engineers for engineers, based on what actually comes off our machines.',
+    tagFilterLabel: 'Filter by tag',
+    allTag: 'all',
+    emptyFiltered: 'No articles with this tag.',
+    publishedLabel: 'Published',
+    updatedLabel: 'Updated',
+    authorRole: 'MICRO_FACTORY engineering team',
+    readingTime: (min: number) => `${min} min read`,
+    tocTitle: 'Contents',
+    relatedTitle: 'Related articles',
+    rssTitle: 'MICRO_FACTORY knowledge base (RSS)',
+    rssDescription:
+      'New engineering guides to FDM 3D printing from MICRO_FACTORY.',
+  },
   // Shared quote CTA (QuoteCta.tsx) — every content page ends in it.
   cta: {
     headline: 'Have a part in hand?',

@@ -99,6 +99,38 @@ describe('localized-slug alternates', () => {
       `${SITE_URL}/pl/materialy/asa`,
     )
   })
+  test('partial alternates emit only present locales', () => {
+    // Blog article without a translation: no hreflang link to a 404.
+    const links = hreflangLinks('/en/blog/en-only', { en: '/en/blog/en-only' })
+    expect(links.map((l) => l.hrefLang).sort()).toEqual(['en', 'x-default'])
+    // x-default falls back to the only existing locale.
+    expect(links.find((l) => l.hrefLang === 'x-default')?.href).toBe(
+      `${SITE_URL}/en/blog/en-only`,
+    )
+  })
+  test('og:type defaults to website, articles override', () => {
+    const base = seoHead({
+      locale: 'en',
+      path: '/en',
+      title: 'T',
+      description: 'D',
+    })
+    expect(base.meta).toContainEqual({
+      property: 'og:type',
+      content: 'website',
+    })
+    const article = seoHead({
+      locale: 'en',
+      path: '/en/blog/x',
+      title: 'T',
+      description: 'D',
+      type: 'article',
+    })
+    expect(article.meta).toContainEqual({
+      property: 'og:type',
+      content: 'article',
+    })
+  })
   test('seoHead threads alternates through', () => {
     const head = seoHead({
       locale: 'en',

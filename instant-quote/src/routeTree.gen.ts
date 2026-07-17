@@ -17,6 +17,8 @@ import { Route as LocaleOrdersRouteImport } from './routes/$locale/orders'
 import { Route as LocaleLoginRouteImport } from './routes/$locale/login'
 import { Route as LocaleSectionRouteRouteImport } from './routes/$locale/$section/route'
 import { Route as LocaleSectionIndexRouteImport } from './routes/$locale/$section/index'
+import { Route as PlBazaWiedzyRssDotxmlRouteImport } from './routes/pl/baza-wiedzy/rss[.]xml'
+import { Route as EnBlogRssDotxmlRouteImport } from './routes/en/blog/rss[.]xml'
 import { Route as LocaleSectionDetailRouteImport } from './routes/$locale/$section/$detail'
 
 const LocaleRouteRoute = LocaleRouteRouteImport.update({
@@ -59,6 +61,16 @@ const LocaleSectionIndexRoute = LocaleSectionIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LocaleSectionRouteRoute,
 } as any)
+const PlBazaWiedzyRssDotxmlRoute = PlBazaWiedzyRssDotxmlRouteImport.update({
+  id: '/pl/baza-wiedzy/rss.xml',
+  path: '/pl/baza-wiedzy/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnBlogRssDotxmlRoute = EnBlogRssDotxmlRouteImport.update({
+  id: '/en/blog/rss.xml',
+  path: '/en/blog/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocaleSectionDetailRoute = LocaleSectionDetailRouteImport.update({
   id: '/$detail',
   path: '/$detail',
@@ -74,6 +86,8 @@ export interface FileRoutesByFullPath {
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale/': typeof LocaleIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
+  '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
+  '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
 }
 export interface FileRoutesByTo {
@@ -83,6 +97,8 @@ export interface FileRoutesByTo {
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale': typeof LocaleIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
+  '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
+  '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section': typeof LocaleSectionIndexRoute
 }
 export interface FileRoutesById {
@@ -95,6 +111,8 @@ export interface FileRoutesById {
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale/': typeof LocaleIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
+  '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
+  '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
 }
 export interface FileRouteTypes {
@@ -108,6 +126,8 @@ export interface FileRouteTypes {
     | '/$locale/quote'
     | '/$locale/'
     | '/$locale/$section/$detail'
+    | '/en/blog/rss.xml'
+    | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,6 +137,8 @@ export interface FileRouteTypes {
     | '/$locale/quote'
     | '/$locale'
     | '/$locale/$section/$detail'
+    | '/en/blog/rss.xml'
+    | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section'
   id:
     | '__root__'
@@ -128,12 +150,16 @@ export interface FileRouteTypes {
     | '/$locale/quote'
     | '/$locale/'
     | '/$locale/$section/$detail'
+    | '/en/blog/rss.xml'
+    | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LocaleRouteRoute: typeof LocaleRouteRouteWithChildren
+  EnBlogRssDotxmlRoute: typeof EnBlogRssDotxmlRoute
+  PlBazaWiedzyRssDotxmlRoute: typeof PlBazaWiedzyRssDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -194,6 +220,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleSectionIndexRouteImport
       parentRoute: typeof LocaleSectionRouteRoute
     }
+    '/pl/baza-wiedzy/rss.xml': {
+      id: '/pl/baza-wiedzy/rss.xml'
+      path: '/pl/baza-wiedzy/rss.xml'
+      fullPath: '/pl/baza-wiedzy/rss.xml'
+      preLoaderRoute: typeof PlBazaWiedzyRssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/en/blog/rss.xml': {
+      id: '/en/blog/rss.xml'
+      path: '/en/blog/rss.xml'
+      fullPath: '/en/blog/rss.xml'
+      preLoaderRoute: typeof EnBlogRssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$locale/$section/$detail': {
       id: '/$locale/$section/$detail'
       path: '/$detail'
@@ -240,6 +280,8 @@ const LocaleRouteRouteWithChildren = LocaleRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LocaleRouteRoute: LocaleRouteRouteWithChildren,
+  EnBlogRssDotxmlRoute: EnBlogRssDotxmlRoute,
+  PlBazaWiedzyRssDotxmlRoute: PlBazaWiedzyRssDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

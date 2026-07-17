@@ -123,3 +123,14 @@ export function formatPlacedDate(iso: string, locale: Locale): string {
     timeZone: 'Europe/Warsaw',
   }).format(new Date(iso))
 }
+
+/** Blog published/updated date (ISO day, frontmatter) — day + full month + year. */
+export function formatArticleDate(isoDate: string, locale: Locale): string {
+  return dateFmt(locale, {
+    key: 'article',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${isoDate}T00:00:00Z`))
+}

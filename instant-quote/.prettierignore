@@ -6,3 +6,4 @@ dist
 bun.lock
 src/routeTree.gen.ts
 .impeccable
+*.mdx

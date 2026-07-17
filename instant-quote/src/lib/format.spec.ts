@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  formatArticleDate,
   formatDims,
   formatPlacedDate,
   formatPln,
@@ -39,6 +40,13 @@ describe('formatPlacedDate', () => {
   test('pinned to the Warsaw business day, not the viewer zone', () => {
     // 23:00 UTC = 01:00 next day in Warsaw (CEST) — the shop's calendar wins.
     expect(formatPlacedDate('2026-07-15T23:00:00Z', 'en')).toBe('16 Jul')
+  })
+})
+
+describe('formatArticleDate', () => {
+  test('day + full month + year from a frontmatter ISO day', () => {
+    expect(formatArticleDate('2026-07-10', 'en')).toBe('10 July 2026')
+    expect(formatArticleDate('2026-07-10', 'pl')).toBe('10 lipca 2026')
   })
 })
 
