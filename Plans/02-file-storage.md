@@ -1,6 +1,20 @@
 # Plan 02 — File storage for uploaded models
 
-> **Status: ⬜ Not started** (as of 2026-07-16).
+> **Status: ✅ Done with notes** (2026-07-17). Storage client, presigned upload
+> endpoints, upload-confirm, file↔quote linkage, MakerWorld tee, and the
+> retention sweep shipped earlier; the deferred security-critical half landed
+> 2026-07-17: server-side geometry recompute (`internal/mesh` + Go port of the
+> client pipeline) wired into `POST /quotes` as `httpapi.recomputeQuoteParts`,
+> so the price is computed from stored bytes. **Notes:** (1) recompute is
+> _tolerance-based authoritative_, not the brief's bit-exact `VerifyOrderPricing`
+> — the server is authoritative, so no convex-hull port and non-watertight
+> meshes defer to client metrics + a flag (see `backend/README.md` mesh section
+> and `instant-quote/references/seekmake-public-api.md` for the rationale);
+> (2) placed in `httpapi/verify.go` (not `internal/orders`) — plan 05 extracts
+> the order-time call site mechanically; (3) STEP `manual_verify` remains
+> plans 05/07 as designed; (4) the `files.kind` migration comment (`'mesh'|'step'`)
+> is stale vs the actual `stl/obj/3mf/step` — no comment-only migration; fix in
+> the next real files migration.
 
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`). Storage client, upload endpoints, recompute, and retention all live in `backend/` (Go); the browser talks to them through the OpenAPI client.
 

@@ -87,8 +87,29 @@ deduped by content hash; MakerWorld downloads are teed into storage server-side.
 - Storage-backed tests need `TEST_S3_ENDPOINT` (e.g. `localhost:9000`) in
   addition to `TEST_DATABASE_URL`; skipped otherwise.
 
-The Go **mesh port** and order-time price re-verification (`VerifyOrderPricing`)
-are intentionally deferred — required before/with plan 05.
+### Mesh recompute (server-side geometry)
+
+`POST /api/v1/quotes` re-parses each part's stored file and recomputes its
+geometry in Go (`internal/mesh`) before pricing, so the price rides on bytes
+the server holds — not client-submitted metrics (`httpapi.recomputeQuoteParts`,
+wired ahead of `priceParts`). Watertight meshes are authoritative; non-watertight
+ones keep the client's metrics (the client priced via its convex-hull fallback,
+which Go does not port) and log the divergence; a stored-bytes hash mismatch is a
+hard 400; storage/parse failures soft-fall-back to client metrics. STEP is not
+recomputed (no Go OCCT); the server view is still persisted to `files.metrics`
+for admin reconciliation (plan 07). The order-time call site is plan 05's.
+
+**Not bit-exact:** the Go port is idiomatic (`encoding/xml` for 3MF, no hull),
+because the server is authoritative — the engines only need tolerance-level
+agreement. 3MF parsing caps cumulative decompression (zip-bomb guard, a
+server-only exposure). Golden fixtures are generated from the real TS pipeline:
+
+```sh
+cd ../instant-quote && bun tests/golden/mesh-generate.ts   # writes backend/internal/mesh/testdata/golden.json
+```
+
+Goldens compare at relative 1e-6; hull-fallback cases assert only the
+hull-independent fields. Quote-time drift beyond relative 1e-3 is logged.
 
 ## API
 
@@ -100,8 +121,8 @@ make test       # go test ./...
 ```
 
 Endpoints: `POST /api/v1/price`, `GET /api/v1/config`,
-`GET /api/v1/ship-dates`, `POST /api/v1/quotes`, `POST /api/v1/step-quotes`,
-`POST /api/v1/makerworld/fetch`, `GET /healthz`.
+`GET /api/v1/ship-dates`, `POST /api/v1/quotes`, `GET /api/v1/quotes/{id}`,
+`POST /api/v1/step-quotes`, `POST /api/v1/makerworld/fetch`, `GET /healthz`.
 
 `quotes` and `step-quotes` are still honest stubs (log + generated ID — no
 persistence yet; that's roadmap topic 1), but prices are recomputed
