@@ -1,5 +1,6 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
+import { NotFoundPage } from './components/NotFoundPage'
 import { track } from './lib/funnel'
 import { isLocale } from './lib/i18n'
 
@@ -9,6 +10,7 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
+    defaultNotFoundComponent: NotFoundPage,
   })
 
   // page_view per resolved navigation (initial load included) — client only;

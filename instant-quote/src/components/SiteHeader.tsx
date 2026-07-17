@@ -57,9 +57,12 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
   return (
     <header className="bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 font-mono text-xs tracking-widest uppercase sm:px-6">
+        {/* exact: fuzzy matching would mark the home link current on every
+            page under /$locale (Link force-sets aria-current when active). */}
         <Link
           to="/$locale"
           params={{ locale }}
+          activeOptions={{ exact: true }}
           className="text-foreground hover:text-foreground font-bold"
         >
           {strings.hero.wordmark}
@@ -74,6 +77,10 @@ export function SiteHeader({ variant }: { variant: 'landing' | 'quote' }) {
                 to="/$locale"
                 params={{ locale }}
                 hash="how-it-works"
+                // exact+hash: otherwise the router force-marks this link
+                // aria-current="page" on every /$locale/* page; the scroll
+                // spy owns its current-state instead.
+                activeOptions={{ exact: true, includeHash: true }}
                 aria-current={
                   activeKey === 'howItWorks' ? 'location' : undefined
                 }
