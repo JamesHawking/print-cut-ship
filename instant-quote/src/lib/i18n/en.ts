@@ -196,6 +196,14 @@ export const en = {
     priceFrom: (price: string) => `from ${price}`,
     comingSoon: 'Page coming soon',
     propertiesTitle: 'Properties',
+    detailsLink: 'Details →',
+    datasheetTitle: 'Datasheet — printed, XY',
+    densityRate: 'Density · rate',
+    shipsIn: (days: number) => `ships in ${days} business days`,
+    propertyLabelsShort: {
+      tensile: 'Tensile',
+      hdt: 'HDT',
+    },
     propertyLabels: {
       tensile: 'Tensile strength',
       hdt: 'Heat deflection (HDT)',

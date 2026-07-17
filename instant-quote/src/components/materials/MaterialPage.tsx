@@ -11,6 +11,7 @@ import { SectionHeading } from '@/components/SectionHeading'
 import { QuoteCta } from '@/components/QuoteCta'
 import { ContentBreadcrumb } from './ContentBreadcrumb'
 import { useLocale, useStrings } from '@/lib/i18n'
+import { track } from '@/lib/funnel'
 import { formatDecimal, formatPln } from '@/lib/format'
 import { MATERIALS } from '@/lib/catalog-static'
 import { MATERIAL_DATA } from '@/content/materials/data'
@@ -28,10 +29,16 @@ import {
   REFERENCE_QUANTITIES,
   referenceUnitPrice,
 } from '@/content/materials/prices'
+import { PRICING_CATALOG } from '@/content/pricing/data'
 import { COMPARE_SECTION, comparisonsFor } from '@/content/compare/slugs'
 import { compareCopy } from '@/content/compare/copy'
 
-/** One template for every material landing page (seo_prompts/02). */
+/**
+ * Material landing page in the "Dark datasheet hero" direction (SEO Pages
+ * Revamp 3d): the property table lives as a datasheet card inside the dark
+ * hero next to the promise + CTA; the light body follows with use cases,
+ * the dark reference-price table, guidelines and FAQ.
+ */
 export function MaterialPage({ slug }: { slug: MaterialSlug }) {
   const strings = useStrings()
   const locale = useLocale()
@@ -41,10 +48,12 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
   const copy = materialsCopy(locale)[id]
   const catalog = MATERIALS.find((m) => m.id === id)!
   const sourcePage = `materials/${slug}`
+  const standardLeadDays =
+    PRICING_CATALOG.leadTimes.find((lead) => lead.id === 'standard')
+      ?.businessDays ?? 3
 
-  // Locale-formatted property rows: label from the dictionary, value from
-  // the locale-neutral data module.
-  const properties: Array<[string, string]> = [
+  // Datasheet card rows: label from the dictionary, value locale-formatted.
+  const datasheet: Array<[string, string]> = [
     [s.propertyLabels.tensile, `${data.tensileMPa} MPa`],
     [s.propertyLabels.hdt, `${data.hdtC} °C`],
     [s.propertyLabels.uv, s.ratings[data.uv]],
@@ -58,19 +67,18 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
       `±${formatDecimal(data.toleranceMm, locale, 2)} mm / 100 mm`,
     ],
     [
-      s.propertyLabels.density,
-      `${formatDecimal(catalog.densityGCm3, locale, 2, 2)} g/cm³`,
+      s.densityRate,
+      `${formatDecimal(catalog.densityGCm3, locale, 2, 2)} g/cm³ · ${catalog.plnPerKg} zł/kg`,
     ],
-    [s.propertyLabels.rate, `${catalog.plnPerKg} zł/kg`],
   ]
 
   return (
     <>
       <SiteHeader variant="landing" />
       <main>
-        {/* hero */}
-        <section className="border-b">
-          <div className="mx-auto max-w-6xl px-4 pt-10 pb-14 sm:px-6 md:pt-16">
+        {/* dark datasheet hero */}
+        <section className="dark bg-background text-foreground border-b">
+          <div className="mx-auto max-w-6xl px-4 pt-10 pb-12 sm:px-6 md:pt-16 md:pb-14">
             <ContentBreadcrumb
               items={[
                 { label: s.breadcrumbHome, href: `/${locale}` },
@@ -81,34 +89,82 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
                 { label: catalog.label },
               ]}
             />
-            <h1 className="mt-8 text-[clamp(2.2rem,6vw,4.5rem)] leading-[0.95] font-black tracking-[-0.03em] uppercase">
-              {copy.h1}
-            </h1>
-            <p className="text-muted-foreground mt-6 max-w-2xl text-[17px] leading-relaxed text-pretty">
-              {copy.promise}
-            </p>
+            <div className="mt-8 grid items-start gap-x-16 gap-y-10 lg:grid-cols-[1.3fr_1fr]">
+              <div>
+                <h1 className="text-[clamp(2rem,5vw,3.5rem)] leading-[0.98] font-black tracking-[-0.03em] uppercase">
+                  {copy.h1}
+                </h1>
+                <p className="text-muted-foreground mt-5 max-w-2xl text-[15.5px] leading-relaxed text-pretty">
+                  {copy.promise}
+                </p>
+                <div className="mt-7 flex flex-wrap items-center gap-5">
+                  <Link
+                    to="/$locale"
+                    params={{ locale }}
+                    search={{ source: sourcePage }}
+                    hash="top"
+                    onClick={() =>
+                      track('cta_upload_clicked', { source_page: sourcePage })
+                    }
+                    className="bg-primary text-primary-foreground rounded-md px-6 py-3 text-sm font-bold transition-transform hover:scale-[1.02]"
+                  >
+                    {strings.cta.button} →
+                  </Link>
+                  <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.12em] uppercase tabular-nums">
+                    {s.priceFrom(
+                      formatPln(referenceUnitPrice(id, 'bracket', 1), locale),
+                    )}{' '}
+                    · {s.shipsIn(standardLeadDays)}
+                  </span>
+                </div>
+              </div>
+              {/* datasheet card */}
+              <dl className="bg-card rounded-lg border px-6 py-5">
+                <div className="flex items-baseline justify-between gap-4 border-b pb-3">
+                  <span className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.16em] uppercase">
+                    {s.datasheetTitle}
+                  </span>
+                  <span className="text-primary-text font-mono text-[0.6rem] font-bold tracking-[0.16em] uppercase">
+                    {catalog.label}
+                  </span>
+                </div>
+                {datasheet.map(([label, value], i) => (
+                  <div
+                    key={label}
+                    className={`flex items-baseline justify-between gap-4 py-2.5 ${
+                      i < datasheet.length - 1 ? 'border-b' : 'pb-0'
+                    }`}
+                  >
+                    <dt className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.12em] uppercase">
+                      {label}
+                    </dt>
+                    <dd className="text-right font-mono text-[13.5px] font-bold whitespace-nowrap tabular-nums">
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
         </section>
 
-        {/* 01 — properties */}
+        {/* 01 — use cases */}
         <section className="border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="01" title={s.propertiesTitle} />
-            <dl className="mt-10 grid gap-x-10 sm:grid-cols-2">
-              {properties.map(([label, value]) => (
-                <div
-                  key={label}
-                  className="flex items-baseline justify-between gap-4 border-b py-3.5"
-                >
-                  <dt className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-                    {label}
-                  </dt>
-                  <dd className="font-mono text-sm font-bold tabular-nums">
-                    {value}
-                  </dd>
-                </div>
+            <SectionHeading n="01" title={s.useCasesTitle} />
+            <ul className="mt-10 grid list-none gap-x-10 gap-y-5 p-0 sm:grid-cols-2">
+              {copy.useCases.map((useCase) => (
+                <li key={useCase} className="flex items-baseline gap-3">
+                  <span
+                    aria-hidden
+                    className="bg-primary size-1.5 shrink-0 translate-y-[-2px] rounded-full"
+                  />
+                  <span className="text-[15px] leading-relaxed text-pretty">
+                    {useCase}
+                  </span>
+                </li>
               ))}
-            </dl>
+            </ul>
           </div>
         </section>
 
@@ -164,30 +220,10 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
           </div>
         </section>
 
-        {/* 03 — use cases */}
+        {/* 03 — design guidelines */}
         <section className="border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="03" title={s.useCasesTitle} />
-            <ul className="mt-10 grid list-none gap-x-10 gap-y-5 p-0 sm:grid-cols-2">
-              {copy.useCases.map((useCase) => (
-                <li key={useCase} className="flex items-baseline gap-3">
-                  <span
-                    aria-hidden
-                    className="bg-primary size-1.5 shrink-0 translate-y-[-2px] rounded-full"
-                  />
-                  <span className="text-[15px] leading-relaxed text-pretty">
-                    {useCase}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* 04 — design guidelines */}
-        <section className="border-b">
-          <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="04" title={s.guidelinesTitle} />
+            <SectionHeading n="03" title={s.guidelinesTitle} />
             <div className="mt-10 max-w-3xl space-y-5">
               {copy.guidelines.map((paragraph) => (
                 <p
@@ -211,10 +247,10 @@ export function MaterialPage({ slug }: { slug: MaterialSlug }) {
           </div>
         </section>
 
-        {/* 05 — FAQ */}
+        {/* 04 — FAQ */}
         <section className="border-b">
           <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-            <SectionHeading n="05" title={s.faqTitle} />
+            <SectionHeading n="04" title={s.faqTitle} />
             <Accordion type="single" collapsible className="mt-8 max-w-3xl">
               {copy.faq.map((item) => (
                 <AccordionItem key={item.q} value={item.q}>

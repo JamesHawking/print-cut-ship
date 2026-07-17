@@ -11,14 +11,14 @@ import { SectionHeading } from './SectionHeading'
 // is echoed in the legend under the table, so colour never carries meaning
 // alone. Tokens resolve against the section's `.dark` scope. Keyed by the
 // locale-stable family key; display labels come from the dictionary.
-const FAMILY_DOT: Record<MaterialFamily, string> = {
+export const FAMILY_DOT: Record<MaterialFamily, string> = {
   standard: 'bg-muted-foreground',
   engineering: 'bg-primary',
   specialty: 'bg-info',
 }
 
 // Legend order: simplest → most specialised.
-const FAMILY_ORDER = ['standard', 'engineering', 'specialty'] as const
+export const FAMILY_ORDER = ['standard', 'engineering', 'specialty'] as const
 
 // Shared 4-column grid (md+): name / application / density / from —
 // right-aligned numerics, tabular so the two number columns stay on a rail.

@@ -207,6 +207,15 @@ export const pl = {
     priceFrom: (price: string) => `od ${price}`,
     comingSoon: 'Strona wkrótce',
     propertiesTitle: 'Właściwości',
+    detailsLink: 'Szczegóły →',
+    datasheetTitle: 'Karta — wydruk, XY',
+    densityRate: 'Gęstość · stawka',
+    shipsIn: (days: number) => `wysyłka w ${days} dni rob.`,
+    // Short forms for card half-cells (design 5d: the full labels wrap).
+    propertyLabelsShort: {
+      tensile: 'Rozciąganie',
+      hdt: 'HDT',
+    },
     propertyLabels: {
       tensile: 'Wytrzymałość na rozciąganie',
       hdt: 'Odporność termiczna (HDT)',
