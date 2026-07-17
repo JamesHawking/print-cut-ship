@@ -18,7 +18,7 @@ row when done.
 | 002 | Retention sweep removes orphaned MinIO objects | P1 | S | 001 | TODO |
 | 003 | 3MF uploads hash file bytes (fixes tee dedup + content addressing) | P1 | M | — (001 recommended) | DONE (`43ef87b`) — landed in the plan-02 completion sequence |
 | 004 | Pin `"latest"` frontend deps to lockfile-resolved versions | P2 | S | — | TODO |
-| 005 | Docs truth pass + root README/CLAUDE.md/.env.example | P2 | S | 001 (one sentence) | TODO |
+| 005 | Docs truth pass + root README/CLAUDE.md/.env.example | P2 | S | 001 (one sentence) | DONE (2026-07-17, amended) — truth-pass landed in `720d7be`; README/AGENTS.md/CLAUDE.md/.env.examples created business-wide in the restructure (`33184e9` + follow-up) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -43,7 +43,7 @@ From the 2026-07-17 audit — vetted but not selected in this round:
 - **No React component/route test layer at all** — L; Testing Library under `bun test`, start with quote submit.
 - **`handlers.go` (645 lines) mixes DTO/validation/HTTP/persistence/tee** — M extraction.
 - **Content-section routing duplicates a 4-way switch across two route files**; unknown sections silently render materials instead of 404 — M; registry-dispatch refactor, pin SEO head output with tests first.
-- **Tracked binary artifacts** (.docx/.pptx/.xlsx at root, 588 KB .dc.html) — S relocation.
+- **Tracked binary artifacts** (.docx/.pptx/.xlsx at root, 588 KB .dc.html) — ~~S relocation~~ **resolved** in the 2026-07-17 restructure (now under `research/`).
 
 ## Findings considered and rejected
 
