@@ -19,7 +19,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/db"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/email"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/httpapi"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
@@ -101,6 +103,15 @@ func serve(logger *slog.Logger) {
 			Logger:          logger,
 			Store:           st,
 			Storage:         strg,
+			Auth: auth.NewService(
+				st,
+				// Console transport until plan 06 swaps in Resend (launch gate).
+				email.ConsoleSender{Logger: logger},
+				logger,
+				envDurationMinutes("LOGIN_CODE_TTL_MINUTES", 10),
+				envDurationDays("SESSION_TTL_DAYS", 30),
+			),
+			CookieSecure:    os.Getenv("COOKIE_SECURE") == "true",
 			PricingConfigID: pricingConfigID,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
@@ -157,6 +168,25 @@ func sweep(ctx context.Context, logger *slog.Logger) error {
 		}
 	}
 	return storage.RunSweep(ctx, store.NewStore(pool), strg, days, logger)
+}
+
+// envDurationDays reads a whole-days duration env var with a default.
+func envDurationDays(name string, def int) time.Duration {
+	return envDuration(name, def, 24*time.Hour)
+}
+
+// envDurationMinutes reads a whole-minutes duration env var with a default.
+func envDurationMinutes(name string, def int) time.Duration {
+	return envDuration(name, def, time.Minute)
+}
+
+func envDuration(name string, def int, unit time.Duration) time.Duration {
+	if v := os.Getenv(name); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return time.Duration(n) * unit
+		}
+	}
+	return time.Duration(def) * unit
 }
 
 // ensureActivePricingConfig guarantees the DB's active pricing_config_snapshots

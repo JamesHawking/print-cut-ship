@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 
+	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
@@ -24,6 +25,11 @@ type Config struct {
 	// Storage holds uploaded model files. Nil in unit tests; the file
 	// endpoints degrade to log-only when absent.
 	Storage *storage.Store
+	// Auth runs the OTP login flow (plan 04). Nil in unit tests without a DB.
+	Auth *auth.Service
+	// CookieSecure forces the Secure flag on the session cookie even over
+	// plain http (COOKIE_SECURE). TLS requests always get Secure.
+	CookieSecure bool
 	// PricingConfigID is the active pricing_config_snapshots row verified at
 	// startup to equal the compiled-in pricing.Default (see cmd/api). Quotes
 	// are stamped with it; plan 07 replaces this with a live-swappable config.
@@ -41,6 +47,7 @@ func NewRouter(cfg Config) http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(s.sessionMiddleware)
 
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -21,7 +21,9 @@ func testHandler(t *testing.T, cfg Config, mwClient *http.Client) http.Handler {
 		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
 	s := &server{cfg: cfg, makerworldClient: mwClient}
-	return HandlerFromMux(s, chi.NewRouter())
+	r := chi.NewRouter()
+	r.Use(s.sessionMiddleware)
+	return HandlerFromMux(s, r)
 }
 
 func doJSON(t *testing.T, h http.Handler, method, path, body string) *httptest.ResponseRecorder {
@@ -193,17 +195,17 @@ func TestSubmitQuoteEndpoint(t *testing.T) {
 		})
 	}
 
-	t.Run("invalid_email on the orders query param", func(t *testing.T) {
-		rec := doJSON(t, h, http.MethodGet, "/api/v1/orders?email=nope", "")
-		if rec.Code != http.StatusBadRequest {
-			t.Fatalf("status %d, want 400", rec.Code)
+	t.Run("orders requires a session", func(t *testing.T) {
+		rec := doJSON(t, h, http.MethodGet, "/api/v1/orders", "")
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("status %d, want 401", rec.Code)
 		}
 		var e ApiError
 		if err := json.Unmarshal(rec.Body.Bytes(), &e); err != nil {
 			t.Fatal(err)
 		}
-		if e.Code != InvalidEmail {
-			t.Errorf("code %q, want %q", e.Code, InvalidEmail)
+		if e.Code != Unauthorized {
+			t.Errorf("code %q, want %q", e.Code, Unauthorized)
 		}
 	})
 

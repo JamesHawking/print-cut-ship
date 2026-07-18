@@ -442,16 +442,15 @@ func (s *server) GetQuote(w http.ResponseWriter, r *http.Request, id string) {
 	})
 }
 
-// ListOrders returns the order history (persisted quotes) for an email,
-// newest first. Prototype access control: the frontend gates this behind a
-// simulated one-time code, so there is no server-side identity check yet —
-// plan 05 replaces this with real auth.
-func (s *server) ListOrders(w http.ResponseWriter, r *http.Request, params ListOrdersParams) {
-	email := string(params.Email)
-	if !validEmail(email) {
-		badRequest(w, InvalidEmail, "invalid email", nil)
+// ListOrders returns the signed-in user's order history (persisted quotes),
+// newest first. The email is derived from the session server-side (plan 04).
+func (s *server) ListOrders(w http.ResponseWriter, r *http.Request) {
+	u := CurrentUser(r.Context())
+	if u == nil {
+		apiError(w, http.StatusUnauthorized, Unauthorized, "authentication required", nil)
 		return
 	}
+	email := u.Email
 	orders := []OrderSummary{}
 	if s.cfg.Store == nil {
 		s.cfg.Logger.Warn("store not configured; returning empty order list")

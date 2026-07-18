@@ -15,6 +15,8 @@ import (
 
 // Defines values for ApiErrorCode.
 const (
+	CodeExpired         ApiErrorCode = "code_expired"
+	CodeInvalid         ApiErrorCode = "code_invalid"
 	FileMissingHash     ApiErrorCode = "file_missing_hash"
 	FileNotFound        ApiErrorCode = "file_not_found"
 	FileSizeRange       ApiErrorCode = "file_size_range"
@@ -33,6 +35,8 @@ const (
 	QuoteFileInvalid    ApiErrorCode = "quote_file_invalid"
 	QuoteNotFound       ApiErrorCode = "quote_not_found"
 	StorageUnavailable  ApiErrorCode = "storage_unavailable"
+	TooManyAttempts     ApiErrorCode = "too_many_attempts"
+	Unauthorized        ApiErrorCode = "unauthorized"
 	UnknownLeadTime     ApiErrorCode = "unknown_lead_time"
 	UnknownProcess      ApiErrorCode = "unknown_process"
 	UnsupportedCountry  ApiErrorCode = "unsupported_country"
@@ -301,6 +305,11 @@ type MakerworldFetchRequest struct {
 	ProfileId *int64 `json:"profileId,omitempty"`
 }
 
+// MeResponse defines model for MeResponse.
+type MeResponse struct {
+	Email openapi_types.Email `json:"email"`
+}
+
 // MeshMetrics Pricing-relevant subset of client-side mesh analysis
 type MeshMetrics struct {
 	BboxMm Vec3Mm `json:"bboxMm"`
@@ -405,6 +414,11 @@ type PriceResponse struct {
 // ProcessId defines model for ProcessId.
 type ProcessId string
 
+// RequestCodeRequest defines model for RequestCodeRequest.
+type RequestCodeRequest struct {
+	Email openapi_types.Email `json:"email"`
+}
+
 // ShipDate defines model for ShipDate.
 type ShipDate struct {
 	Date                CalDate `json:"date"`
@@ -478,16 +492,26 @@ type Vec3Mm struct {
 	Z float64 `json:"z"`
 }
 
+// VerifyCodeRequest defines model for VerifyCodeRequest.
+type VerifyCodeRequest struct {
+	Code  string              `json:"code"`
+	Email openapi_types.Email `json:"email"`
+}
+
 // BadRequest defines model for BadRequest.
 type BadRequest = ApiError
 
 // NotFound defines model for NotFound.
 type NotFound = ApiError
 
-// ListOrdersParams defines parameters for ListOrders.
-type ListOrdersParams struct {
-	Email openapi_types.Email `form:"email" json:"email"`
-}
+// UnauthorizedError defines model for UnauthorizedError.
+type UnauthorizedError = ApiError
+
+// RequestLoginCodeJSONRequestBody defines body for RequestLoginCode for application/json ContentType.
+type RequestLoginCodeJSONRequestBody = RequestCodeRequest
+
+// VerifyLoginCodeJSONRequestBody defines body for VerifyLoginCode for application/json ContentType.
+type VerifyLoginCodeJSONRequestBody = VerifyCodeRequest
 
 // CreateFileUploadJSONRequestBody defines body for CreateFileUpload for application/json ContentType.
 type CreateFileUploadJSONRequestBody = CreateFileRequest
@@ -506,6 +530,18 @@ type SubmitStepQuoteJSONRequestBody = StepQuoteRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Delete the current session and clear the cookie
+	// (POST /api/v1/auth/logout)
+	Logout(w http.ResponseWriter, r *http.Request)
+	// Current session's identity (session restore for the frontend)
+	// (GET /api/v1/auth/me)
+	GetMe(w http.ResponseWriter, r *http.Request)
+	// Email a 6-digit one-time login code. Always returns 204 — whether the email has orders or not, and whether the resend throttle skipped sending — so the endpoint never reveals which emails exist. 400 only for a malformed email.
+	// (POST /api/v1/auth/request-code)
+	RequestLoginCode(w http.ResponseWriter, r *http.Request)
+	// Verify a 6-digit login code. On success sets the iq_session cookie (httpOnly, SameSite=Lax) and returns 204. Codes are single-use, expire after 10 minutes, and allow at most 5 attempts.
+	// (POST /api/v1/auth/verify-code)
+	VerifyLoginCode(w http.ResponseWriter, r *http.Request)
 	// Pricing catalog for display (processes, lead times, fees)
 	// (GET /api/v1/config)
 	GetConfig(w http.ResponseWriter, r *http.Request)
@@ -518,9 +554,9 @@ type ServerInterface interface {
 	// Download a MakerWorld model's 3MF via Bambu Cloud
 	// (POST /api/v1/makerworld/fetch)
 	FetchMakerworldModel(w http.ResponseWriter, r *http.Request)
-	// List order requests (submitted quotes) for an email. Prototype access control: the login page gates this with a simulated one-time code, so treat the data as non-sensitive until plan 05 adds real auth.
+	// List the signed-in user's order requests (submitted quotes), newest first. The email is derived from the session server-side.
 	// (GET /api/v1/orders)
-	ListOrders(w http.ResponseWriter, r *http.Request, params ListOrdersParams)
+	ListOrders(w http.ResponseWriter, r *http.Request)
 	// Price a set of parts and compute order totals
 	// (POST /api/v1/price)
 	Price(w http.ResponseWriter, r *http.Request)
@@ -541,6 +577,30 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Delete the current session and clear the cookie
+// (POST /api/v1/auth/logout)
+func (_ Unimplemented) Logout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Current session's identity (session restore for the frontend)
+// (GET /api/v1/auth/me)
+func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Email a 6-digit one-time login code. Always returns 204 — whether the email has orders or not, and whether the resend throttle skipped sending — so the endpoint never reveals which emails exist. 400 only for a malformed email.
+// (POST /api/v1/auth/request-code)
+func (_ Unimplemented) RequestLoginCode(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Verify a 6-digit login code. On success sets the iq_session cookie (httpOnly, SameSite=Lax) and returns 204. Codes are single-use, expire after 10 minutes, and allow at most 5 attempts.
+// (POST /api/v1/auth/verify-code)
+func (_ Unimplemented) VerifyLoginCode(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Pricing catalog for display (processes, lead times, fees)
 // (GET /api/v1/config)
@@ -566,9 +626,9 @@ func (_ Unimplemented) FetchMakerworldModel(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List order requests (submitted quotes) for an email. Prototype access control: the login page gates this with a simulated one-time code, so treat the data as non-sensitive until plan 05 adds real auth.
+// List the signed-in user's order requests (submitted quotes), newest first. The email is derived from the session server-side.
 // (GET /api/v1/orders)
-func (_ Unimplemented) ListOrders(w http.ResponseWriter, r *http.Request, params ListOrdersParams) {
+func (_ Unimplemented) ListOrders(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -610,6 +670,62 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// Logout operation middleware
+func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Logout(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMe operation middleware
+func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMe(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestLoginCode operation middleware
+func (siw *ServerInterfaceWrapper) RequestLoginCode(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestLoginCode(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyLoginCode operation middleware
+func (siw *ServerInterfaceWrapper) VerifyLoginCode(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyLoginCode(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetConfig operation middleware
 func (siw *ServerInterfaceWrapper) GetConfig(w http.ResponseWriter, r *http.Request) {
@@ -681,28 +797,8 @@ func (siw *ServerInterfaceWrapper) FetchMakerworldModel(w http.ResponseWriter, r
 // ListOrders operation middleware
 func (siw *ServerInterfaceWrapper) ListOrders(w http.ResponseWriter, r *http.Request) {
 
-	var err error
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListOrdersParams
-
-	// ------------- Required query parameter "email" -------------
-
-	if paramValue := r.URL.Query().Get("email"); paramValue != "" {
-
-	} else {
-		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "email"})
-		return
-	}
-
-	err = runtime.BindQueryParameter("form", true, true, "email", r.URL.Query(), &params.Email)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "email", Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListOrders(w, r, params)
+		siw.Handler.ListOrders(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -906,6 +1002,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/auth/me", wrapper.GetMe)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/request-code", wrapper.RequestLoginCode)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/verify-code", wrapper.VerifyLoginCode)
+	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/config", wrapper.GetConfig)
 	})

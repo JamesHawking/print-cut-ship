@@ -89,6 +89,74 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/auth/request-code': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Email a 6-digit one-time login code. Always returns 204 — whether the email has orders or not, and whether the resend throttle skipped sending — so the endpoint never reveals which emails exist. 400 only for a malformed email. */
+    post: operations['requestLoginCode']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/verify-code': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Verify a 6-digit login code. On success sets the iq_session cookie (httpOnly, SameSite=Lax) and returns 204. Codes are single-use, expire after 10 minutes, and allow at most 5 attempts. */
+    post: operations['verifyLoginCode']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/me': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Current session's identity (session restore for the frontend) */
+    get: operations['getMe']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/logout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Delete the current session and clear the cookie */
+    post: operations['logout']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/orders': {
     parameters: {
       query?: never
@@ -96,7 +164,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** List order requests (submitted quotes) for an email. Prototype access control: the login page gates this with a simulated one-time code, so treat the data as non-sensitive until plan 05 adds real auth. */
+    /** List the signed-in user's order requests (submitted quotes), newest first. The email is derived from the session server-side. */
     get: operations['listOrders']
     put?: never
     post?: never
@@ -503,6 +571,19 @@ export interface components {
       fileId: string
       stored: boolean
     }
+    RequestCodeRequest: {
+      /** Format: email */
+      email: string
+    }
+    VerifyCodeRequest: {
+      /** Format: email */
+      email: string
+      code: string
+    }
+    MeResponse: {
+      /** Format: email */
+      email: string
+    }
     ApiError: {
       code: components['schemas']['ApiErrorCode']
       /** @description English debug prose; never displayed to users. */
@@ -540,6 +621,10 @@ export interface components {
       | 'upload_object_missing'
       | 'upload_size_mismatch'
       | 'storage_unavailable'
+      | 'code_invalid'
+      | 'code_expired'
+      | 'too_many_attempts'
+      | 'unauthorized'
       | 'internal'
   }
   responses: {
@@ -554,6 +639,15 @@ export interface components {
     }
     /** @description Resource not found */
     NotFound: {
+      headers: {
+        [name: string]: unknown
+      }
+      content: {
+        'application/json': components['schemas']['ApiError']
+      }
+    }
+    /** @description Missing, invalid, or expired credentials/session */
+    UnauthorizedError: {
       headers: {
         [name: string]: unknown
       }
@@ -692,18 +786,102 @@ export interface operations {
       404: components['responses']['NotFound']
     }
   }
-  listOrders: {
+  requestLoginCode: {
     parameters: {
-      query: {
-        email: string
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RequestCodeRequest']
       }
+    }
+    responses: {
+      /** @description Code sent (or silently throttled) */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      400: components['responses']['BadRequest']
+    }
+  }
+  verifyLoginCode: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VerifyCodeRequest']
+      }
+    }
+    responses: {
+      /** @description Code accepted; session cookie set */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+    }
+  }
+  getMe: {
+    parameters: {
+      query?: never
       header?: never
       path?: never
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Order requests for the email, newest first */
+      /** @description The signed-in user */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeResponse']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+    }
+  }
+  logout: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Session deleted; cookie cleared */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  listOrders: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Order requests for the session's email, newest first */
       200: {
         headers: {
           [name: string]: unknown
@@ -712,7 +890,7 @@ export interface operations {
           'application/json': components['schemas']['ListOrdersResponse']
         }
       }
-      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
     }
   }
   submitStepQuote: {

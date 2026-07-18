@@ -3,13 +3,12 @@ INSERT INTO login_codes (email, code_hash, expires_at)
 VALUES ($1, $2, $3)
 RETURNING id;
 
--- name: GetLatestActiveLoginCode :one
--- The newest unconsumed, unexpired code for the email — the only one
--- verify-code will accept (RequestCode invalidates all prior codes first).
+-- name: GetLatestLoginCode :one
+-- The newest unconsumed code for the email (any expiry) — the only one
+-- verify-code will accept. Expiry is checked in Go so the handler can
+-- distinguish code_expired from code_invalid.
 SELECT * FROM login_codes
-WHERE email = $1
-  AND consumed_at IS NULL
-  AND expires_at > now()
+WHERE email = $1 AND consumed_at IS NULL
 ORDER BY created_at DESC
 LIMIT 1;
 

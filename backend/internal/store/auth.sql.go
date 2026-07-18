@@ -113,19 +113,18 @@ func (q *Queries) DeleteSessionByTokenHash(ctx context.Context, tokenHash string
 	return err
 }
 
-const getLatestActiveLoginCode = `-- name: GetLatestActiveLoginCode :one
+const getLatestLoginCode = `-- name: GetLatestLoginCode :one
 SELECT id, email, code_hash, expires_at, attempts, consumed_at, created_at FROM login_codes
-WHERE email = $1
-  AND consumed_at IS NULL
-  AND expires_at > now()
+WHERE email = $1 AND consumed_at IS NULL
 ORDER BY created_at DESC
 LIMIT 1
 `
 
-// The newest unconsumed, unexpired code for the email — the only one
-// verify-code will accept (RequestCode invalidates all prior codes first).
-func (q *Queries) GetLatestActiveLoginCode(ctx context.Context, email string) (LoginCode, error) {
-	row := q.db.QueryRow(ctx, getLatestActiveLoginCode, email)
+// The newest unconsumed code for the email (any expiry) — the only one
+// verify-code will accept. Expiry is checked in Go so the handler can
+// distinguish code_expired from code_invalid.
+func (q *Queries) GetLatestLoginCode(ctx context.Context, email string) (LoginCode, error) {
+	row := q.db.QueryRow(ctx, getLatestLoginCode, email)
 	var i LoginCode
 	err := row.Scan(
 		&i.ID,
