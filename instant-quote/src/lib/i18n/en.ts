@@ -256,7 +256,7 @@ export const en = {
     ],
   },
   footer: {
-    note: 'Prototype · illustrative rates · every quote is fully itemized',
+    note: 'Every quote fully itemized · no hidden fees',
     meta: 'EU · FDM · PLN · 23% VAT',
     cutoff: '14:00 cutoff',
     navLabel: 'Navigate',
@@ -490,7 +490,7 @@ export const en = {
     breakdownTitle: 'Price breakdown',
     howWePrice: 'How we price',
     shippingNote: 'Ships D+1 to PL/DE, D+2 to the rest of the EU',
-    notPrintable: 'Not printable',
+    notPrintable: 'Outside print limits',
     discountOff: (pct: string) => `${pct} off`,
     lineTotalFor: (total: string, qty: number) => `${total} for ${qty}`,
     metaTriangles: (count: number, formatted: string) =>
@@ -682,7 +682,6 @@ export const en = {
     resend: 'Re-send code',
     resent: 'Code re-sent ✓',
     changeEmail: 'Change email',
-    simNote: 'Prototype · one-time codes are simulated · nothing is sent',
   },
   orders: {
     signedIn: 'Signed in —',

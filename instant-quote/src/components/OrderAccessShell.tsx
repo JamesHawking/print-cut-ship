@@ -80,12 +80,6 @@ export function OrderAccessShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </main>
-
-      <footer className="border-t">
-        <p className="text-muted-foreground mx-auto max-w-6xl px-6 py-4 text-center font-mono text-[0.65rem] tracking-[0.16em] uppercase tabular-nums">
-          {s.simNote}
-        </p>
-      </footer>
     </div>
   )
 }

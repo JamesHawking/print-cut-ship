@@ -270,7 +270,7 @@ export const pl = {
     ],
   },
   footer: {
-    note: 'Prototyp · stawki poglądowe · każda wycena jest w pełni rozbita na pozycje',
+    note: 'Każda wycena w pełni rozbita na pozycje · bez ukrytych opłat',
     meta: 'UE · FDM · PLN · 23% VAT',
     cutoff: 'zamówienia do 14:00',
     navLabel: 'Nawigacja',
@@ -513,7 +513,7 @@ export const pl = {
     breakdownTitle: 'Rozbicie ceny',
     howWePrice: 'Jak wyceniamy',
     shippingNote: 'Wysyłka D+1 do PL/DE, D+2 do reszty UE',
-    notPrintable: 'Nie do wydrukowania',
+    notPrintable: 'Poza zakresem druku',
     discountOff: (pct: string) => `${pct} taniej`,
     lineTotalFor: (total: string, qty: number) => `${total} za ${qty} szt.`,
     metaTriangles: (count: number, formatted: string) =>
@@ -708,8 +708,6 @@ export const pl = {
     resend: 'Wyślij kod ponownie',
     resent: 'Kod wysłany ponownie ✓',
     changeEmail: 'Zmień e-mail',
-    simNote:
-      'Prototyp · kody jednorazowe są symulowane · nic nie jest wysyłane',
   },
   orders: {
     signedIn: 'Zalogowano —',
