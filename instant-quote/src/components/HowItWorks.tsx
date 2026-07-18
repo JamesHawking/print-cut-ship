@@ -14,8 +14,10 @@ import {
   SAMPLE_METRICS,
   STAGE_ANCHOR,
   buildScript,
+  buildStationReadouts,
 } from './how-it-works/demo'
 import { useDemoRun } from './how-it-works/useDemoRun'
+import { BracketPanel } from './how-it-works/BracketPanel'
 import { ConveyorRail } from './how-it-works/ConveyorRail'
 import { DemoTerminal } from './how-it-works/DemoTerminal'
 
@@ -65,6 +67,13 @@ export function HowItWorks() {
   )
   const { status, visible, stage, replay, sectionRef } = useDemoRun(script)
   const anchorIdx = status === 'idle' ? null : STAGE_ANCHOR[stage]
+  const shipsDateLabel = expressWeekday
+    ? strings.process.shipsDate(expressWeekday)
+    : strings.process.shipsDateFallback
+  const readouts = useMemo(
+    () => buildStationReadouts(demo, locale, part, shipsDateLabel),
+    [demo, locale, part, shipsDateLabel],
+  )
 
   return (
     <section id="how-it-works" ref={sectionRef} className="scroll-mt-14">
@@ -73,14 +82,11 @@ export function HowItWorks() {
         <p className="text-muted-foreground mt-4 max-w-[560px] text-[13.5px] leading-[1.55] text-pretty">
           {intro}
         </p>
-        <div className="dark bg-background text-foreground mt-12 px-6 py-10 md:px-16 md:pt-14 md:pb-16">
+        <div className="dark bg-background text-foreground blueprint-grid mt-12 px-6 py-10 md:px-16 md:pt-14 md:pb-16">
           <ConveyorRail
             anchorIdx={anchorIdx}
-            shipsDateLabel={
-              expressWeekday
-                ? strings.process.shipsDate(expressWeekday)
-                : strings.process.shipsDateFallback
-            }
+            readouts={readouts}
+            shipsDateLabel={shipsDateLabel}
           />
           {/* The animated log is aria-hidden; this carries its substance. */}
           <p className="sr-only">
@@ -89,12 +95,17 @@ export function HowItWorks() {
               expressWeekday ?? strings.process.shipsDateFallback,
             )}
           </p>
-          <DemoTerminal
-            lines={script}
-            visible={visible}
-            running={status === 'running'}
-            onReplay={replay}
-          />
+          <div className="mt-10 grid items-stretch gap-6 lg:grid-cols-2">
+            <div className="order-first lg:order-last">
+              <BracketPanel stage={stage} />
+            </div>
+            <DemoTerminal
+              lines={script}
+              visible={visible}
+              running={status === 'running'}
+              onReplay={replay}
+            />
+          </div>
         </div>
         <div className="mt-6 flex justify-end">
           <button

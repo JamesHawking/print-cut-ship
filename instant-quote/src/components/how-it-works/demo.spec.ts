@@ -9,7 +9,9 @@ import {
   SAMPLE_FILE,
   SAMPLE_METRICS,
   STAGE_ANCHOR,
+  STAGE_ORDER,
   buildScript,
+  buildStationReadouts,
   type Stage,
 } from './demo'
 
@@ -105,6 +107,53 @@ describe('buildScript', () => {
       expect(anchor).toBeLessThanOrEqual(3)
       expect(anchor).toBeGreaterThanOrEqual(prev)
       prev = anchor
+    }
+  })
+})
+
+describe('buildStationReadouts', () => {
+  test('fallback numbers match the log fallback, both locales', () => {
+    for (const [dict, locale] of [
+      [pl, 'pl'],
+      [en, 'en'],
+    ] as const) {
+      const readouts = buildStationReadouts(
+        dict.process.demo,
+        locale,
+        undefined,
+        'D+1',
+      )
+      const script = buildScript(
+        dict.process.demo,
+        locale,
+        undefined,
+        undefined,
+      )
+      expect(readouts[0]).toBe(script[1].text) // recv line
+      expect(readouts[1]).toContain('7' + (locale === 'pl' ? ',' : '.') + '78')
+      expect(readouts[2]).toBe('D+1')
+    }
+  })
+
+  test('live quote price replaces the fallback', () => {
+    const readouts = buildStationReadouts(
+      en.process.demo,
+      'en',
+      { lineTotalPln: 12.34, weightG: 41.6, printHours: 3.21 },
+      'FRI · D+1',
+    )
+    expect(readouts[1]).toContain('12.34')
+    expect(readouts[2]).toBe('FRI · D+1')
+  })
+})
+
+describe('STAGE_ORDER', () => {
+  test('covers every Stage exactly once, recv first and done last', () => {
+    expect(STAGE_ORDER[0]).toBe('recv')
+    expect(STAGE_ORDER[STAGE_ORDER.length - 1]).toBe('done')
+    expect(new Set(STAGE_ORDER).size).toBe(STAGE_ORDER.length)
+    for (const stage of Object.keys(STAGE_ANCHOR) as Stage[]) {
+      expect(STAGE_ORDER).toContain(stage)
     }
   })
 })

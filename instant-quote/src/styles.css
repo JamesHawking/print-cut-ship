@@ -264,6 +264,9 @@
   --animate-ship-pulse: ship-pulse 2s infinite;
   --animate-caret: caret 1s step-end infinite;
   --animate-log-line: log-line 240ms ease-out both;
+  /* One-shot emphasis when the engine's PRICE answer lands: text-orange
+     settling to plain ink. Applied to strong log lines when revealed. */
+  --animate-price-flash: price-flash 900ms ease-out 250ms both;
 
   @keyframes conveyor {
     from {
@@ -290,6 +293,14 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+  @keyframes price-flash {
+    from {
+      color: var(--primary-text);
+    }
+    to {
+      color: var(--foreground);
     }
   }
   @keyframes ship-pulse {
@@ -319,6 +330,21 @@
     var(--color-muted-foreground) 0 16px,
     transparent 16px 32px
   );
+}
+
+/* Faint engineering grid for the demo band — graph paper under the machine. */
+@utility blueprint-grid {
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--color-foreground) 12%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-foreground) 12%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 28px 28px;
 }
 
 /* Outlined display type (hero second line). */

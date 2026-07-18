@@ -8,6 +8,16 @@ import type { MeshMetrics } from '@/lib/mesh/types'
 
 export type Stage = 'recv' | 'measure' | 'price' | 'order' | 'ship' | 'done'
 
+/** Playback order of stages — BracketPanel keys its draw-in off this. */
+export const STAGE_ORDER: readonly Stage[] = [
+  'recv',
+  'measure',
+  'price',
+  'order',
+  'ship',
+  'done',
+]
+
 export interface LogLine {
   stage: Stage
   /** Mono log tag (RECV/MEASURE/…); absent on the `$ quote …` command line. */
@@ -58,6 +68,29 @@ export interface DemoQuote {
   lineTotalPln: number
   weightG: number
   printHours: number
+}
+
+/** Terse committed values the rail stations reveal once their stage passes:
+ *  [file, price, ship date] — same numbers as the log, shorter phrasing. */
+export type StationReadouts = [string, string, string]
+
+export function buildStationReadouts(
+  demo: Dictionary['process']['demo'],
+  locale: Locale,
+  quote: DemoQuote | undefined,
+  shipsDateLabel: string,
+): StationReadouts {
+  const q = quote ?? FALLBACK_QUOTE
+  const sizeKb = formatDecimal(
+    Math.round(SAMPLE_FILE.bytes / 100) / 10,
+    locale,
+    1,
+  )
+  return [
+    demo.recv(SAMPLE_FILE.name, `${sizeKb} KB`),
+    formatPln(q.lineTotalPln, locale),
+    shipsDateLabel,
+  ]
 }
 
 // Captured from a real engine response for SAMPLE_METRICS + DEMO_CONFIG

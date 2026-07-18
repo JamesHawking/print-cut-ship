@@ -24,10 +24,26 @@ export function DemoTerminal({
   const demo = strings.process.demo
 
   return (
-    <div className="border-foreground/20 mt-10 border">
+    <div className="border-foreground/20 bg-background border">
       <div className="border-foreground/20 flex items-center justify-between gap-4 border-b px-4 py-2 sm:px-5">
-        <span className="text-muted-foreground font-mono text-[10px] tracking-[0.14em] uppercase">
-          {demo.engineLabel}
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className={cn(
+              'size-1.5 rounded-full transition-colors',
+              running
+                ? 'bg-primary motion-safe:animate-led'
+                : 'bg-muted-foreground/50',
+            )}
+          />
+          <span className="text-muted-foreground font-mono text-[10px] tracking-[0.14em] uppercase">
+            {demo.engineLabel}
+          </span>
+          {running && (
+            <span className="text-primary-text font-mono text-[10px] font-bold tracking-[0.14em] uppercase">
+              LIVE
+            </span>
+          )}
         </span>
         <button
           type="button"
@@ -62,12 +78,18 @@ export function DemoTerminal({
                 className={cn(
                   line.tag
                     ? line.strong
-                      ? 'text-foreground font-bold'
+                      ? 'text-foreground text-[11px] font-bold sm:text-[13px]'
                       : 'text-muted-foreground'
                     : 'text-foreground font-semibold',
                 )}
               >
-                {line.text}
+                {line.strong && shown ? (
+                  <span className="motion-safe:animate-price-flash">
+                    {line.text}
+                  </span>
+                ) : (
+                  line.text
+                )}
                 {running && last && (
                   <span className="motion-safe:animate-caret text-foreground ml-1">
                     ▊
