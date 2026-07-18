@@ -7,7 +7,6 @@ import { SECTIONS } from '@/content/sections'
 import {
   NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
   NavigationMenuViewport,
@@ -48,10 +47,14 @@ const itemClass = (active: boolean) =>
       : 'text-muted-foreground',
   )
 
+// Keyboard focus reuses the nav's own language (orange underline + bright
+// text) instead of the repo's ring-2 boxes — a ring around an h-14 item
+// would span the full header.
 const triggerClass = (active: boolean) =>
   cn(
     itemClass(active),
     'rounded-none bg-transparent px-0 font-mono text-xs font-medium tracking-widest uppercase hover:bg-transparent focus:bg-transparent focus-visible:ring-0 data-[state=open]:bg-transparent data-[state=open]:hover:bg-transparent data-[state=open]:focus:bg-transparent',
+    "focus-visible:text-foreground focus-visible:after:bg-primary-text focus-visible:after:absolute focus-visible:after:inset-x-0 focus-visible:after:bottom-0 focus-visible:after:h-0.5 focus-visible:after:content-['']",
   )
 
 export function DesktopNav({
@@ -124,7 +127,11 @@ export function DesktopNav({
                   </NavigationMenuContent>
                 </>
               ) : (
-                <NavigationMenuLink asChild>
+                /* Primitive Link, not the styled shadcn one: with asChild the
+                   Slot concatenates the shadcn base (flex-col, p-2,
+                   hover:bg-accent) without twMerge, which misaligns the label
+                   and leaks the accent hover. */
+                <NavigationMenuPrimitive.Link asChild>
                   <Link
                     to="/$locale/$section"
                     params={{ locale, section: SECTIONS[key][locale] }}
@@ -133,7 +140,7 @@ export function DesktopNav({
                   >
                     {strings.nav[key]}
                   </Link>
-                </NavigationMenuLink>
+                </NavigationMenuPrimitive.Link>
               )}
             </NavigationMenuItem>
           ))}
