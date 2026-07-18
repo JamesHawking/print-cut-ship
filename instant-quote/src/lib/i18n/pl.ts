@@ -4,7 +4,8 @@
 // Deliberately NO `as const`: values widen to `string` / `(n) => string` so
 // the English file can carry different text under the same shape.
 //
-// TODO(launch): machine-drafted Polish — native-speaker review required
+// TODO(launch): native-speaker sign-off pending — PL copy overhauled per
+// business/voice.md (2026-07-18), but a human native review is still required
 // before launch; schedule alongside plan 09's lawyer pass (plans/engineering/08-i18n.md §6).
 
 import type { components } from '@/lib/api/schema'
@@ -78,7 +79,7 @@ export const pl = {
     compare: 'Porównania',
     blog: 'Baza wiedzy',
     trackOrder: 'Śledź zamówienie',
-    menuLabel: 'Przełącz menu',
+    menuLabel: 'Otwórz lub zamknij menu',
     skipToContent: 'Przejdź do treści',
     resume: (n: number) => `Wróć do wyceny (${n}) →`,
     // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
@@ -254,7 +255,7 @@ export const pl = {
       },
       {
         q: 'Jakiej dokładności mogę oczekiwać?',
-        a: 'Typowo ±0,3 mm na 100 mm w płaszczyźnie XY — tyle daje dobrze zestrojony FDM. Jeśli część wymaga ciaśniejszych pasowań, zaprojektuj zapas albo dopracuj pasowania po druku.',
+        a: 'Typowo ±0,3 mm na 100 mm w płaszczyźnie XY — tyle daje dobrze zestrojony FDM. Jeśli część wymaga ciaśniejszych pasowań, zostaw zapas w projekcie albo dopracuj pasowania po druku.',
       },
       {
         q: 'Jak szybko dotrze zamówienie?',
