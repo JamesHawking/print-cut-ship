@@ -1,24 +1,24 @@
-# sendcutsend.com — capability review vs filefish
+# sendcutsend.com — capability review vs MICRO_FACTORY
 
 Competitor research, captured 2026-07-18 from <https://sendcutsend.com/>, the
 public FAQ (<https://sendcutsend.com/faq/>), and app entry points
 (`app.sendcutsend.com/customer` — the app itself is JS-gated, so app-level
 features are inferred from the marketing site, FAQ, and documented flows).
 
-Purpose: gap analysis of **filefish** (EU FDM 3D-printing instant-quote app)
+Purpose: gap analysis of **MICRO_FACTORY** (EU FDM 3D-printing instant-quote app)
 against SendCutSend's app and feature set, for planning follow-up work.
 
 ## Framing caveat
 
 SendCutSend is **sheet fabrication** (laser cutting, waterjet, CNC routing,
-bending, finishing); filefish is **FDM 3D printing**. Process-level features
+bending, finishing); MICRO_FACTORY is **FDM 3D printing**. Process-level features
 (DXF intake, material x thickness matrix, bend/tapping/hardware insertion, 2D
 sheet nesting) do not translate to our process. The meaningful comparison is
 the **app + commerce funnel**.
 
-Note: `instant-quote/PRODUCT.md` already positions against their UX ("dense
+Note: `business/product.md` already positions against their UX ("dense
 configuration walls, prices buried several steps deep... Do not make the
-visitor fill a form before a price appears").
+visitor fill a form or click through stages before a price appears").
 
 ## Their app & feature inventory
 
@@ -26,13 +26,15 @@ visitor fill a form before a price appears").
 - Instant pricing on upload: **DXF, DWG, EPS, AI, STEP/STP**.
 - **Parts Builder**: 60+ customizable part templates for users without CAD.
 - **Design services**: sketch-on-graph-paper → CAD conversion; scanning of
-  paper/cardboard/foam templates; "design partners" referral network.
+  paper/cardboard/other disposable templates; "design partners" referral
+  network.
 - Per-part service configuration: bending, countersinking, dimple forming,
   hardware (PEM) insertion, tapping, anodizing (5 colors), plating
   (zinc/nickel), powder coating (11 options), tumbling, deburring.
 - Service eligibility gating in-app (e.g. finishing requires a ≥.063" hanging
   hole, size limits, compatible material) — explained via FAQ.
-- Part preview **with measurement tools and material specs inside the viewer**.
+- Part preview **with measurement tools** (in-viewer material-spec display not
+  verifiable from public pages).
 - Mirror/duplicate part button for mirrored orders.
 
 ### Commerce
@@ -44,7 +46,7 @@ visitor fill a form before a price appears").
   exact copy of the cart.
 - Real-time ship-date estimate in cart as parts/services are added.
 - **Rush tiers**: Fast (rush production), Faster (rush + overnight shipping),
-  Fastest ("order by noon, get it by noon" next day).
+  Fastest (order by noon 12pm PST → ships within 24 h, overnight).
 - Standard production: 2–4 business days before shipping (parts without
   added services).
 - Order history, tracking, reorder in account.
@@ -56,7 +58,7 @@ visitor fill a form before a price appears").
   tolerance, min/max part size charts, processing size charts.
 - Material selection guide, laser cutting guidelines, bending guidelines,
   **bend calculator**, **hardware catalog**, free Fusion 360 gauge tables,
-  free stencil fonts, laser cutting templates.
+  free font packages, laser cutting templates.
 - Blog, education video series, podcast, CAD tutorials, FAQ (15 categories).
 - English only.
 
@@ -64,13 +66,14 @@ visitor fill a form before a price appears").
 - **Marketplace**: designers list parts as Products; SendCutSend fulfills.
 - Partner program (creators get account credits + discount codes).
 - Merch store, gift cards.
-- Trust signals: Fortune-500 customer logos, 2,000+ 5-star reviews,
+- Trust signals: Fortune-500 customer logos, 853 five-star reviews shown
+  (2026-07-18),
   CAGE/DUNS/DFARS/SAM certifications, Inc. 5000 / Deloitte Fast 500.
 - Three US facilities (Reno NV, Paris KY, Arlington TX).
 
 ## Side-by-side (funnel/app level)
 
-| Area | SendCutSend | filefish today |
+| Area | SendCutSend | MICRO_FACTORY today |
 |---|---|---|
 | Instant pricing | Upload DXF/DWG/EPS/AI/STEP | STL/OBJ/3MF/STEP — incl. **browser-side STEP tessellation** (they process server-side) |
 | Account | Not needed to quote; needed for orders/tracking | None at all (simulated OTP only — Plan 04 ⬜) |
@@ -87,7 +90,7 @@ visitor fill a form before a price appears").
 | Trust/commerce | Money-back guarantee, refunds, gift cards, invoicing, certs | None (legal pages Plan 09 ⬜) |
 | i18n | English only | Full PL/EN, localized slugs, hreflang, engine-generated reference prices |
 
-## Where filefish genuinely leads
+## Where MICRO_FACTORY genuinely leads
 
 - **Zero-friction price-first funnel** — price visible before any form (the
   stated anti-SendCutSend stance, delivered).
@@ -100,7 +103,8 @@ visitor fill a form before a price appears").
 - **i18n/SEO machinery** — localized slugs, per-locale RSS, JSON-LD, sitemap
   with hreflang, content-page zł figures generated from the engine
   (`reference-prices.json`, enforced by `no-literal-prices.spec.ts`).
-- **Pricing engine regression-pinned** by 1,512 golden fixtures.
+- **Pricing engine regression-pinned** by 1,512 part-quote golden fixtures
+  (plus order-total, packing, mesh and lead-time golden sets).
 
 ## Gaps worth borrowing (mapped to existing plans)
 
@@ -114,7 +118,7 @@ Priority order by leverage vs existing groundwork:
    not built).
 3. **Real accounts with order history & reorder** — Plan 04.
 4. **Rush/expedite merchandising** — we already have Economy/Standard/Express
-   multipliers; SCS shows how to sell speed ("order by noon, get it by noon").
+   multipliers; SCS shows how to sell speed (order by noon → ships same day).
    Cheap UX win on the existing lead-time engine.
 5. **In-viewer measurement tools** — small, high-trust feature; our R3F viewer
    already renders the mesh with known units.
@@ -122,8 +126,9 @@ Priority order by leverage vs existing groundwork:
    no plan exists. Our sample-part flow is the seed.
 7. **Per-part post-processing options** (colors, vapor smoothing, etc.) — new
    pricing dimension; no plan exists.
-8. **Formal B2B artifacts** — PDF quote, VAT invoice, PO / NET-30 terms —
-   adjacent to Plans 05/06.
+8. **Formal B2B artifacts** — PDF quote and VAT invoice sit at the Plans
+   05/06 seam (Fakturownia); PO / NET-30 terms are unplanned (would be a new
+   decision — plans 05/06 scope prepay only).
 
 ## Sources
 

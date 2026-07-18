@@ -9,6 +9,7 @@
 | `competitors/seekmake-public-api.md` | 2026-07-17 | SeekMake public API | Competitor API shape; decision record behind tolerance-based (non-bit-exact) mesh recompute |
 | `SEO Pages Revamp.dc.html` | 2026-07-17 | AI design tool | Design revamp brief for the SEO pages — reference for plan 13 / `plans/seo/` work |
 | `drone-cuas-verification.md` | 2026-07-17 | Verification pass (audit + primary sources) | Verifies the FDM→MJF/CNC→dual-use drone/C-UAS assumptions; C-UAS market data and the EDIP/SAFE moat |
+| `competitors/sendcutsend-capability-review.md` | 2026-07-18 | sendcutsend.com + FAQ | App/commerce-funnel gap analysis vs a best-in-class US instant-quote shop; feeds plans 04/05/14 prioritization |
 
 Conventions:
 
