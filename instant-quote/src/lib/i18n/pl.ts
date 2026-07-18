@@ -60,7 +60,7 @@ export const pl = {
     kicker: 'Druk 3D na żądanie · Polska · PLN',
     headline1: 'Wgraj plik.',
     headline2: 'Zobacz cenę.',
-    sub: 'Upuść plik 3D, a maszyna odpowie: pełny kosztorys i realna data wysyłki, w kilka sekund. Bez konta i bez telefonu od handlowca.',
+    sub: 'Pełne rozbicie ceny i realna data wysyłki w kilka sekund. Bez konta, bez formularza zapytania, bez czekania na handlowca.',
     sample: 'Nie masz pliku pod ręką? Wypróbuj przykładową część →',
     privacy:
       'Plik służy wyłącznie do przygotowania wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
@@ -108,7 +108,7 @@ export const pl = {
     n: '01',
     heading: 'Od pliku do daty wysyłki w trzech krokach',
     intro:
-      'Maszyna prowadzi twój plik przez linię: mierzy, wycenia i blokuje datę wysyłki — w niecałą minutę. Poniżej prawdziwy przebieg na żywym silniku.',
+      'Od wgrania do daty wysyłki mija niecała minuta: mierzymy plik, liczymy cenę i blokujemy termin. Poniżej prawdziwy przebieg na żywym silniku wyceny.',
     steps: [
       { n: '01', kicker: 'WGRAJ', title: 'Upuść plik' },
       { n: '02', kicker: 'WYCEŃ', title: 'Zobacz liczby' },
@@ -145,7 +145,7 @@ export const pl = {
       ship: (weekday: string) =>
         `${weekday} · D+1 · PL/DE · zamówienia do 14:00`,
       shipFallback: 'D+1 · PL/DE · zamówienia do 14:00',
-      done: 'wycena gotowa — maszyna odpowiedziała',
+      done: 'wycena gotowa',
       replay: 'Odtwórz ponownie',
       engineLabel: 'quote-engine v1',
       panelTag: 'Przebieg wyceny na żywo',
@@ -494,8 +494,8 @@ export const pl = {
     multiHint: 'Dodaj do 5 części',
     dragActive: 'Puść, aby wgrać',
     parsing: 'Czytanie geometrii…',
-    intake: 'Przyjęcie pliku',
-    intakeArmed: 'Przyjęcie pliku — uzbrojone',
+    intake: 'Start wyceny',
+    intakeArmed: 'Upuść, aby wycenić',
     formats: 'STL · 3MF · OBJ · STEP — do 100 MB',
     maxSize: 'Maks. 340 × 320 × 340 mm',
     mwLabel: 'albo wklej link z MakerWorld',

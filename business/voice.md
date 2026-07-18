@@ -17,12 +17,12 @@ renders on — never mix within a string.
 
 | Register | Surfaces | Rules |
 | --- | --- | --- |
-| **Instrument** | mono/uppercase chrome: dropzone states, machine log, status chips, kickers, wordmark grammar (`MICRO_FACTORY`, `Dostęp_do_zamówień`), spec strips | Terse. No persuasion verbs, no explanations, no punctuation beyond `·` and `—`. Log tags (`RECV`, `PRICE`, …) and the `$` command line stay untranslated. |
-| **Human** | prose: subheads, FAQ, dialogs, errors, empty states, emails | Plain "we"/"ty". Explains cause and next action. Never decorates, never shouts. |
+| **Instrument** | data surfaces only: machine log, status chips, kickers, spec strips, wordmark grammar (`MICRO_FACTORY`, `Dostęp_do_zamówień`) | Terse. Carries data, never persona. No persuasion verbs, no explanations, no punctuation beyond `·` and `—`. Log tags (`RECV`, `PRICE`, …) and the `$` command line stay untranslated. |
+| **Human** | prose and interaction: subheads, dropzone prompts, FAQ, dialogs, errors, empty states, emails | Plain "we"/"ty". Benefit-led, explains cause and next action. Never decorates, never shouts. |
 
-The machine persona ("maszyna odpowie" / "the machine answers") lives on
-instrument-adjacent surfaces (hero sub, demo). Everywhere else the humans
-speak ("wysłaliśmy potwierdzenie", "we emailed a confirmation").
+No machine persona anywhere: the product speaks as "we", to "you". The demo
+log *shows* the machine working — copy never has the machine speak
+("maszyna odpowie" / "the machine answers" is retired).
 
 ## CTA taxonomy — one verb per intent
 
