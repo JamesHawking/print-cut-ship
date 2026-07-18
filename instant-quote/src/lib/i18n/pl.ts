@@ -84,6 +84,18 @@ export const pl = {
     // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
     resumeShort: (n: number) => `Wycena (${n}) →`,
     newQuote: '← Nowa wycena',
+    // Header upload CTA (empty cart) — full label at xl+, short form in the
+    // tight band and as the mobile menu's primary button. Opens the native
+    // file picker, same funnel as QuoteCta.
+    getQuote: 'Wyceń część',
+    getQuoteShort: 'Wyceń',
+    // Quote-page "New quote" confirmation (AlertDialog) — orange, not red:
+    // the parts are discarded, nothing is "wrong".
+    newQuoteConfirmTitle: 'Zacząć nową wycenę?',
+    newQuoteConfirmBody: (n: number) =>
+      `Kontynuować? ${plPlural(n, 'Jedna część zostanie odrzucona.', `${n} części zostaną odrzucone.`, `${n} części zostanie odrzuconych.`)}`,
+    newQuoteConfirmAction: 'Nowa wycena',
+    newQuoteConfirmCancel: 'Anuluj',
   },
   ticker: [
     'Wysyłka D+1 PL/DE',
@@ -152,6 +164,9 @@ export const pl = {
     footnote: 'Stawki brutto z 23% VAT',
     readGuide: 'Przewodnik',
     guideSoon: 'Przewodnik wkrótce',
+    // Mega-menu badge (nav-panels.tsx) — the full label would overflow the
+    // two-column panel's cell.
+    guideSoonShort: 'Wkrótce',
     bracketLabel: 'wspornik z dema · 1 szt.',
   },
   materialFamilies: {
@@ -376,6 +391,8 @@ export const pl = {
     readVerdict: 'Przeczytaj werdykt →',
     // Landing teaser card for the comparisons hub (GuidesTeaser.tsx).
     teaserTitle: 'ASA czy PETG? Własna drukarka czy zamówienie?',
+    // Mega-menu panel footer (header/nav-panels.tsx).
+    allComparisonsTitle: 'Wszystkie porównania',
     higherBetter: 'więcej = lepiej',
     lowerBetter: 'mniej = lepiej',
     // Decision-tile A/B stats (design 4a; PL drops the /kg to stay one-line).

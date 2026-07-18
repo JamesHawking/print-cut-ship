@@ -6,18 +6,28 @@ import {
   useParams,
 } from '@tanstack/react-router'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { Menu, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Menu, PackageSearch, X } from 'lucide-react'
 import { formatPln } from '@/lib/format'
+import { track } from '@/lib/funnel'
 import { useParts } from '@/hooks/useParts'
+import { useFilePicker } from '@/hooks/useFilePicker'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
-import { LOCALES, useLocale, useStrings, type Locale } from '@/lib/i18n'
-import { setLocaleCookie } from '@/lib/i18n/detect'
-import { SECTIONS, sectionKeyFor } from '@/content/sections'
-
-/** Content sections in nav order — label keys align with strings.nav.
-    Shared with SiteFooter's sitemap so the two surfaces never drift. */
-export const NAV_SECTIONS = ['materials', 'pricing', 'compare', 'blog'] as const
+import { useLocale, useStrings } from '@/lib/i18n'
+import { sectionKeyFor } from '@/content/sections'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { DesktopNav } from './header/DesktopNav'
+import { MobileNav } from './header/MobileNav'
+import { LocaleSwitcher } from './LocaleSwitcher'
 
 /** Landing section anchors the scroll-spy watches, and the nav item each
     one lights up (the landing sections preview their content pages). */
@@ -57,6 +67,7 @@ export function SiteHeader({
   const strings = useStrings()
   const locale = useLocale()
   const { parts, clear } = useParts()
+  const openFilePicker = useFilePicker()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   // Current content section, if any — SSR-stable (derived from URL params).
@@ -103,50 +114,19 @@ export function SiteHeader({
           {variant === 'landing' ? (
             <>
               <nav className="hidden items-center gap-5 lg:flex">
-                {/* Link+hash instead of a plain anchor so the landing jump
-                  also works from content pages (/materialy/…). */}
-                <Link
-                  to="/$locale"
-                  params={{ locale }}
-                  hash="how-it-works"
-                  // exact+hash: otherwise the router force-marks this link
-                  // aria-current="page" on every /$locale/* page; the scroll
-                  // spy owns its current-state instead.
-                  activeOptions={{ exact: true, includeHash: true }}
-                  aria-current={
-                    activeKey === 'howItWorks' ? 'location' : undefined
-                  }
-                  className={cn(
-                    'hover:text-foreground relative transition-colors',
-                    activeKey === 'howItWorks'
-                      ? "text-foreground after:bg-primary-text after:absolute after:-inset-x-0.5 after:-bottom-[18px] after:h-0.5 after:content-['']"
-                      : 'text-muted-foreground',
-                  )}
-                >
-                  {strings.nav.howItWorks}
-                </Link>
-                {NAV_SECTIONS.map((key) => (
-                  <Link
-                    key={key}
-                    to="/$locale/$section"
-                    params={{ locale, section: SECTIONS[key][locale] }}
-                    aria-current={activeKey === key ? ariaCurrent : undefined}
-                    className={cn(
-                      'hover:text-foreground relative transition-colors',
-                      activeKey === key
-                        ? "text-foreground after:bg-primary-text after:absolute after:-inset-x-0.5 after:-bottom-[18px] after:h-0.5 after:content-['']"
-                        : 'text-muted-foreground',
-                    )}
-                  >
-                    {strings.nav[key]}
-                  </Link>
-                ))}
+                <DesktopNav activeKey={activeKey} ariaCurrent={ariaCurrent} />
                 <Link
                   to="/$locale/login"
                   params={{ locale }}
-                  className="bg-card hover:bg-secondary text-foreground rounded-md border px-3 py-1.5 transition-colors"
+                  aria-label={strings.nav.trackOrder}
+                  // The mega menu made the 1024–1280px band overflow, so the
+                  // chip collapses to an icon there; full label from xl up.
+                  className="bg-card hover:bg-secondary text-foreground rounded-md border px-3 py-1.5 whitespace-nowrap transition-colors"
                 >
-                  {strings.nav.trackOrder}
+                  <PackageSearch aria-hidden className="size-4 xl:hidden" />
+                  <span className="hidden xl:inline">
+                    {strings.nav.trackOrder}
+                  </span>
                 </Link>
                 <LocaleSwitcher />
                 {parts.length > 0 ? (
@@ -164,10 +144,26 @@ export function SiteHeader({
                     </span>
                   </Link>
                 ) : (
-                  <span className="text-foreground hidden items-center gap-1.5 xl:flex">
-                    <span className="bg-signal size-1.5 rounded-full" />
-                    {strings.hero.ready}
-                  </span>
+                  // Empty cart: the header's one upload CTA (QuoteCta
+                  // funnel). Replaces the old xl-only GOTOWE status dot.
+                  <button
+                    type="button"
+                    onClick={() => {
+                      track('cta_upload_clicked', { source_page: 'header' })
+                      openFilePicker()
+                    }}
+                    className="bg-primary text-primary-foreground hover:shadow-primary/40 cursor-pointer rounded-md px-3 py-1.5 font-bold whitespace-nowrap hover:shadow-lg motion-safe:transition-[transform,box-shadow] motion-safe:hover:-translate-y-px"
+                  >
+                    {/* Long label joins the track-order chip's icon→full
+                      swap 30px past xl — at exactly 1280 both together
+                      overflow the nav by 2px. */}
+                    <span className="min-[1310px]:hidden">
+                      {strings.nav.getQuoteShort}
+                    </span>
+                    <span className="hidden min-[1310px]:inline">
+                      {strings.nav.getQuote}
+                    </span>
+                  </button>
                 )}
               </nav>
               <div className="flex items-center gap-3 lg:hidden">
@@ -192,7 +188,7 @@ export function SiteHeader({
                     <button
                       type="button"
                       aria-label={strings.nav.menuLabel}
-                      className="text-foreground focus-visible:ring-ring -mr-2 inline-flex size-10 cursor-pointer items-center justify-center rounded-[7px] border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                      className="text-foreground focus-visible:ring-ring -mr-2.5 inline-flex size-11 cursor-pointer items-center justify-center rounded-[7px] border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                       {menuOpen ? (
                         <X className="size-5" />
@@ -205,49 +201,15 @@ export function SiteHeader({
                     <DialogPrimitive.Overlay className="motion-safe:animate-in motion-safe:fade-in bg-background/60 fixed inset-0 top-14 z-40 backdrop-blur-sm duration-[180ms] lg:hidden" />
                     <DialogPrimitive.Content
                       aria-describedby={undefined}
-                      className="motion-safe:animate-in fade-in slide-in-from-top-1.5 bg-background fixed inset-x-0 top-14 z-50 border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out lg:hidden"
+                      className="motion-safe:animate-in fade-in slide-in-from-top-1.5 bg-background fixed inset-x-0 top-14 z-50 max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out lg:hidden"
                     >
                       <DialogPrimitive.Title className="sr-only">
                         {strings.nav.menuLabel}
                       </DialogPrimitive.Title>
-                      <Link
-                        to="/$locale"
-                        params={{ locale }}
-                        hash="how-it-works"
-                        onClick={() => setMenuOpen(false)}
-                        className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
-                      >
-                        {strings.nav.howItWorks}
-                        <span aria-hidden className="text-primary-text">
-                          01
-                        </span>
-                      </Link>
-                      {NAV_SECTIONS.map((key, i) => (
-                        <Link
-                          key={key}
-                          to="/$locale/$section"
-                          params={{ locale, section: SECTIONS[key][locale] }}
-                          onClick={() => setMenuOpen(false)}
-                          aria-current={routeKey === key ? 'page' : undefined}
-                          className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
-                        >
-                          {strings.nav[key]}
-                          <span aria-hidden className="text-primary-text">
-                            {`0${i + 2}`}
-                          </span>
-                        </Link>
-                      ))}
-                      <Link
-                        to="/$locale/login"
-                        params={{ locale }}
-                        onClick={() => setMenuOpen(false)}
-                        className="bg-primary text-primary-foreground mt-3.5 block rounded-[7px] px-2 py-[15px] text-center font-bold"
-                      >
-                        {strings.nav.trackOrder} →
-                      </Link>
-                      <div className="mt-3.5 flex justify-center">
-                        <LocaleSwitcher />
-                      </div>
+                      <MobileNav
+                        routeKey={routeKey}
+                        onNavigate={() => setMenuOpen(false)}
+                      />
                     </DialogPrimitive.Content>
                   </DialogPrimitive.Portal>
                 </DialogPrimitive.Root>
@@ -259,16 +221,43 @@ export function SiteHeader({
                 {strings.hero.status}
               </span>
               <LocaleSwitcher />
-              <button
-                type="button"
-                onClick={() => {
-                  clear()
-                  void navigate({ to: '/$locale', params: { locale } })
-                }}
-                className="bg-card hover:bg-secondary cursor-pointer rounded-md border px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
-              >
-                {strings.nav.newQuote}
-              </button>
+              {/* Reset discards the cart — confirm first. Orange, not red:
+                data loss, not an error. */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="bg-card hover:bg-secondary cursor-pointer rounded-md border px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
+                  >
+                    {strings.nav.newQuote}
+                  </button>
+                </AlertDialogTrigger>
+                {/* Mono/uppercase to match the header's TE language (the
+                  vendored primitive stays stock sans). */}
+                <AlertDialogContent className="font-mono tracking-widest uppercase">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {strings.nav.newQuoteConfirmTitle}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {strings.nav.newQuoteConfirmBody(parts.length)}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      {strings.nav.newQuoteConfirmCancel}
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        clear()
+                        void navigate({ to: '/$locale', params: { locale } })
+                      }}
+                    >
+                      {strings.nav.newQuoteConfirmAction}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </nav>
           )}
         </div>
@@ -311,51 +300,5 @@ export function SiteHeader({
         </div>
       )}
     </>
-  )
-}
-
-/**
- * PL | EN segmented switcher — swaps the $locale prefix in place (route and
- * search preserved) and persists the choice for the `/` redirect. The only
- * writer of the locale cookie. Also rendered by OrderAccessShell's header.
- */
-export function LocaleSwitcher() {
-  const locale = useLocale()
-  const navigate = useNavigate()
-
-  function switchTo(next: Locale) {
-    if (next === locale) return
-    setLocaleCookie(next)
-    void navigate({
-      to: '.',
-      params: (prev) => ({ ...prev, locale: next }),
-    })
-  }
-
-  return (
-    <span className="flex items-center gap-1.5">
-      {LOCALES.map((l, i) => (
-        <span key={l} className="flex items-center gap-1.5">
-          {i > 0 && (
-            <span aria-hidden className="text-muted-foreground/50">
-              /
-            </span>
-          )}
-          <button
-            type="button"
-            aria-current={l === locale || undefined}
-            onClick={() => switchTo(l)}
-            className={cn(
-              'cursor-pointer uppercase transition-colors',
-              l === locale
-                ? 'text-foreground font-bold'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {l}
-          </button>
-        </span>
-      ))}
-    </span>
   )
 }

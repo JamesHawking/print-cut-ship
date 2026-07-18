@@ -1,8 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { useWarsawClock } from '@/hooks/useWarsawClock'
-import { SECTIONS } from '@/content/sections'
-import { NAV_SECTIONS } from './SiteHeader'
+import { NAV_SECTIONS, SECTIONS } from '@/content/sections'
 import { QuoteCta } from './QuoteCta'
 
 export function SiteFooter({

@@ -72,6 +72,18 @@ export const en = {
     // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
     resumeShort: (n: number) => `Quote (${n}) →`,
     newQuote: '← New quote',
+    // Header upload CTA (empty cart) — full label at xl+, short form in the
+    // tight band and as the mobile menu's primary button. Opens the native
+    // file picker, same funnel as QuoteCta.
+    getQuote: 'Get a quote',
+    getQuoteShort: 'Quote',
+    // Quote-page "New quote" confirmation (AlertDialog) — orange, not red:
+    // the parts are discarded, nothing is "wrong".
+    newQuoteConfirmTitle: 'Start a new quote?',
+    newQuoteConfirmBody: (n: number) =>
+      `Continue? ${n} ${enPlural(n, 'part', 'parts')} will be discarded.`,
+    newQuoteConfirmAction: 'New quote',
+    newQuoteConfirmCancel: 'Cancel',
   },
   ticker: [
     'Ships D+1 PL/DE',
@@ -139,6 +151,9 @@ export const en = {
     footnote: 'Rates gross incl. 23% VAT',
     readGuide: 'Guide',
     guideSoon: 'Guide soon',
+    // Mega-menu badge (nav-panels.tsx) — the full label would overflow the
+    // two-column panel's cell.
+    guideSoonShort: 'Soon',
     bracketLabel: 'demo bracket · 1 pc',
   },
   materialFamilies: {
@@ -358,6 +373,8 @@ export const en = {
     readVerdict: 'Read the verdict →',
     // Landing teaser card for the comparisons hub (GuidesTeaser.tsx).
     teaserTitle: 'ASA or PETG? Your own printer or ordering?',
+    // Mega-menu panel footer (header/nav-panels.tsx).
+    allComparisonsTitle: 'All comparisons',
     higherBetter: 'higher is better',
     lowerBetter: 'lower is better',
     tileStatAsa: (hdtC: number) => `${hdtC} °C · UV+`,
