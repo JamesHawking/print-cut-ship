@@ -493,7 +493,7 @@ export const pl = {
     dragActive: 'Puść, aby wgrać',
     parsing: 'Czytanie geometrii…',
     intake: 'Przyjęcie pliku',
-    intakeArmed: 'Przyjęcie pliku — gotowe',
+    intakeArmed: 'Przyjęcie pliku — uzbrojone',
     formats: 'STL · 3MF · OBJ · STEP — do 100 MB',
     maxSize: 'Maks. 340 × 320 × 340 mm',
     mwLabel: 'albo wklej link z MakerWorld',

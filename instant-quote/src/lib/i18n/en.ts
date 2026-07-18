@@ -64,7 +64,7 @@ export const en = {
     materials: 'Materials',
     pricing: 'Pricing',
     compare: 'Compare',
-    blog: 'Blog',
+    blog: 'Knowledge base',
     trackOrder: 'Track order',
     menuLabel: 'Toggle menu',
     skipToContent: 'Skip to content',
@@ -75,8 +75,8 @@ export const en = {
     // Header upload CTA (empty cart) — full label at xl+, short form in the
     // tight band and as the mobile menu's primary button. Opens the native
     // file picker, same funnel as QuoteCta.
-    getQuote: 'Get a quote',
-    getQuoteShort: 'Quote',
+    getQuote: 'Price a part',
+    getQuoteShort: 'Price',
     // Quote-page "New quote" confirmation (AlertDialog) — orange, not red:
     // the parts are discarded, nothing is "wrong".
     newQuoteConfirmTitle: 'Start a new quote?',
@@ -414,7 +414,7 @@ export const en = {
   },
   // Blog — UI chrome only; article prose lives in src/content/blog.
   blogPages: {
-    breadcrumb: 'Blog',
+    breadcrumb: 'Knowledge base',
     indexTitle: 'FDM 3D printing knowledge base | MICRO_FACTORY',
     indexDescription:
       'Engineering guides to FDM printing: wall thickness, orientation, tolerances, fits. Concrete numbers instead of adjectives.',
