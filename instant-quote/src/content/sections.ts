@@ -15,6 +15,23 @@ export const SECTIONS = {
 
 export type SectionKey = keyof typeof SECTIONS
 
+/** Content sections in nav order — label keys align with strings.nav.
+    Shared by the header's desktop/mobile nav and SiteFooter's sitemap so
+    the three surfaces never drift. */
+export const NAV_SECTIONS = ['materials', 'pricing', 'compare', 'blog'] as const
+
+/** Full nav order including the landing "how it works" anchor — the source
+    of the 01–05 numbering shown in the mobile menu and mega-panel
+    nameplates. */
+export const NAV_ORDER = ['howItWorks', ...NAV_SECTIONS] as const
+
+export type NavKey = (typeof NAV_ORDER)[number]
+
+/** '01'…'05' — the nav item's position in NAV_ORDER. */
+export function navNumeral(key: NavKey): string {
+  return `0${NAV_ORDER.indexOf(key) + 1}`
+}
+
 /** The section this word names in this locale, if any. */
 export function sectionKeyFor(locale: Locale, word: string): SectionKey | null {
   for (const key of Object.keys(SECTIONS) as SectionKey[]) {

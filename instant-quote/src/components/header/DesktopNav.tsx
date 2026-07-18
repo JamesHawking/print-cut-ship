@@ -3,7 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { NavigationMenu as NavigationMenuPrimitive } from 'radix-ui'
 import { cn } from '@/lib/utils'
 import { useLocale, useStrings } from '@/lib/i18n'
-import { SECTIONS } from '@/content/sections'
+import { NAV_SECTIONS, SECTIONS } from '@/content/sections'
 import {
   NavigationMenuContent,
   NavigationMenuItem,
@@ -11,7 +11,6 @@ import {
   NavigationMenuTrigger,
   NavigationMenuViewport,
 } from '@/components/ui/navigation-menu'
-import { NAV_SECTIONS } from '../SiteHeader'
 import { BlogPanel, ComparePanel, MaterialsPanel } from './nav-panels'
 
 /**

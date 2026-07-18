@@ -13,12 +13,13 @@ import { useParts } from '@/hooks/useParts'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
 import { LOCALES, useLocale, useStrings, type Locale } from '@/lib/i18n'
 import { setLocaleCookie } from '@/lib/i18n/detect'
-import { SECTIONS, sectionKeyFor } from '@/content/sections'
+import {
+  NAV_SECTIONS,
+  SECTIONS,
+  navNumeral,
+  sectionKeyFor,
+} from '@/content/sections'
 import { DesktopNav } from './header/DesktopNav'
-
-/** Content sections in nav order — label keys align with strings.nav.
-    Shared with SiteFooter's sitemap so the two surfaces never drift. */
-export const NAV_SECTIONS = ['materials', 'pricing', 'compare', 'blog'] as const
 
 /** Landing section anchors the scroll-spy watches, and the nav item each
     one lights up (the landing sections preview their content pages). */
@@ -189,10 +190,10 @@ export function SiteHeader({
                       >
                         {strings.nav.howItWorks}
                         <span aria-hidden className="text-primary-text">
-                          01
+                          {navNumeral('howItWorks')}
                         </span>
                       </Link>
-                      {NAV_SECTIONS.map((key, i) => (
+                      {NAV_SECTIONS.map((key) => (
                         <Link
                           key={key}
                           to="/$locale/$section"
@@ -203,7 +204,7 @@ export function SiteHeader({
                         >
                           {strings.nav[key]}
                           <span aria-hidden className="text-primary-text">
-                            {`0${i + 2}`}
+                            {navNumeral(key)}
                           </span>
                         </Link>
                       ))}

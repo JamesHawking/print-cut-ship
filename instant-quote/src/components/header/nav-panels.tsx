@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { useLocale, useStrings, type Dictionary } from '@/lib/i18n'
 import { MATERIALS } from '@/lib/catalog-static'
+import { navNumeral } from '@/content/sections'
 import {
   MATERIALS_SECTION,
   PUBLISHED_MATERIALS,
@@ -88,7 +89,7 @@ export function MaterialsPanel() {
   return (
     <div className={cn(panelClass, 'w-[min(560px,84vw)]')}>
       <PanelNameplate
-        n="02"
+        n={navNumeral('materials')}
         label={strings.nav.materials}
         count={MATERIALS.length}
       />
@@ -156,7 +157,7 @@ export function ComparePanel() {
   return (
     <div className={cn(panelClass, 'w-[min(400px,84vw)]')}>
       <PanelNameplate
-        n="04"
+        n={navNumeral('compare')}
         label={strings.nav.compare}
         count={COMPARISONS.length}
       />
@@ -194,7 +195,7 @@ export function BlogPanel() {
   return (
     <div className={cn(panelClass, 'w-[min(460px,84vw)]')}>
       <PanelNameplate
-        n="05"
+        n={navNumeral('blog')}
         label={strings.nav.blog}
         count={blogPosts(locale).length}
       />
