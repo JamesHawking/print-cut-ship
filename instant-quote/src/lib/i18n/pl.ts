@@ -135,6 +135,7 @@ export const pl = {
       done: 'wycena gotowa — maszyna odpowiedziała',
       replay: 'Odtwórz ponownie',
       engineLabel: 'quote-engine v1',
+      meshLabel: (triangles: string) => `siatka · ${triangles} trójkątów`,
       cta: 'Teraz wyceń swoją część →',
       srSummary: (total: string, weekday: string) =>
         `Przykładowy wspornik zmierzony w przeglądarce i wyceniony przez silnik na ${total} z VAT, wysyłka ${weekday}, D+1 do PL/DE.`,
@@ -148,6 +149,9 @@ export const pl = {
     density: 'Gęstość',
     from: 'Od',
     footnote: 'Stawki brutto z 23% VAT',
+    readGuide: 'Przewodnik',
+    guideSoon: 'Przewodnik wkrótce',
+    bracketLabel: 'wspornik z dema · 1 szt.',
   },
   materialFamilies: {
     standard: 'Standardowe',

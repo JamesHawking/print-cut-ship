@@ -122,6 +122,7 @@ export const en = {
       done: 'quote complete — the machine answered',
       replay: 'Replay',
       engineLabel: 'quote-engine v1',
+      meshLabel: (triangles: string) => `mesh · ${triangles} triangles`,
       cta: 'Now run yours →',
       srSummary: (total: string, weekday: string) =>
         `A sample bracket measured in the browser and priced by the live engine at ${total} incl. VAT, shipping ${weekday}, D+1 to PL/DE.`,
@@ -135,6 +136,9 @@ export const en = {
     density: 'Density',
     from: 'From',
     footnote: 'Rates gross incl. 23% VAT',
+    readGuide: 'Guide',
+    guideSoon: 'Guide soon',
+    bracketLabel: 'demo bracket · 1 pc',
   },
   materialFamilies: {
     standard: 'Standard',
