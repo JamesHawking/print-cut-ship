@@ -36,17 +36,17 @@ export const pl = {
     description:
       'Wgraj plik STL, 3MF, OBJ lub STEP i otrzymaj cenę od ręki. Produkcja w UE, wysyłka D+1/D+2 do Niemiec. Bez zakładania konta.',
     quote: {
-      title: 'Twoja wycena — MICRO_FACTORY',
+      title: 'Twoja wycena | MICRO_FACTORY',
       description:
         'Skonfiguruj materiał, ilość i termin — cena aktualizuje się na żywo.',
     },
     login: {
-      title: 'Śledź zamówienie — MICRO_FACTORY',
+      title: 'Śledź zamówienie | MICRO_FACTORY',
       description:
         'Dostęp do zamówień jednorazowym kodem — bez konta i bez hasła.',
     },
     orders: {
-      title: 'Twoje zamówienia — MICRO_FACTORY',
+      title: 'Twoje zamówienia | MICRO_FACTORY',
       description:
         'Historia wycen i zamówień powiązanych z twoim adresem e-mail.',
     },
@@ -107,7 +107,7 @@ export const pl = {
     n: '01',
     heading: 'Od pliku do daty wysyłki w trzech krokach',
     intro:
-      'Maszyna prowadzi Twój plik przez linię — zmierzony, wyceniony i z wiążącą datą wysyłki w niecałą minutę. Poniżej prawdziwy przebieg na żywym silniku.',
+      'Maszyna prowadzi twój plik przez linię — zmierzony, wyceniony i z wiążącą datą wysyłki w niecałą minutę. Poniżej prawdziwy przebieg na żywym silniku.',
     steps: [
       { n: '01', kicker: 'WGRAJ', title: 'Upuść plik' },
       { n: '02', kicker: 'WYCEŃ', title: 'Zobacz liczby' },
@@ -746,7 +746,7 @@ export const pl = {
     mwNotFound: 'Nie znaleziono modelu na MakerWorld — sprawdź link.',
     mwNoProfile: 'Ten model nie ma profilu druku do pobrania.',
     mwAuthExpired:
-      'Dostęp do MakerWorld wygasł — odśwież BAMBU_CLOUD_TOKEN na serwerze.',
+      'Połączenie z MakerWorld wygasło po naszej stronie. Spróbuj później albo wgraj plik bezpośrednio.',
     mwNotConfigured:
       'Import z MakerWorld nie jest skonfigurowany na tym serwerze.',
     mwDownloadFailed:

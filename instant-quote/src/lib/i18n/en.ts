@@ -25,17 +25,17 @@ export const en = {
     description:
       'Upload an STL, 3MF, OBJ or STEP file and get an instant price. Made in the EU, ships D+1/D+2 to Germany. No account needed.',
     quote: {
-      title: 'Your quote — MICRO_FACTORY',
+      title: 'Your quote | MICRO_FACTORY',
       description:
         'Pick material, quantity and lead time — the price updates live.',
     },
     login: {
-      title: 'Track your order — MICRO_FACTORY',
+      title: 'Track your order | MICRO_FACTORY',
       description:
         'Access your orders with a one-time code — no account, no password.',
     },
     orders: {
-      title: 'Your orders — MICRO_FACTORY',
+      title: 'Your orders | MICRO_FACTORY',
       description: 'Quote and order history linked to your email address.',
     },
   },
@@ -212,7 +212,7 @@ export const en = {
     cards: [
       {
         title: 'Weight, like a slicer',
-        body: 'A 0,9 mm shell over your part’s surface plus 20% infill, converted to grams by material density.',
+        body: 'A 0.9 mm shell over your part’s surface plus 20% infill, converted to grams by material density.',
       },
       {
         title: 'No hidden fees',
@@ -714,7 +714,7 @@ export const en = {
     mwNotFound: 'Model not found on MakerWorld — check the link.',
     mwNoProfile: 'This model has no downloadable print profile.',
     mwAuthExpired:
-      'MakerWorld access expired — refresh BAMBU_CLOUD_TOKEN on the server.',
+      'Our MakerWorld connection has expired. Try again later or upload the file directly.',
     mwNotConfigured: 'MakerWorld import is not configured on this server.',
     mwDownloadFailed:
       'Could not download the model from MakerWorld. Try again.',
