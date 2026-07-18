@@ -57,12 +57,12 @@ export const pl = {
     ready: 'Gotowe',
     kickerBadge: 'UE',
     kicker: 'Druk 3D na żądanie · Polska · PLN',
-    headline1: 'Wgraj część.',
-    headline2: 'Poznaj cenę.',
-    sub: 'To nie formularz zapytania ani rozmowa z handlowcem. Upuść plik, a maszyna odpowie — pełny kosztorys i realna data wysyłki, w kilka sekund, bez konta.',
+    headline1: 'Upuść plik.',
+    headline2: 'Odczytaj cenę.',
+    sub: 'Upuść plik 3D, a maszyna odpowie: pełny kosztorys i realna data wysyłki, w kilka sekund. Bez konta i bez telefonu od handlowca.',
     sample: 'Nie masz pliku pod ręką? Wypróbuj przykładową część →',
     privacy:
-      'Prywatność — pliki służą wyłącznie do przygotowania wyceny i są usuwane automatycznie, jeśli nie zamówisz',
+      'Plik służy wyłącznie do przygotowania wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
       'materiałów FDM',
@@ -107,7 +107,7 @@ export const pl = {
     n: '01',
     heading: 'Od pliku do daty wysyłki w trzech krokach',
     intro:
-      'Maszyna prowadzi twój plik przez linię — zmierzony, wyceniony i z wiążącą datą wysyłki w niecałą minutę. Poniżej prawdziwy przebieg na żywym silniku.',
+      'Maszyna prowadzi twój plik przez linię: mierzy, wycenia i blokuje datę wysyłki — w niecałą minutę. Poniżej prawdziwy przebieg na żywym silniku.',
     steps: [
       { n: '01', kicker: 'WGRAJ', title: 'Upuść plik' },
       { n: '02', kicker: 'WYCEŃ', title: 'Zobacz liczby' },
@@ -149,14 +149,15 @@ export const pl = {
       engineLabel: 'quote-engine v1',
       panelTag: 'Przebieg wyceny na żywo',
       meshLabel: (triangles: string) => `siatka · ${triangles} trójkątów`,
-      cta: 'Teraz wyceń swoją część →',
+      cta: 'Wyceń swoją część →',
       srSummary: (total: string, weekday: string) =>
         `Przykładowy wspornik zmierzony w przeglądarce i wyceniony przez silnik na ${total} z VAT, wysyłka ${weekday}, D+1 do PL/DE.`,
     },
   },
   materialsSection: {
     n: '02',
-    heading: 'Siedem materiałów, od prototypu po część użytkową',
+    heading: (count: number) =>
+      `${count} ${plPlural(count, 'materiał', 'materiały', 'materiałów')}, od prototypu po część użytkową`,
     material: 'Materiał',
     application: 'Zastosowanie',
     density: 'Gęstość',
@@ -183,7 +184,7 @@ export const pl = {
     petg: {
       family: 'standard' as MaterialFamily,
       tagline:
-        'Wytrzymały, odporny na wilgoć materiał do wszystkiego. Obudowy, uchwyty, części funkcjonalne.',
+        'Wytrzymały, odporny na wilgoć, uniwersalny. Obudowy, uchwyty, części funkcjonalne.',
     },
     pctg: {
       family: 'standard' as MaterialFamily,
@@ -290,7 +291,7 @@ export const pl = {
     breadcrumbMaterials: 'Materiały',
     indexTitle: 'Materiały do druku 3D — ceny i właściwości | MICRO_FACTORY',
     indexDescription:
-      'Siedem materiałów FDM od prototypu po część użytkową: właściwości, ograniczenia projektowe i ceny liczone przez silnik wyceny.',
+      'Materiały FDM od prototypu po część użytkową: właściwości, ograniczenia projektowe i ceny liczone przez silnik wyceny.',
     indexHeading: 'Materiały do druku 3D',
     indexIntro:
       'Każdy materiał drukujemy na tych samych maszynach i wyceniamy tym samym silnikiem co formularz wyceny. Wybierz materiał, aby zobaczyć właściwości, wskazówki projektowe i ceny referencyjne.',

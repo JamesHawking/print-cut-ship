@@ -45,12 +45,12 @@ export const en = {
     ready: 'Ready',
     kickerBadge: 'EU',
     kicker: 'On-demand 3D printing · Poland · PLN',
-    headline1: 'Upload a part.',
-    headline2: 'Get a price.',
-    sub: 'Not a request form. Not a sales call. Drop the file and the machine answers — a full cost breakdown and a real ship date, in seconds, with no account.',
+    headline1: 'Drop the file.',
+    headline2: 'Read the price.',
+    sub: 'Drop a 3D file and the machine answers: an itemized price and a real ship date, in seconds. No account, no sales call.',
     sample: 'No file handy? Try a sample part →',
     privacy:
-      'Private — files are used only to prepare your quote and auto-deleted if you don’t order',
+      'Your file is used only to prepare the quote — if you don’t order, it’s deleted automatically',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
       'FDM materials',
@@ -95,7 +95,7 @@ export const en = {
     n: '01',
     heading: 'File to ship date in three steps',
     intro:
-      'The machine takes your file down the line — measured, priced, and committed to a ship date in under a minute. Below is a real run on the live engine.',
+      'The machine takes your file down the line: measures it, prices it, and locks a ship date — in under a minute. Below is a real run on the live engine.',
     steps: [
       { n: '01', kicker: 'UPLOAD', title: 'Drop the file' },
       { n: '02', kicker: 'PRICE', title: 'Read the numbers' },
@@ -143,7 +143,7 @@ export const en = {
   },
   materialsSection: {
     n: '02',
-    heading: 'Seven materials, prototype to end-use',
+    heading: (count: number) => `${count} materials, prototype to end-use`,
     material: 'Material',
     application: 'Application',
     density: 'Density',
@@ -276,7 +276,7 @@ export const en = {
     breadcrumbMaterials: 'Materials',
     indexTitle: '3D printing materials — prices & properties | MICRO_FACTORY',
     indexDescription:
-      'Seven FDM materials from prototype to end-use: properties, design limits, and prices computed by the quoting engine.',
+      'FDM materials from prototype to end-use: properties, design limits, and prices computed by the quoting engine.',
     indexHeading: '3D printing materials',
     indexIntro:
       'Every material prints on the same machines and is priced by the same engine as the quote form. Pick a material for properties, design guidance, and reference prices.',
