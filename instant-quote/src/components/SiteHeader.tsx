@@ -14,6 +14,7 @@ import { useScrollSpy } from '@/hooks/useScrollSpy'
 import { LOCALES, useLocale, useStrings, type Locale } from '@/lib/i18n'
 import { setLocaleCookie } from '@/lib/i18n/detect'
 import { SECTIONS, sectionKeyFor } from '@/content/sections'
+import { DesktopNav } from './header/DesktopNav'
 
 /** Content sections in nav order — label keys align with strings.nav.
     Shared with SiteFooter's sitemap so the two surfaces never drift. */
@@ -103,44 +104,7 @@ export function SiteHeader({
           {variant === 'landing' ? (
             <>
               <nav className="hidden items-center gap-5 lg:flex">
-                {/* Link+hash instead of a plain anchor so the landing jump
-                  also works from content pages (/materialy/…). */}
-                <Link
-                  to="/$locale"
-                  params={{ locale }}
-                  hash="how-it-works"
-                  // exact+hash: otherwise the router force-marks this link
-                  // aria-current="page" on every /$locale/* page; the scroll
-                  // spy owns its current-state instead.
-                  activeOptions={{ exact: true, includeHash: true }}
-                  aria-current={
-                    activeKey === 'howItWorks' ? 'location' : undefined
-                  }
-                  className={cn(
-                    'hover:text-foreground relative transition-colors',
-                    activeKey === 'howItWorks'
-                      ? "text-foreground after:bg-primary-text after:absolute after:-inset-x-0.5 after:-bottom-[18px] after:h-0.5 after:content-['']"
-                      : 'text-muted-foreground',
-                  )}
-                >
-                  {strings.nav.howItWorks}
-                </Link>
-                {NAV_SECTIONS.map((key) => (
-                  <Link
-                    key={key}
-                    to="/$locale/$section"
-                    params={{ locale, section: SECTIONS[key][locale] }}
-                    aria-current={activeKey === key ? ariaCurrent : undefined}
-                    className={cn(
-                      'hover:text-foreground relative transition-colors',
-                      activeKey === key
-                        ? "text-foreground after:bg-primary-text after:absolute after:-inset-x-0.5 after:-bottom-[18px] after:h-0.5 after:content-['']"
-                        : 'text-muted-foreground',
-                    )}
-                  >
-                    {strings.nav[key]}
-                  </Link>
-                ))}
+                <DesktopNav activeKey={activeKey} ariaCurrent={ariaCurrent} />
                 <Link
                   to="/$locale/login"
                   params={{ locale }}

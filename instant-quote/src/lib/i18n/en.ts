@@ -358,6 +358,8 @@ export const en = {
     readVerdict: 'Read the verdict →',
     // Landing teaser card for the comparisons hub (GuidesTeaser.tsx).
     teaserTitle: 'ASA or PETG? Your own printer or ordering?',
+    // Mega-menu panel footer (header/nav-panels.tsx).
+    allComparisonsTitle: 'All comparisons',
     higherBetter: 'higher is better',
     lowerBetter: 'lower is better',
     tileStatAsa: (hdtC: number) => `${hdtC} °C · UV+`,

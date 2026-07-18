@@ -376,6 +376,8 @@ export const pl = {
     readVerdict: 'Przeczytaj werdykt →',
     // Landing teaser card for the comparisons hub (GuidesTeaser.tsx).
     teaserTitle: 'ASA czy PETG? Własna drukarka czy zamówienie?',
+    // Mega-menu panel footer (header/nav-panels.tsx).
+    allComparisonsTitle: 'Wszystkie porównania',
     higherBetter: 'więcej = lepiej',
     lowerBetter: 'mniej = lepiej',
     // Decision-tile A/B stats (design 4a; PL drops the /kg to stay one-line).
