@@ -1,6 +1,8 @@
 # 04 — User accounts & authentication
 
-> **Status: ⬜ Not started** (as of 2026-07-16).
+> **Status: 🟨 In progress** (as of 2026-07-18).
+
+> **Amendment (2026-07-18, user-locked): passwordless OTP replaces email+password.** The shipped `/login → /orders` UI is passwordless (email + 6-digit code), the 2026-07-18 copy overhaul removed the "codes are simulated" disclaimer, and "no account, no password" is now the positioning — so the password model (argon2id, register/verify/reset flows) is dropped. Login = email + real one-time code → Postgres-backed session cookie. What survives unchanged: server-side sessions in Postgres (opaque token, SHA-256-hashed at rest, httpOnly/Secure/SameSite=Lax cookie `iq_session`, 30-day sliding TTL), `role` column + `RequireAdmin` for plan 07, the email `Sender` port with console dev impl (plan 06 swaps in Resend — production launch stays gated on 06 since codes are console-logged until then), quoting never gated behind login, additive-only migration. B2B fields (company/NIP): columns land here, UI deferred to plan 05 checkout. The body below stays as history per working agreements; the executable checklist in §5 is superseded by the OTP checklist in the implementation handoff (real code emailed — console in dev · wrong code uniform 401 · code single-use + 10-min TTL · attempt/resend caps · sessions survive backend restart · quoting stays anonymous · `role='admin'` passes `RequireAdmin`, customer 403 · gen-check clean).
 
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`): better-auth is **out**; auth lives in the Go service with server-side sessions, consumed by the frontend through the OpenAPI client.
 
