@@ -8,10 +8,8 @@ Three corpora, one root. Each is self-indexing; this file is the map.
 | `advisor/` | Implementation plans from external codebase audits (the `improve` skill), prioritized with dependencies | Status table in `advisor/README.md` (TODO / IN PROGRESS / DONE / BLOCKED / REJECTED) |
 | `seo/` | Six executable build prompts for the SEO/content surface, in dependency order | Table in `seo/00_README.md`; shipped state is reflected in engineering plan 13's banner |
 
-Rules:
+Rules (normative versions in root [`AGENTS.md`](../AGENTS.md)):
 
-- A plan's status changes; its body is a decision record — amend with dated
-  notes, don't rewrite history.
 - When a status changes, update the corpus index in the same commit.
 - New sequenced plans: `NN-kebab-title.md` in the right corpus (advisor uses
   `NNN-`). Give each a status banner or table row from birth.

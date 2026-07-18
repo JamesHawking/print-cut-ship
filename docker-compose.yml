@@ -2,8 +2,8 @@
 #
 # Two modes, both needing zero external config:
 #
-#   1. DB only (fast native hot-reload loop) — the default:
-#        docker compose up -d          # postgres on :5432
+#   1. Services only (fast native dev loop) — the default:
+#        docker compose up -d          # postgres :5432 + minio :9000
 #        make dev                      # runs backend + frontend natively
 #
 #   2. Full stack in containers (no Go/Bun toolchain needed):
@@ -12,7 +12,8 @@
 #      the API on :8080. The frontend still runs natively (bun dev proxies
 #      /api to :8080).
 #
-# Plan 02 adds MinIO here; plan 03 owns the production Coolify resources.
+# MinIO (plan 02) stores uploaded models; plan 03 owns the production Coolify
+# resources.
 
 x-backend: &backend
   build: ./backend

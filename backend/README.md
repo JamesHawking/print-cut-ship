@@ -30,7 +30,8 @@ repo-root `docker-compose.yml`; **local dev needs no external config** — the
 Makefiles default `DATABASE_URL` to the compose Postgres. Two modes:
 
 ```sh
-# Mode 1 — native hot-reload loop (default). From the repo root:
+# Mode 1 — native dev loop (default; the frontend hot-reloads, restart the
+# API to pick up Go changes). From the repo root:
 make dev              # starts Postgres, migrates+seeds, runs API + frontend
 
 # Just the backend against the compose DB (from backend/):

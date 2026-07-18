@@ -13,6 +13,6 @@ Conventions:
   recorded in `business/decisions.md` — create it when the first decision
   needs recording. Engineering decisions live separately in
   [`../plans/engineering/DECISIONS.md`](../plans/engineering/DECISIONS.md).
-- New business domains (marketing, ops, finance, legal) become top-level
-  folders with their own README when the first real artifact exists — don't
-  create empty trees.
+- New business domains (marketing, ops, finance, legal): top-level folder +
+  README when the first real artifact exists — see the working agreement in
+  [`../AGENTS.md`](../AGENTS.md).

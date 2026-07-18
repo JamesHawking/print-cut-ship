@@ -17,7 +17,8 @@ at [`README.md`](README.md) for the map.
   SQL queries.
 - **Never hand-edit generated files:**
   - `backend/internal/httpapi/gen.go`
-  - `backend/internal/store/*.sql.go`
+  - all sqlc output in `backend/internal/store/` (`*.sql.go`, `models.go`,
+    `db.go` — only `store.go` there is hand-written)
   - `instant-quote/src/lib/api/schema.d.ts`
   - `instant-quote/src/routeTree.gen.ts`
   - `instant-quote/src/content/reference-prices.json`

@@ -27,8 +27,8 @@ by multiple AI agents — coding and non-coding alike.
 1. Read [`AGENTS.md`](AGENTS.md) — the operating manual (invariants, generated
    files, verification gates).
 2. Pick the index for your task type from the table above.
-3. The `> **Status:**` banners in `plans/engineering/*.md` are the source of
-   truth for what is done — read the banner before executing any plan.
+3. Never rebuild shipped work — check a plan's `> **Status:**` banner before
+   executing it (the truthfulness rule lives in `AGENTS.md`).
 
 ## Quickstart (code)
 
