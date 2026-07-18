@@ -6,6 +6,7 @@ and competitor material see [`../research/`](../research/README.md).
 | File | What it is | Update when |
 | --- | --- | --- |
 | `product.md` | Product definition: users, purpose, positioning, brand personality, design principles, accessibility commitment | Product direction shifts |
+| `voice.md` | Copy standard: registers (instrument vs human), CTA taxonomy, error rules, locale mechanics, glossary | Voice or terminology decisions change |
 
 Conventions:
 

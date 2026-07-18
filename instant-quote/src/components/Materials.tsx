@@ -57,7 +57,8 @@ function slugFor(id: string): MaterialSlug | undefined {
 export function Materials() {
   const strings = useStrings()
   const locale = useLocale()
-  const { n, heading, footnote } = strings.materialsSection
+  const { n, footnote } = strings.materialsSection
+  const heading = strings.materialsSection.heading(MATERIALS.length)
   const { ref, revealed } = useOnceInView()
   // Legend hover spotlight: dims cards of the other families. Decorative only
   // — family is always carried by the on-card tag as text.

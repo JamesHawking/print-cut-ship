@@ -4,7 +4,8 @@
 // Deliberately NO `as const`: values widen to `string` / `(n) => string` so
 // the English file can carry different text under the same shape.
 //
-// TODO(launch): machine-drafted Polish — native-speaker review required
+// TODO(launch): native-speaker sign-off pending — PL copy overhauled per
+// business/voice.md (2026-07-18), but a human native review is still required
 // before launch; schedule alongside plan 09's lawyer pass (plans/engineering/08-i18n.md §6).
 
 import type { components } from '@/lib/api/schema'
@@ -36,17 +37,17 @@ export const pl = {
     description:
       'Wgraj plik STL, 3MF, OBJ lub STEP i otrzymaj cenę od ręki. Produkcja w UE, wysyłka D+1/D+2 do Niemiec. Bez zakładania konta.',
     quote: {
-      title: 'Twoja wycena — MICRO_FACTORY',
+      title: 'Twoja wycena | MICRO_FACTORY',
       description:
         'Skonfiguruj materiał, ilość i termin — cena aktualizuje się na żywo.',
     },
     login: {
-      title: 'Śledź zamówienie — MICRO_FACTORY',
+      title: 'Śledź zamówienie | MICRO_FACTORY',
       description:
         'Dostęp do zamówień jednorazowym kodem — bez konta i bez hasła.',
     },
     orders: {
-      title: 'Twoje zamówienia — MICRO_FACTORY',
+      title: 'Twoje zamówienia | MICRO_FACTORY',
       description:
         'Historia wycen i zamówień powiązanych z twoim adresem e-mail.',
     },
@@ -57,12 +58,12 @@ export const pl = {
     ready: 'Gotowe',
     kickerBadge: 'UE',
     kicker: 'Druk 3D na żądanie · Polska · PLN',
-    headline1: 'Wgraj część.',
-    headline2: 'Poznaj cenę.',
-    sub: 'To nie formularz zapytania ani rozmowa z handlowcem. Upuść plik, a maszyna odpowie — pełny kosztorys i realna data wysyłki, w kilka sekund, bez konta.',
+    headline1: 'Wgraj plik.',
+    headline2: 'Zobacz cenę.',
+    sub: 'Pełne rozbicie ceny i realna data wysyłki w kilka sekund. Bez konta, bez formularza zapytania, bez czekania na handlowca.',
     sample: 'Nie masz pliku pod ręką? Wypróbuj przykładową część →',
     privacy:
-      'Prywatność — pliki służą wyłącznie do przygotowania wyceny i są usuwane automatycznie, jeśli nie zamówisz',
+      'Plik służy wyłącznie do przygotowania wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
       'materiałów FDM',
@@ -78,7 +79,7 @@ export const pl = {
     compare: 'Porównania',
     blog: 'Baza wiedzy',
     trackOrder: 'Śledź zamówienie',
-    menuLabel: 'Przełącz menu',
+    menuLabel: 'Otwórz lub zamknij menu',
     skipToContent: 'Przejdź do treści',
     resume: (n: number) => `Wróć do wyceny (${n}) →`,
     // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
@@ -107,7 +108,7 @@ export const pl = {
     n: '01',
     heading: 'Od pliku do daty wysyłki w trzech krokach',
     intro:
-      'Maszyna prowadzi Twój plik przez linię — zmierzony, wyceniony i z wiążącą datą wysyłki w niecałą minutę. Poniżej prawdziwy przebieg na żywym silniku.',
+      'Od wgrania do daty wysyłki mija niecała minuta: mierzymy plik, liczymy cenę i blokujemy termin. Poniżej prawdziwy przebieg na żywym silniku wyceny.',
     steps: [
       { n: '01', kicker: 'WGRAJ', title: 'Upuść plik' },
       { n: '02', kicker: 'WYCEŃ', title: 'Zobacz liczby' },
@@ -144,19 +145,20 @@ export const pl = {
       ship: (weekday: string) =>
         `${weekday} · D+1 · PL/DE · zamówienia do 14:00`,
       shipFallback: 'D+1 · PL/DE · zamówienia do 14:00',
-      done: 'wycena gotowa — maszyna odpowiedziała',
+      done: 'wycena gotowa',
       replay: 'Odtwórz ponownie',
       engineLabel: 'quote-engine v1',
       panelTag: 'Przebieg wyceny na żywo',
       meshLabel: (triangles: string) => `siatka · ${triangles} trójkątów`,
-      cta: 'Teraz wyceń swoją część →',
+      cta: 'Wyceń swoją część →',
       srSummary: (total: string, weekday: string) =>
         `Przykładowy wspornik zmierzony w przeglądarce i wyceniony przez silnik na ${total} z VAT, wysyłka ${weekday}, D+1 do PL/DE.`,
     },
   },
   materialsSection: {
     n: '02',
-    heading: 'Siedem materiałów, od prototypu po część użytkową',
+    heading: (count: number) =>
+      `${count} ${plPlural(count, 'materiał', 'materiały', 'materiałów')}, od prototypu po część użytkową`,
     material: 'Materiał',
     application: 'Zastosowanie',
     density: 'Gęstość',
@@ -183,7 +185,7 @@ export const pl = {
     petg: {
       family: 'standard' as MaterialFamily,
       tagline:
-        'Wytrzymały, odporny na wilgoć materiał do wszystkiego. Obudowy, uchwyty, części funkcjonalne.',
+        'Wytrzymały, odporny na wilgoć, uniwersalny. Obudowy, uchwyty, części funkcjonalne.',
     },
     pctg: {
       family: 'standard' as MaterialFamily,
@@ -253,7 +255,7 @@ export const pl = {
       },
       {
         q: 'Jakiej dokładności mogę oczekiwać?',
-        a: 'Typowo ±0,3 mm na 100 mm w płaszczyźnie XY — tyle daje dobrze zestrojony FDM. Jeśli część wymaga ciaśniejszych pasowań, zaprojektuj zapas albo dopracuj pasowania po druku.',
+        a: 'Typowo ±0,3 mm na 100 mm w płaszczyźnie XY — tyle daje dobrze zestrojony FDM. Jeśli część wymaga ciaśniejszych pasowań, zostaw zapas w projekcie albo dopracuj pasowania po druku.',
       },
       {
         q: 'Jak szybko dotrze zamówienie?',
@@ -270,7 +272,7 @@ export const pl = {
     ],
   },
   footer: {
-    note: 'Prototyp · stawki poglądowe · każda wycena jest w pełni rozbita na pozycje',
+    note: 'Każda wycena w pełni rozbita na pozycje · bez ukrytych opłat',
     meta: 'UE · FDM · PLN · 23% VAT',
     cutoff: 'zamówienia do 14:00',
     navLabel: 'Nawigacja',
@@ -290,7 +292,7 @@ export const pl = {
     breadcrumbMaterials: 'Materiały',
     indexTitle: 'Materiały do druku 3D — ceny i właściwości | MICRO_FACTORY',
     indexDescription:
-      'Siedem materiałów FDM od prototypu po część użytkową: właściwości, ograniczenia projektowe i ceny liczone przez silnik wyceny.',
+      'Materiały FDM od prototypu po część użytkową: właściwości, ograniczenia projektowe i ceny liczone przez silnik wyceny.',
     indexHeading: 'Materiały do druku 3D',
     indexIntro:
       'Każdy materiał drukujemy na tych samych maszynach i wyceniamy tym samym silnikiem co formularz wyceny. Wybierz materiał, aby zobaczyć właściwości, wskazówki projektowe i ceny referencyjne.',
@@ -492,8 +494,8 @@ export const pl = {
     multiHint: 'Dodaj do 5 części',
     dragActive: 'Puść, aby wgrać',
     parsing: 'Czytanie geometrii…',
-    intake: 'Przyjęcie pliku',
-    intakeArmed: 'Przyjęcie pliku — gotowe',
+    intake: 'Start wyceny',
+    intakeArmed: 'Upuść, aby wycenić',
     formats: 'STL · 3MF · OBJ · STEP — do 100 MB',
     maxSize: 'Maks. 340 × 320 × 340 mm',
     mwLabel: 'albo wklej link z MakerWorld',
@@ -513,7 +515,7 @@ export const pl = {
     breakdownTitle: 'Rozbicie ceny',
     howWePrice: 'Jak wyceniamy',
     shippingNote: 'Wysyłka D+1 do PL/DE, D+2 do reszty UE',
-    notPrintable: 'Nie do wydrukowania',
+    notPrintable: 'Poza zakresem druku',
     discountOff: (pct: string) => `${pct} taniej`,
     lineTotalFor: (total: string, qty: number) => `${total} za ${qty} szt.`,
     metaTriangles: (count: number, formatted: string) =>
@@ -708,8 +710,6 @@ export const pl = {
     resend: 'Wyślij kod ponownie',
     resent: 'Kod wysłany ponownie ✓',
     changeEmail: 'Zmień e-mail',
-    simNote:
-      'Prototyp · kody jednorazowe są symulowane · nic nie jest wysyłane',
   },
   orders: {
     signedIn: 'Zalogowano —',
@@ -746,7 +746,7 @@ export const pl = {
     mwNotFound: 'Nie znaleziono modelu na MakerWorld — sprawdź link.',
     mwNoProfile: 'Ten model nie ma profilu druku do pobrania.',
     mwAuthExpired:
-      'Dostęp do MakerWorld wygasł — odśwież BAMBU_CLOUD_TOKEN na serwerze.',
+      'Połączenie z MakerWorld wygasło po naszej stronie. Spróbuj później albo wgraj plik bezpośrednio.',
     mwNotConfigured:
       'Import z MakerWorld nie jest skonfigurowany na tym serwerze.',
     mwDownloadFailed:

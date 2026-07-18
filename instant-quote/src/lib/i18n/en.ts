@@ -25,17 +25,17 @@ export const en = {
     description:
       'Upload an STL, 3MF, OBJ or STEP file and get an instant price. Made in the EU, ships D+1/D+2 to Germany. No account needed.',
     quote: {
-      title: 'Your quote — MICRO_FACTORY',
+      title: 'Your quote | MICRO_FACTORY',
       description:
         'Pick material, quantity and lead time — the price updates live.',
     },
     login: {
-      title: 'Track your order — MICRO_FACTORY',
+      title: 'Track your order | MICRO_FACTORY',
       description:
         'Access your orders with a one-time code — no account, no password.',
     },
     orders: {
-      title: 'Your orders — MICRO_FACTORY',
+      title: 'Your orders | MICRO_FACTORY',
       description: 'Quote and order history linked to your email address.',
     },
   },
@@ -45,12 +45,12 @@ export const en = {
     ready: 'Ready',
     kickerBadge: 'EU',
     kicker: 'On-demand 3D printing · Poland · PLN',
-    headline1: 'Upload a part.',
-    headline2: 'Get a price.',
-    sub: 'Not a request form. Not a sales call. Drop the file and the machine answers — a full cost breakdown and a real ship date, in seconds, with no account.',
+    headline1: 'Upload a file.',
+    headline2: 'See your price.',
+    sub: 'An itemized price and a real ship date, in seconds. No account, no quote forms, no waiting on a sales rep.',
     sample: 'No file handy? Try a sample part →',
     privacy:
-      'Private — files are used only to prepare your quote and auto-deleted if you don’t order',
+      'Your file is used only to prepare the quote — if you don’t order, it’s deleted automatically',
     // Zipped with computed values in Hero.tsx (same order).
     specs: [
       'FDM materials',
@@ -64,7 +64,7 @@ export const en = {
     materials: 'Materials',
     pricing: 'Pricing',
     compare: 'Compare',
-    blog: 'Blog',
+    blog: 'Knowledge base',
     trackOrder: 'Track order',
     menuLabel: 'Toggle menu',
     skipToContent: 'Skip to content',
@@ -75,8 +75,8 @@ export const en = {
     // Header upload CTA (empty cart) — full label at xl+, short form in the
     // tight band and as the mobile menu's primary button. Opens the native
     // file picker, same funnel as QuoteCta.
-    getQuote: 'Get a quote',
-    getQuoteShort: 'Quote',
+    getQuote: 'Price a part',
+    getQuoteShort: 'Price',
     // Quote-page "New quote" confirmation (AlertDialog) — orange, not red:
     // the parts are discarded, nothing is "wrong".
     newQuoteConfirmTitle: 'Start a new quote?',
@@ -95,7 +95,7 @@ export const en = {
     n: '01',
     heading: 'File to ship date in three steps',
     intro:
-      'The machine takes your file down the line — measured, priced, and committed to a ship date in under a minute. Below is a real run on the live engine.',
+      'From upload to ship date in under a minute: we measure your file, price it, and lock the date. Below is a real run on the live quoting engine.',
     steps: [
       { n: '01', kicker: 'UPLOAD', title: 'Drop the file' },
       { n: '02', kicker: 'PRICE', title: 'Read the numbers' },
@@ -131,7 +131,7 @@ export const en = {
       order2: 'ship date locks at checkout',
       ship: (weekday: string) => `${weekday} · D+1 · PL/DE · 14:00 cutoff`,
       shipFallback: 'D+1 · PL/DE · 14:00 cutoff',
-      done: 'quote complete — the machine answered',
+      done: 'quote complete',
       replay: 'Replay',
       engineLabel: 'quote-engine v1',
       panelTag: 'Live quote run',
@@ -143,7 +143,7 @@ export const en = {
   },
   materialsSection: {
     n: '02',
-    heading: 'Seven materials, prototype to end-use',
+    heading: (count: number) => `${count} materials, prototype to end-use`,
     material: 'Material',
     application: 'Application',
     density: 'Density',
@@ -212,7 +212,7 @@ export const en = {
     cards: [
       {
         title: 'Weight, like a slicer',
-        body: 'A 0,9 mm shell over your part’s surface plus 20% infill, converted to grams by material density.',
+        body: 'A 0.9 mm shell over your part’s surface plus 20% infill, converted to grams by material density.',
       },
       {
         title: 'No hidden fees',
@@ -256,7 +256,7 @@ export const en = {
     ],
   },
   footer: {
-    note: 'Prototype · illustrative rates · every quote is fully itemized',
+    note: 'Every quote fully itemized · no hidden fees',
     meta: 'EU · FDM · PLN · 23% VAT',
     cutoff: '14:00 cutoff',
     navLabel: 'Navigate',
@@ -276,7 +276,7 @@ export const en = {
     breadcrumbMaterials: 'Materials',
     indexTitle: '3D printing materials — prices & properties | MICRO_FACTORY',
     indexDescription:
-      'Seven FDM materials from prototype to end-use: properties, design limits, and prices computed by the quoting engine.',
+      'FDM materials from prototype to end-use: properties, design limits, and prices computed by the quoting engine.',
     indexHeading: '3D printing materials',
     indexIntro:
       'Every material prints on the same machines and is priced by the same engine as the quote form. Pick a material for properties, design guidance, and reference prices.',
@@ -414,7 +414,7 @@ export const en = {
   },
   // Blog — UI chrome only; article prose lives in src/content/blog.
   blogPages: {
-    breadcrumb: 'Blog',
+    breadcrumb: 'Knowledge base',
     indexTitle: 'FDM 3D printing knowledge base | MICRO_FACTORY',
     indexDescription:
       'Engineering guides to FDM printing: wall thickness, orientation, tolerances, fits. Concrete numbers instead of adjectives.',
@@ -470,8 +470,8 @@ export const en = {
     multiHint: 'Add up to 5 parts',
     dragActive: 'Release to upload',
     parsing: 'Reading geometry…',
-    intake: 'File intake',
-    intakeArmed: 'File intake — armed',
+    intake: 'Start your quote',
+    intakeArmed: 'Drop to see your price',
     formats: 'STL · 3MF · OBJ · STEP — up to 100 MB',
     maxSize: 'Max 340 × 320 × 340 mm',
     mwLabel: 'or paste a MakerWorld link',
@@ -490,7 +490,7 @@ export const en = {
     breakdownTitle: 'Price breakdown',
     howWePrice: 'How we price',
     shippingNote: 'Ships D+1 to PL/DE, D+2 to the rest of the EU',
-    notPrintable: 'Not printable',
+    notPrintable: 'Outside print limits',
     discountOff: (pct: string) => `${pct} off`,
     lineTotalFor: (total: string, qty: number) => `${total} for ${qty}`,
     metaTriangles: (count: number, formatted: string) =>
@@ -682,7 +682,6 @@ export const en = {
     resend: 'Re-send code',
     resent: 'Code re-sent ✓',
     changeEmail: 'Change email',
-    simNote: 'Prototype · one-time codes are simulated · nothing is sent',
   },
   orders: {
     signedIn: 'Signed in —',
@@ -714,7 +713,7 @@ export const en = {
     mwNotFound: 'Model not found on MakerWorld — check the link.',
     mwNoProfile: 'This model has no downloadable print profile.',
     mwAuthExpired:
-      'MakerWorld access expired — refresh BAMBU_CLOUD_TOKEN on the server.',
+      'Our MakerWorld connection has expired. Try again later or upload the file directly.',
     mwNotConfigured: 'MakerWorld import is not configured on this server.',
     mwDownloadFailed:
       'Could not download the model from MakerWorld. Try again.',
