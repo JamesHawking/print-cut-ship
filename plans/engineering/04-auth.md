@@ -1,6 +1,8 @@
 # 04 — User accounts & authentication
 
-> **Status: 🟨 In progress** (as of 2026-07-18).
+> **Status: ✅ Done** (as of 2026-07-19; OTP amendment shipped on branch `backend/auth-otp`).
+
+> **Done note (2026-07-19):** OTP checklist verified — real code delivered via the `Sender` port (console in dev; production transport is plan 06's launch gate) · wrong code uniform 401 (`code_invalid`) · code single-use + 10-min TTL · 5-attempt cap + resend throttle (30 s min, ≤5/hour per email) · sessions survive a real backend restart (Postgres-backed, e2e-verified) · quoting stays anonymous (`/price`, `/quotes` 200 with no session) · `role='admin'` passes `RequireAdmin`, customer 403 · gen-check clean (`make -C backend gen` → no drift). B2B company/NIP columns landed; UI is plan 05's. `RequireAdmin` ships tested but unmounted — plan 07 mounts it.
 
 > **Amendment (2026-07-18, user-locked): passwordless OTP replaces email+password.** The shipped `/login → /orders` UI is passwordless (email + 6-digit code), the 2026-07-18 copy overhaul removed the "codes are simulated" disclaimer, and "no account, no password" is now the positioning — so the password model (argon2id, register/verify/reset flows) is dropped. Login = email + real one-time code → Postgres-backed session cookie. What survives unchanged: server-side sessions in Postgres (opaque token, SHA-256-hashed at rest, httpOnly/Secure/SameSite=Lax cookie `iq_session`, 30-day sliding TTL), `role` column + `RequireAdmin` for plan 07, the email `Sender` port with console dev impl (plan 06 swaps in Resend — production launch stays gated on 06 since codes are console-logged until then), quoting never gated behind login, additive-only migration. B2B fields (company/NIP): columns land here, UI deferred to plan 05 checkout. The body below stays as history per working agreements; the executable checklist in §5 is superseded by the OTP checklist in the implementation handoff (real code emailed — console in dev · wrong code uniform 401 · code single-use + 10-min TTL · attempt/resend caps · sessions survive backend restart · quoting stays anonymous · `role='admin'` passes `RequireAdmin`, customer 403 · gen-check clean).
 
@@ -12,7 +14,7 @@ The app has no notion of a user. The Go intake (`POST /api/v1/quotes`) collects 
 
 This topic adds real identity: email+password registration with verification and reset, server-side sessions that survive deploys, an account page with order history, an admin role flag, and B2B fields (company name + NIP) needed for Polish invoicing (plan 05).
 
-**Load-bearing product constraint:** quoting must never be gated behind login. The core promise is "no friction to the number." Guests keep ordering with just an email exactly as they do today; an account is strictly opt-in. A guest order placed against an email can be *claimed* later by registering (and verifying) that same email — the account then absorbs the prior order history.
+**Load-bearing product constraint:** quoting must never be gated behind login. The core promise is "no friction to the number." Guests keep ordering with just an email exactly as they do today; an account is strictly opt-in. A guest order placed against an email can be _claimed_ later by registering (and verifying) that same email — the account then absorbs the prior order history.
 
 ## 2. Decisions applied
 
@@ -26,7 +28,7 @@ From `plans/engineering/DECISIONS.md` (pinned, incl. amendment):
 
 **Topic-local decisions resolved:**
 
-- **Auth approach: hand-rolled email+password on vetted primitives, not a Go auth framework.** `golang.org/x/crypto/argon2` (argon2id) for password hashing, `crypto/rand` 256-bit opaque session tokens stored **hashed** (SHA-256) in Postgres, httpOnly/Secure/SameSite=Lax cookie. *Rationale:* Go has no better-auth equivalent — libraries like authboss/goth solve OAuth breadth we deferred; email+password+sessions is ~500 lines of well-trodden code with fewer moving parts than any framework, and the OpenAPI contract keeps it testable. *Alternative rejected:* JWTs (revocation pain; server-side sessions are strictly simpler at one backend).
+- **Auth approach: hand-rolled email+password on vetted primitives, not a Go auth framework.** `golang.org/x/crypto/argon2` (argon2id) for password hashing, `crypto/rand` 256-bit opaque session tokens stored **hashed** (SHA-256) in Postgres, httpOnly/Secure/SameSite=Lax cookie. _Rationale:_ Go has no better-auth equivalent — libraries like authboss/goth solve OAuth breadth we deferred; email+password+sessions is ~500 lines of well-trodden code with fewer moving parts than any framework, and the OpenAPI contract keeps it testable. _Alternative rejected:_ JWTs (revocation pain; server-side sessions are strictly simpler at one backend).
 - **Where the login UI lives:** dedicated top-level frontend routes (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/account`) plus a single account entry point in `SiteHeader`. The quote flow (`/`, `/quote`, `OrderDialog`) is untouched and never redirects to login.
 - **Social login at launch:** deferred, email+password only. Adding Google later is an additive OAuth handler in Go (revisit in plan 16).
 - **Admin identity:** a plain `role` column (`'customer' | 'admin'`, default `'customer'`) plus a `RequireAdmin` middleware — no admin framework. Plan 07 needs only "is this request an admin."
