@@ -58,8 +58,8 @@ export const pl = {
     ready: 'Gotowe',
     kickerBadge: 'UE',
     kicker: 'Druk 3D na żądanie · Polska · PLN',
-    headline1: 'Upuść plik.',
-    headline2: 'Odczytaj cenę.',
+    headline1: 'Wgraj plik.',
+    headline2: 'Zobacz cenę.',
     sub: 'Upuść plik 3D, a maszyna odpowie: pełny kosztorys i realna data wysyłki, w kilka sekund. Bez konta i bez telefonu od handlowca.',
     sample: 'Nie masz pliku pod ręką? Wypróbuj przykładową część →',
     privacy:
