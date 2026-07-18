@@ -154,10 +154,13 @@ export function SiteHeader({
                     }}
                     className="bg-primary text-primary-foreground hover:shadow-primary/40 cursor-pointer rounded-md px-3 py-1.5 font-bold whitespace-nowrap hover:shadow-lg motion-safe:transition-[transform,box-shadow] motion-safe:hover:-translate-y-px"
                   >
-                    <span className="xl:hidden">
+                    {/* Long label joins the track-order chip's icon→full
+                      swap 30px past xl — at exactly 1280 both together
+                      overflow the nav by 2px. */}
+                    <span className="min-[1310px]:hidden">
                       {strings.nav.getQuoteShort}
                     </span>
-                    <span className="hidden xl:inline">
+                    <span className="hidden min-[1310px]:inline">
                       {strings.nav.getQuote}
                     </span>
                   </button>
@@ -229,7 +232,9 @@ export function SiteHeader({
                     {strings.nav.newQuote}
                   </button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                {/* Mono/uppercase to match the header's TE language (the
+                  vendored primitive stays stock sans). */}
+                <AlertDialogContent className="font-mono tracking-widest uppercase">
                   <AlertDialogHeader>
                     <AlertDialogTitle>
                       {strings.nav.newQuoteConfirmTitle}

@@ -81,7 +81,10 @@ function MobileAccordionSection({
   const data = useNavPanelData(panelKey)
   return (
     <AccordionItem value={panelKey}>
-      <AccordionTrigger className="items-center rounded-none px-1.5 py-4 hover:no-underline">
+      <AccordionTrigger
+        aria-current={active ? 'page' : undefined}
+        className="items-center rounded-none px-1.5 py-4 hover:no-underline"
+      >
         <span className="flex flex-1 items-center justify-between">
           <span
             className={cn(
