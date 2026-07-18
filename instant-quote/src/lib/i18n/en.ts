@@ -72,6 +72,18 @@ export const en = {
     // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
     resumeShort: (n: number) => `Quote (${n}) →`,
     newQuote: '← New quote',
+    // Header upload CTA (empty cart) — full label at xl+, short form in the
+    // tight band and as the mobile menu's primary button. Opens the native
+    // file picker, same funnel as QuoteCta.
+    getQuote: 'Get a quote',
+    getQuoteShort: 'Quote',
+    // Quote-page "New quote" confirmation (AlertDialog) — orange, not red:
+    // the parts are discarded, nothing is "wrong".
+    newQuoteConfirmTitle: 'Start a new quote?',
+    newQuoteConfirmBody: (n: number) =>
+      `Continue? ${n} ${enPlural(n, 'part', 'parts')} will be discarded.`,
+    newQuoteConfirmAction: 'New quote',
+    newQuoteConfirmCancel: 'Cancel',
   },
   ticker: [
     'Ships D+1 PL/DE',

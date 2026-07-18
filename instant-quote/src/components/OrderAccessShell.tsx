@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { useWarsawClock } from '@/hooks/useWarsawClock'
-import { LocaleSwitcher } from './SiteHeader'
+import { LocaleSwitcher } from './LocaleSwitcher'
 
 /**
  * Shared frame for the order-access screens (/login, /orders), from

@@ -84,6 +84,18 @@ export const pl = {
     // Narrow-desktop form of `resume` (1024–1280px, PL labels are long).
     resumeShort: (n: number) => `Wycena (${n}) →`,
     newQuote: '← Nowa wycena',
+    // Header upload CTA (empty cart) — full label at xl+, short form in the
+    // tight band and as the mobile menu's primary button. Opens the native
+    // file picker, same funnel as QuoteCta.
+    getQuote: 'Wyceń część',
+    getQuoteShort: 'Wyceń',
+    // Quote-page "New quote" confirmation (AlertDialog) — orange, not red:
+    // the parts are discarded, nothing is "wrong".
+    newQuoteConfirmTitle: 'Zacząć nową wycenę?',
+    newQuoteConfirmBody: (n: number) =>
+      `Kontynuować? ${plPlural(n, 'Jedna część zostanie odrzucona.', `${n} części zostaną odrzucone.`, `${n} części zostanie odrzuconych.`)}`,
+    newQuoteConfirmAction: 'Nowa wycena',
+    newQuoteConfirmCancel: 'Anuluj',
   },
   ticker: [
     'Wysyłka D+1 PL/DE',

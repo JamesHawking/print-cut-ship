@@ -7,19 +7,16 @@ import {
 } from '@tanstack/react-router'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { Menu, PackageSearch, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { formatPln } from '@/lib/format'
+import { track } from '@/lib/funnel'
 import { useParts } from '@/hooks/useParts'
+import { useFilePicker } from '@/hooks/useFilePicker'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
-import { LOCALES, useLocale, useStrings, type Locale } from '@/lib/i18n'
-import { setLocaleCookie } from '@/lib/i18n/detect'
-import {
-  NAV_SECTIONS,
-  SECTIONS,
-  navNumeral,
-  sectionKeyFor,
-} from '@/content/sections'
+import { useLocale, useStrings } from '@/lib/i18n'
+import { sectionKeyFor } from '@/content/sections'
 import { DesktopNav } from './header/DesktopNav'
+import { MobileNav } from './header/MobileNav'
+import { LocaleSwitcher } from './LocaleSwitcher'
 
 /** Landing section anchors the scroll-spy watches, and the nav item each
     one lights up (the landing sections preview their content pages). */
@@ -59,6 +56,7 @@ export function SiteHeader({
   const strings = useStrings()
   const locale = useLocale()
   const { parts, clear } = useParts()
+  const openFilePicker = useFilePicker()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   // Current content section, if any — SSR-stable (derived from URL params).
@@ -135,10 +133,23 @@ export function SiteHeader({
                     </span>
                   </Link>
                 ) : (
-                  <span className="text-foreground hidden items-center gap-1.5 xl:flex">
-                    <span className="bg-signal size-1.5 rounded-full" />
-                    {strings.hero.ready}
-                  </span>
+                  // Empty cart: the header's one upload CTA (QuoteCta
+                  // funnel). Replaces the old xl-only GOTOWE status dot.
+                  <button
+                    type="button"
+                    onClick={() => {
+                      track('cta_upload_clicked', { source_page: 'header' })
+                      openFilePicker()
+                    }}
+                    className="bg-primary text-primary-foreground hover:shadow-primary/40 cursor-pointer rounded-md px-3 py-1.5 font-bold whitespace-nowrap hover:shadow-lg motion-safe:transition-[transform,box-shadow] motion-safe:hover:-translate-y-px"
+                  >
+                    <span className="xl:hidden">
+                      {strings.nav.getQuoteShort}
+                    </span>
+                    <span className="hidden xl:inline">
+                      {strings.nav.getQuote}
+                    </span>
+                  </button>
                 )}
               </nav>
               <div className="flex items-center gap-3 lg:hidden">
@@ -163,7 +174,7 @@ export function SiteHeader({
                     <button
                       type="button"
                       aria-label={strings.nav.menuLabel}
-                      className="text-foreground focus-visible:ring-ring -mr-2 inline-flex size-10 cursor-pointer items-center justify-center rounded-[7px] border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                      className="text-foreground focus-visible:ring-ring -mr-2.5 inline-flex size-11 cursor-pointer items-center justify-center rounded-[7px] border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                       {menuOpen ? (
                         <X className="size-5" />
@@ -176,49 +187,15 @@ export function SiteHeader({
                     <DialogPrimitive.Overlay className="motion-safe:animate-in motion-safe:fade-in bg-background/60 fixed inset-0 top-14 z-40 backdrop-blur-sm duration-[180ms] lg:hidden" />
                     <DialogPrimitive.Content
                       aria-describedby={undefined}
-                      className="motion-safe:animate-in fade-in slide-in-from-top-1.5 bg-background fixed inset-x-0 top-14 z-50 border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out lg:hidden"
+                      className="motion-safe:animate-in fade-in slide-in-from-top-1.5 bg-background fixed inset-x-0 top-14 z-50 max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out lg:hidden"
                     >
                       <DialogPrimitive.Title className="sr-only">
                         {strings.nav.menuLabel}
                       </DialogPrimitive.Title>
-                      <Link
-                        to="/$locale"
-                        params={{ locale }}
-                        hash="how-it-works"
-                        onClick={() => setMenuOpen(false)}
-                        className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
-                      >
-                        {strings.nav.howItWorks}
-                        <span aria-hidden className="text-primary-text">
-                          {navNumeral('howItWorks')}
-                        </span>
-                      </Link>
-                      {NAV_SECTIONS.map((key) => (
-                        <Link
-                          key={key}
-                          to="/$locale/$section"
-                          params={{ locale, section: SECTIONS[key][locale] }}
-                          onClick={() => setMenuOpen(false)}
-                          aria-current={routeKey === key ? 'page' : undefined}
-                          className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
-                        >
-                          {strings.nav[key]}
-                          <span aria-hidden className="text-primary-text">
-                            {navNumeral(key)}
-                          </span>
-                        </Link>
-                      ))}
-                      <Link
-                        to="/$locale/login"
-                        params={{ locale }}
-                        onClick={() => setMenuOpen(false)}
-                        className="bg-primary text-primary-foreground mt-3.5 block rounded-[7px] px-2 py-[15px] text-center font-bold"
-                      >
-                        {strings.nav.trackOrder} →
-                      </Link>
-                      <div className="mt-3.5 flex justify-center">
-                        <LocaleSwitcher />
-                      </div>
+                      <MobileNav
+                        routeKey={routeKey}
+                        onNavigate={() => setMenuOpen(false)}
+                      />
                     </DialogPrimitive.Content>
                   </DialogPrimitive.Portal>
                 </DialogPrimitive.Root>
@@ -282,51 +259,5 @@ export function SiteHeader({
         </div>
       )}
     </>
-  )
-}
-
-/**
- * PL | EN segmented switcher — swaps the $locale prefix in place (route and
- * search preserved) and persists the choice for the `/` redirect. The only
- * writer of the locale cookie. Also rendered by OrderAccessShell's header.
- */
-export function LocaleSwitcher() {
-  const locale = useLocale()
-  const navigate = useNavigate()
-
-  function switchTo(next: Locale) {
-    if (next === locale) return
-    setLocaleCookie(next)
-    void navigate({
-      to: '.',
-      params: (prev) => ({ ...prev, locale: next }),
-    })
-  }
-
-  return (
-    <span className="flex items-center gap-1.5">
-      {LOCALES.map((l, i) => (
-        <span key={l} className="flex items-center gap-1.5">
-          {i > 0 && (
-            <span aria-hidden className="text-muted-foreground/50">
-              /
-            </span>
-          )}
-          <button
-            type="button"
-            aria-current={l === locale || undefined}
-            onClick={() => switchTo(l)}
-            className={cn(
-              'cursor-pointer uppercase transition-colors',
-              l === locale
-                ? 'text-foreground font-bold'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {l}
-          </button>
-        </span>
-      ))}
-    </span>
   )
 }
