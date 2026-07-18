@@ -22,7 +22,7 @@ import { SectionHeading } from './SectionHeading'
 
 // Signal-color coding by material family (TE Pocket-Operator style). The dot
 // is echoed in the legend chips under the grid, so colour never carries
-// meaning alone. Tokens resolve against the section's `.dark` scope. Keyed by
+// meaning alone. Tokens resolve on the light section background. Keyed by
 // the locale-stable family key; display labels come from the dictionary.
 export const FAMILY_DOT: Record<MaterialFamily, string> = {
   standard: 'bg-muted-foreground',
@@ -84,10 +84,7 @@ export function Materials() {
   const bracketPrices = bracketQuery.data ?? bracketFallbackOrdered()
 
   return (
-    <section
-      id="materials"
-      className="dark bg-background text-foreground scroll-mt-14"
-    >
+    <section id="materials" className="scroll-mt-14">
       <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
         <SectionHeading n={n} title={heading} />
 

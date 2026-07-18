@@ -2,10 +2,11 @@ import { cn } from '@/lib/utils'
 import { MATERIALS } from '@/lib/catalog-static'
 
 /**
- * The material-rate tape. Rendered dark on both edges of the landing's dark
- * zone (sections 01–02): normal direction as the entry threshold above 01,
- * reversed as the exit bracket below 02. Inline animationDirection — the
- * arbitrary-property variant would race the animate-ticker utility.
+ * The material-rate tape. Rendered dark as a thin accent bracketing the
+ * landing's light middle sections (01–02): normal direction as the entry
+ * threshold above 01, reversed as the exit bracket below 02. Inline
+ * animationDirection — the arbitrary-property variant would race the
+ * animate-ticker utility.
  */
 export function RateTicker({
   reverse = false,

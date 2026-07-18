@@ -79,14 +79,14 @@ export function HowItWorks() {
     <section
       id="how-it-works"
       ref={sectionRef}
-      className="dark bg-background text-foreground scroll-mt-14"
+      className="scroll-mt-14 border-b"
     >
-      <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:pt-24 md:pb-16">
+      <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
         <SectionHeading n={n} title={heading} />
         <p className="text-muted-foreground mt-4 max-w-[560px] text-[13.5px] leading-[1.55] text-pretty">
           {intro}
         </p>
-        <div className="bg-background blueprint-grid border-foreground/10 mt-12 border px-6 py-10 md:px-16 md:pt-14 md:pb-16">
+        <div className="dark bg-background text-foreground blueprint-grid mt-12 border px-6 py-10 md:px-16 md:pt-14 md:pb-16">
           {/* Equipment nameplate: tags the slab as one instrument panel. */}
           <div className="text-muted-foreground mb-8 flex items-center gap-4 font-mono text-[10px] font-bold tracking-[0.14em] uppercase">
             <span className="text-primary-text shrink-0">{demo.panelTag}</span>
