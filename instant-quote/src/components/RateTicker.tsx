@@ -1,9 +1,31 @@
+import { cn } from '@/lib/utils'
 import { MATERIALS } from '@/lib/catalog-static'
 
-export function RateTicker() {
+/**
+ * The material-rate tape. Rendered dark on both edges of the landing's dark
+ * zone (sections 01–02): normal direction as the entry threshold above 01,
+ * reversed as the exit bracket below 02. Inline animationDirection — the
+ * arbitrary-property variant would race the animate-ticker utility.
+ */
+export function RateTicker({
+  reverse = false,
+  className,
+}: {
+  reverse?: boolean
+  className?: string
+}) {
   return (
-    <section aria-hidden className="bg-card overflow-hidden border-b">
-      <div className="motion-safe:animate-ticker flex w-max font-mono text-[11px] font-semibold tracking-[0.14em] uppercase">
+    <section
+      aria-hidden
+      className={cn(
+        'dark bg-background text-foreground overflow-hidden',
+        className,
+      )}
+    >
+      <div
+        className="motion-safe:animate-ticker text-muted-foreground flex w-max font-mono text-[11px] font-semibold tracking-[0.14em] uppercase"
+        style={reverse ? { animationDirection: 'reverse' } : undefined}
+      >
         <TickerRun />
         <TickerRun />
         <TickerRun />

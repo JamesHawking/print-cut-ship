@@ -135,6 +135,7 @@ export const pl = {
       done: 'wycena gotowa — maszyna odpowiedziała',
       replay: 'Odtwórz ponownie',
       engineLabel: 'quote-engine v1',
+      panelTag: 'Przebieg wyceny na żywo',
       meshLabel: (triangles: string) => `siatka · ${triangles} trójkątów`,
       cta: 'Teraz wyceń swoją część →',
       srSummary: (total: string, weekday: string) =>

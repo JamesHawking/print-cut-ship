@@ -75,9 +75,10 @@ function Landing() {
           urlPending={mwPending}
           onSample={handleSample}
         />
-        <RateTicker />
+        <RateTicker className="border-b" />
         <HowItWorks />
         <Materials />
+        <RateTicker reverse className="border-t" />
         <PricingFormula />
         <LandingFaq />
         <GuidesTeaser />

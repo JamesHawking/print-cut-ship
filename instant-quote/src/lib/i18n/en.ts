@@ -122,6 +122,7 @@ export const en = {
       done: 'quote complete — the machine answered',
       replay: 'Replay',
       engineLabel: 'quote-engine v1',
+      panelTag: 'Live quote run',
       meshLabel: (triangles: string) => `mesh · ${triangles} triangles`,
       cta: 'Now run yours →',
       srSummary: (total: string, weekday: string) =>

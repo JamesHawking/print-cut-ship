@@ -109,6 +109,7 @@ export function Materials() {
               <MaterialCard
                 material={m}
                 bracketPricePln={bracketPrices[i]}
+                live={bracketQuery.isSuccess}
                 meterPct={shareOfMax(bracketPrices[i], bracketPrices)}
                 revealed={revealed}
                 meterDelayMs={150 + i * 45}
@@ -171,6 +172,7 @@ export function Materials() {
 function MaterialCard({
   material: p,
   bracketPricePln,
+  live,
   meterPct,
   revealed,
   meterDelayMs,
@@ -178,6 +180,7 @@ function MaterialCard({
 }: {
   material: StaticMaterial
   bracketPricePln: number
+  live: boolean
   meterPct: number
   revealed: boolean
   meterDelayMs: number
@@ -216,7 +219,14 @@ function MaterialCard({
         {m.tagline}
       </span>
       <span className="mt-auto block pt-5">
-        <span className="block font-mono text-2xl font-bold tabular-nums">
+        {/* Flash marks the moment live engine numbers replace the fallback —
+            same honesty signal as the demo terminal's PRICE line. */}
+        <span
+          className={cn(
+            'block font-mono text-2xl font-bold tabular-nums',
+            live && 'motion-safe:animate-price-flash',
+          )}
+        >
           {formatPln(bracketPricePln, locale)}
         </span>
         <span className="text-muted-foreground mt-1 block font-mono text-[9px] tracking-[0.14em] uppercase">

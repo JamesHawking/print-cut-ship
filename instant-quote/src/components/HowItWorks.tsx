@@ -87,6 +87,14 @@ export function HowItWorks() {
           {intro}
         </p>
         <div className="bg-background blueprint-grid border-foreground/10 mt-12 border px-6 py-10 md:px-16 md:pt-14 md:pb-16">
+          {/* Equipment nameplate: tags the slab as one instrument panel. */}
+          <div className="text-muted-foreground mb-8 flex items-center gap-4 font-mono text-[10px] font-bold tracking-[0.14em] uppercase">
+            <span className="text-primary-text shrink-0">{demo.panelTag}</span>
+            <span
+              aria-hidden
+              className="border-foreground/15 flex-1 border-t border-dashed"
+            />
+          </div>
           <ConveyorRail
             anchorIdx={anchorIdx}
             readouts={readouts}
