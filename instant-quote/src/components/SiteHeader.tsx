@@ -14,6 +14,17 @@ import { useFilePicker } from '@/hooks/useFilePicker'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { sectionKeyFor } from '@/content/sections'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { DesktopNav } from './header/DesktopNav'
 import { MobileNav } from './header/MobileNav'
 import { LocaleSwitcher } from './LocaleSwitcher'
@@ -207,16 +218,41 @@ export function SiteHeader({
                 {strings.hero.status}
               </span>
               <LocaleSwitcher />
-              <button
-                type="button"
-                onClick={() => {
-                  clear()
-                  void navigate({ to: '/$locale', params: { locale } })
-                }}
-                className="bg-card hover:bg-secondary cursor-pointer rounded-md border px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
-              >
-                {strings.nav.newQuote}
-              </button>
+              {/* Reset discards the cart — confirm first. Orange, not red:
+                data loss, not an error. */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="bg-card hover:bg-secondary cursor-pointer rounded-md border px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
+                  >
+                    {strings.nav.newQuote}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {strings.nav.newQuoteConfirmTitle}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {strings.nav.newQuoteConfirmBody(parts.length)}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      {strings.nav.newQuoteConfirmCancel}
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        clear()
+                        void navigate({ to: '/$locale', params: { locale } })
+                      }}
+                    >
+                      {strings.nav.newQuoteConfirmAction}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </nav>
           )}
         </div>
