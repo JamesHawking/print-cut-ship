@@ -25,6 +25,16 @@ type File struct {
 	CreatedAt     pgtype.Timestamptz
 }
 
+type LoginCode struct {
+	ID         uuid.UUID
+	Email      string
+	CodeHash   string
+	ExpiresAt  pgtype.Timestamptz
+	Attempts   int32
+	ConsumedAt pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
+}
+
 type Order struct {
 	ID               uuid.UUID
 	ShortID          string
@@ -90,6 +100,15 @@ type QuotePart struct {
 	CreatedAt         pgtype.Timestamptz
 }
 
+type Session struct {
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	TokenHash  string
+	ExpiresAt  pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
+	LastSeenAt pgtype.Timestamptz
+}
+
 type StepRequest struct {
 	ID            uuid.UUID
 	ShortID       string
@@ -102,8 +121,11 @@ type StepRequest struct {
 }
 
 type User struct {
-	ID        uuid.UUID
-	Email     string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID          uuid.UUID
+	Email       string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	Role        string
+	CompanyName *string
+	Nip         *string
 }
