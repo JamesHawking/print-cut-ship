@@ -37,7 +37,15 @@ function slugFor(id: string): MaterialSlug | undefined {
 // into the Radix viewport, so each panel sets its own.
 const panelClass = 'bg-background font-mono uppercase'
 
-function PanelNameplate({ n, label }: { n: string; label: string }) {
+function PanelNameplate({
+  n,
+  label,
+  count,
+}: {
+  n: string
+  label: string
+  count: number
+}) {
   return (
     <div className="text-muted-foreground flex items-center gap-3 border-b px-4 py-2.5 text-[9px] font-bold tracking-[0.16em]">
       <span aria-hidden className="text-primary-text">
@@ -48,6 +56,11 @@ function PanelNameplate({ n, label }: { n: string; label: string }) {
         aria-hidden
         className="border-foreground/10 flex-1 border-t border-dashed"
       />
+      {/* List size at a glance: materials shows the full count (the panel IS
+          the whole catalog), blog/compare the published total. */}
+      <span aria-hidden className="tabular-nums">
+        {String(count).padStart(2, '0')}
+      </span>
     </div>
   )
 }
@@ -74,16 +87,22 @@ export function MaterialsPanel() {
   const locale = useLocale()
   return (
     <div className={cn(panelClass, 'w-[min(560px,84vw)]')}>
-      <PanelNameplate n="02" label={strings.nav.materials} />
+      <PanelNameplate
+        n="02"
+        label={strings.nav.materials}
+        count={MATERIALS.length}
+      />
       <ul className="grid grid-cols-2 gap-x-0">
         {MATERIALS.map((m) => {
           const d = strings.materials[m.id as MaterialId]
           const slug = slugFor(m.id)
           const cells = (
             <>
-              <span className="text-[13px] font-bold">{m.label}</span>
+              <span className="text-[13px] font-bold whitespace-nowrap">
+                {m.label}
+              </span>
               {slug ? (
-                <span className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-[9px] tracking-[0.12em]">
+                <span className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-[9px] tracking-[0.12em] whitespace-nowrap">
                   <span
                     aria-hidden
                     className={cn(
@@ -94,8 +113,8 @@ export function MaterialsPanel() {
                   {strings.materialFamilies[d.family]}
                 </span>
               ) : (
-                <span className="text-muted-foreground/70 border-foreground/15 shrink-0 border px-1.5 py-0.5 text-[9px] tracking-[0.12em]">
-                  {strings.materialsSection.guideSoon}
+                <span className="text-muted-foreground/70 border-foreground/15 shrink-0 border px-1.5 py-0.5 text-[9px] tracking-[0.12em] whitespace-nowrap">
+                  {strings.materialsSection.guideSoonShort}
                 </span>
               )}
             </>
@@ -136,7 +155,11 @@ export function ComparePanel() {
   const copy = compareCopy(locale)
   return (
     <div className={cn(panelClass, 'w-[min(400px,84vw)]')}>
-      <PanelNameplate n="04" label={strings.nav.compare} />
+      <PanelNameplate
+        n="04"
+        label={strings.nav.compare}
+        count={COMPARISONS.length}
+      />
       <ul>
         {COMPARISONS.map((c) => (
           <li key={c.slug}>
@@ -149,11 +172,8 @@ export function ComparePanel() {
                   detail: c.slug,
                 }}
               >
-                <span className="text-[13px] font-bold">
+                <span className="text-[13px] font-bold whitespace-nowrap">
                   {copy[c.slug].title}
-                </span>
-                <span aria-hidden className="text-primary-text">
-                  →
                 </span>
               </Link>
             </NavigationMenuLink>
@@ -173,7 +193,11 @@ export function BlogPanel() {
   const locale = useLocale()
   return (
     <div className={cn(panelClass, 'w-[min(460px,84vw)]')}>
-      <PanelNameplate n="05" label={strings.nav.blog} />
+      <PanelNameplate
+        n="05"
+        label={strings.nav.blog}
+        count={blogPosts(locale).length}
+      />
       <ul>
         {blogPosts(locale)
           .slice(0, 3)

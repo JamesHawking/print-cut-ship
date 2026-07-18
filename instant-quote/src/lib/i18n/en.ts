@@ -139,6 +139,9 @@ export const en = {
     footnote: 'Rates gross incl. 23% VAT',
     readGuide: 'Guide',
     guideSoon: 'Guide soon',
+    // Mega-menu badge (nav-panels.tsx) — the full label would overflow the
+    // two-column panel's cell.
+    guideSoonShort: 'Soon',
     bracketLabel: 'demo bracket · 1 pc',
   },
   materialFamilies: {

@@ -6,7 +6,7 @@ import {
   useParams,
 } from '@tanstack/react-router'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { Menu, X } from 'lucide-react'
+import { Menu, PackageSearch, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatPln } from '@/lib/format'
 import { useParts } from '@/hooks/useParts'
@@ -108,9 +108,15 @@ export function SiteHeader({
                 <Link
                   to="/$locale/login"
                   params={{ locale }}
-                  className="bg-card hover:bg-secondary text-foreground rounded-md border px-3 py-1.5 transition-colors"
+                  aria-label={strings.nav.trackOrder}
+                  // The mega menu made the 1024–1280px band overflow, so the
+                  // chip collapses to an icon there; full label from xl up.
+                  className="bg-card hover:bg-secondary text-foreground rounded-md border px-3 py-1.5 whitespace-nowrap transition-colors"
                 >
-                  {strings.nav.trackOrder}
+                  <PackageSearch aria-hidden className="size-4 xl:hidden" />
+                  <span className="hidden xl:inline">
+                    {strings.nav.trackOrder}
+                  </span>
                 </Link>
                 <LocaleSwitcher />
                 {parts.length > 0 ? (

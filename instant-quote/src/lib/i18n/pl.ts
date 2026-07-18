@@ -152,6 +152,9 @@ export const pl = {
     footnote: 'Stawki brutto z 23% VAT',
     readGuide: 'Przewodnik',
     guideSoon: 'Przewodnik wkrótce',
+    // Mega-menu badge (nav-panels.tsx) — the full label would overflow the
+    // two-column panel's cell.
+    guideSoonShort: 'Wkrótce',
     bracketLabel: 'wspornik z dema · 1 szt.',
   },
   materialFamilies: {
