@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { OrderAccessShell } from '@/components/OrderAccessShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getSessionEmail, setSessionEmail } from '@/lib/session'
+import { api } from '@/lib/api/client'
+import { useSession } from '@/lib/useSession'
 import {
   DEFAULT_LOCALE,
   getStrings,
@@ -35,53 +37,96 @@ function Login() {
   const s = useStrings().login
   const locale = useLocale()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const session = useSession()
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [emailError, setEmailError] = useState(false)
-  const [codeError, setCodeError] = useState(false)
+  const [sendFailed, setSendFailed] = useState(false)
+  const [codeErrorMsg, setCodeErrorMsg] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
   const [resent, setResent] = useState(false)
   const resentTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   // Already signed in — straight to the orders page.
   useEffect(() => {
-    if (getSessionEmail())
+    if (session.data)
       void navigate({
         to: '/$locale/orders',
         params: { locale },
         replace: true,
       })
-  }, [navigate, locale])
+  }, [session.data, navigate, locale])
 
   useEffect(() => () => clearTimeout(resentTimer.current), [])
 
-  function sendCode(e: FormEvent) {
+  async function requestCode(): Promise<boolean> {
+    const res = await api.POST('/api/v1/auth/request-code', {
+      body: { email },
+    })
+    return res.response.ok
+  }
+
+  async function sendCode(e: FormEvent) {
     e.preventDefault()
     if (!EMAIL_RE.test(email)) {
       setEmailError(true)
       return
     }
     setEmailError(false)
+    setSendFailed(false)
+    setPending(true)
+    const ok = await requestCode().catch(() => false)
+    setPending(false)
+    if (!ok) {
+      setSendFailed(true)
+      return
+    }
     setCode('')
-    setCodeError(false)
+    setCodeErrorMsg(null)
     setStep('code')
   }
 
-  // The code is simulated (see the shell's footer note): any six digits pass.
-  function verifyCode(e: FormEvent) {
+  async function verifyCode(e: FormEvent) {
     e.preventDefault()
     if (!/^\d{6}$/.test(code)) {
-      setCodeError(true)
+      setCodeErrorMsg(s.codeError)
       return
     }
-    setSessionEmail(email)
-    void navigate({ to: '/$locale/orders', params: { locale } })
+    setCodeErrorMsg(null)
+    setPending(true)
+    const res = await api
+      .POST('/api/v1/auth/verify-code', { body: { email, code } })
+      .catch(() => undefined)
+    setPending(false)
+    if (res?.response.ok) {
+      // Seed the session cache so /orders doesn't bounce through a 401.
+      queryClient.setQueryData(['auth', 'me'], { email })
+      void navigate({ to: '/$locale/orders', params: { locale } })
+      return
+    }
+    if (res?.response.status === 401 && res.error) {
+      switch (res.error.code) {
+        case 'code_expired':
+          setCodeErrorMsg(s.codeExpired)
+          return
+        case 'too_many_attempts':
+          setCodeErrorMsg(s.tooManyAttempts)
+          return
+        default:
+          setCodeErrorMsg(s.codeError)
+          return
+      }
+    }
+    setCodeErrorMsg(s.requestFailed)
   }
 
-  function resend() {
+  async function resend() {
     setResent(true)
     clearTimeout(resentTimer.current)
     resentTimer.current = setTimeout(() => setResent(false), 1600)
+    await requestCode().catch(() => undefined)
   }
 
   return (
@@ -112,13 +157,24 @@ function Login() {
               onChange={(e) => {
                 setEmail(e.target.value)
                 setEmailError(false)
+                setSendFailed(false)
               }}
             />
             {emailError && (
               <span className="text-destructive text-xs">{s.emailError}</span>
             )}
+            {sendFailed && (
+              <span className="text-destructive text-xs">
+                {s.requestFailed}
+              </span>
+            )}
           </div>
-          <Button type="submit" size="lg" className="font-bold">
+          <Button
+            type="submit"
+            size="lg"
+            className="font-bold"
+            disabled={pending}
+          >
             {s.sendCode}
           </Button>
           <p className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.14em] uppercase">
@@ -157,15 +213,20 @@ function Login() {
               value={code}
               onChange={(e) => {
                 setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
-                setCodeError(false)
+                setCodeErrorMsg(null)
               }}
               className="h-14 text-center font-mono !text-2xl font-bold tracking-[0.5em] tabular-nums"
             />
-            {codeError && (
-              <span className="text-destructive text-xs">{s.codeError}</span>
+            {codeErrorMsg && (
+              <span className="text-destructive text-xs">{codeErrorMsg}</span>
             )}
           </div>
-          <Button type="submit" size="lg" className="font-bold">
+          <Button
+            type="submit"
+            size="lg"
+            className="font-bold"
+            disabled={pending}
+          >
             {s.openOrders}
           </Button>
           <div className="flex gap-5">
@@ -181,7 +242,7 @@ function Login() {
               onClick={() => {
                 setStep('email')
                 setCode('')
-                setCodeError(false)
+                setCodeErrorMsg(null)
               }}
               className="text-muted-foreground hover:text-foreground cursor-pointer font-mono text-[0.65rem] tracking-[0.14em] uppercase underline underline-offset-4 transition-colors"
             >

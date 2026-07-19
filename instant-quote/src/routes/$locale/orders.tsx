@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { OrderAccessShell } from '@/components/OrderAccessShell'
 import { api } from '@/lib/api/client'
-import { clearSessionEmail, getSessionEmail } from '@/lib/session'
+import { useLogout, useSession } from '@/lib/useSession'
 import { formatPlacedDate, formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import {
@@ -41,21 +41,22 @@ function Orders() {
   const s = useStrings().orders
   const locale = useLocale()
   const navigate = useNavigate()
-  const email = getSessionEmail()
+  const session = useSession()
+  const logout = useLogout()
+  const email = session.data?.email ?? null
 
-  // Not signed in — the login page owns this screen's access.
+  // Not signed in — the login page owns this screen's access. The real gate
+  // is the API's 401; this redirect is just UX.
   useEffect(() => {
-    if (!email)
+    if (session.isError)
       void navigate({ to: '/$locale/login', params: { locale }, replace: true })
-  }, [email, navigate, locale])
+  }, [session.isError, navigate, locale])
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['orders', email],
     enabled: email !== null,
     queryFn: async () => {
-      const res = await api.GET('/api/v1/orders', {
-        params: { query: { email: email! } },
-      })
+      const res = await api.GET('/api/v1/orders')
       if (!res.data) throw new Error('orders fetch failed')
       return res.data.orders
     },
@@ -111,8 +112,10 @@ function Orders() {
         <button
           type="button"
           onClick={() => {
-            clearSessionEmail()
-            void navigate({ to: '/$locale/login', params: { locale } })
+            logout.mutate(undefined, {
+              onSettled: () =>
+                void navigate({ to: '/$locale/login', params: { locale } }),
+            })
           }}
           className="text-muted-foreground hover:text-foreground cursor-pointer underline underline-offset-4 transition-colors"
         >

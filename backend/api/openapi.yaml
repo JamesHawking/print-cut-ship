@@ -96,29 +96,84 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/v1/auth/request-code:
+    post:
+      operationId: requestLoginCode
+      summary: >-
+        Email a 6-digit one-time login code. Always returns 204 — whether the
+        email has orders or not, and whether the resend throttle skipped
+        sending — so the endpoint never reveals which emails exist. 400 only
+        for a malformed email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestCodeRequest'
+      responses:
+        '204':
+          description: Code sent (or silently throttled)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/auth/verify-code:
+    post:
+      operationId: verifyLoginCode
+      summary: >-
+        Verify a 6-digit login code. On success sets the iq_session cookie
+        (httpOnly, SameSite=Lax) and returns 204. Codes are single-use,
+        expire after 10 minutes, and allow at most 5 attempts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+      responses:
+        '204':
+          description: Code accepted; session cookie set
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/auth/me:
+    get:
+      operationId: getMe
+      summary: Current session's identity (session restore for the frontend)
+      responses:
+        '200':
+          description: The signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Delete the current session and clear the cookie
+      responses:
+        '204':
+          description: Session deleted; cookie cleared
+
   /api/v1/orders:
     get:
       operationId: listOrders
       summary: >-
-        List order requests (submitted quotes) for an email. Prototype access
-        control: the login page gates this with a simulated one-time code, so
-        treat the data as non-sensitive until plan 05 adds real auth.
-      parameters:
-        - name: email
-          in: query
-          required: true
-          schema:
-            type: string
-            format: email
+        List the signed-in user's order requests (submitted quotes), newest
+        first. The email is derived from the session server-side.
       responses:
         '200':
-          description: Order requests for the email, newest first
+          description: Order requests for the session's email, newest first
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListOrdersResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /api/v1/step-quotes:
     post:
@@ -229,6 +284,12 @@ components:
             $ref: '#/components/schemas/ApiError'
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    UnauthorizedError:
+      description: Missing, invalid, or expired credentials/session
       content:
         application/json:
           schema:
@@ -729,6 +790,33 @@ components:
         stored:
           type: boolean
 
+    RequestCodeRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    VerifyCodeRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+
+    MeResponse:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
     ApiError:
       type: object
       required: [code, error]
@@ -770,4 +858,8 @@ components:
         - upload_object_missing
         - upload_size_mismatch
         - storage_unavailable
+        - code_invalid
+        - code_expired
+        - too_many_attempts
+        - unauthorized
         - internal

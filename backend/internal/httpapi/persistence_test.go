@@ -8,10 +8,12 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/db"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
@@ -100,7 +102,9 @@ func TestSubmitQuotePersists(t *testing.T) {
 
 func TestListOrdersByEmail(t *testing.T) {
 	st, cfgID := setupTestStore(t)
-	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID}, nil)
+	mailer := &captureMailer{}
+	svc := auth.NewService(st, mailer, nil, 10*time.Minute, 30*24*time.Hour)
+	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID, Auth: svc}, nil)
 
 	quotePart := strings.Replace(validPart, `"metrics"`,
 		`"fileName": "plate.stl", "hash": "abc123", "metrics"`, 1)
@@ -111,7 +115,13 @@ func TestListOrdersByEmail(t *testing.T) {
 		}
 	}
 
-	rec := doJSON(t, h, http.MethodGet, "/api/v1/orders?email=jan%40example.com", "")
+	// Anonymous: 401.
+	if rec := doJSON(t, h, http.MethodGet, "/api/v1/orders", ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous list status %d, want 401", rec.Code)
+	}
+
+	session := requestCodeAndVerify(t, h, mailer, "jan@example.com")
+	rec := doJSONCookies(t, h, http.MethodGet, "/api/v1/orders", "", session)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("list status %d: %s", rec.Code, rec.Body)
 	}
@@ -128,8 +138,9 @@ func TestListOrdersByEmail(t *testing.T) {
 		t.Errorf("order summary wrong: %+v", o)
 	}
 
-	// Someone else's email sees nothing.
-	rec = doJSON(t, h, http.MethodGet, "/api/v1/orders?email=other%40example.com", "")
+	// Someone else's session sees nothing.
+	other := requestCodeAndVerify(t, h, mailer, "other@example.com")
+	rec = doJSONCookies(t, h, http.MethodGet, "/api/v1/orders", "", other)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("list status %d: %s", rec.Code, rec.Body)
 	}
