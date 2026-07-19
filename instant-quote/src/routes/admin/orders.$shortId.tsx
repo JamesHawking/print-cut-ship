@@ -14,6 +14,7 @@ import {
   Truck,
 } from 'lucide-react'
 
+import { PageHeader } from './-components/PageHeader'
 import { StatusPill } from './-components/StatusPill'
 import { errorCode } from './-components/util'
 import {
@@ -58,6 +59,7 @@ import {
 import { api } from '@/lib/api/client'
 import { ApiRequestError } from '@/lib/api/errors'
 import { formatPlacedDate, formatPln } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { components } from '@/lib/api/schema'
 
 export const Route = createFileRoute('/admin/orders/$shortId')({
@@ -149,167 +151,185 @@ function OrderDetail() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-background sticky top-14 z-10 -mx-1 flex flex-col gap-3 px-1 pt-1 pb-3">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="font-mono text-xl font-extrabold tracking-tight tabular-nums">
-              {o.orderId}
-            </h1>
-            <p className="text-muted-foreground mt-1 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-              {o.email} · placed {formatPlacedDate(o.createdAt, 'en')}
-              {o.paidAt ? ` · paid ${formatPlacedDate(o.paidAt, 'en')}` : ''}
-            </p>
-          </div>
-          <StatusPill status={o.status} />
-        </div>
+      <PageHeader
+        kicker="Orders / Order"
+        title={<span className="font-mono tabular-nums">{o.orderId}</span>}
+        meta={
+          <>
+            {o.email} · placed {formatPlacedDate(o.createdAt, 'en')}
+            {o.paidAt ? ` · paid ${formatPlacedDate(o.paidAt, 'en')}` : ''}
+          </>
+        }
+        action={<StatusPill status={o.status} />}
+      />
 
-        <TransitionBar
-          status={o.status}
-          busy={busy}
-          onTransition={(to, trackingNumber) =>
-            transition.mutate({ to, trackingNumber })
-          }
-          onRefund={() => refund.mutate()}
-        />
-      </div>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        <FactCard
-          title="Customer"
-          facts={[
-            ['Email', o.email],
-            ['Company', o.companyName ?? '—'],
-            ['NIP', o.nip ?? '—'],
-            ['Invoice', o.invoiceRequested ? 'requested' : 'no'],
-            ['Locale', o.locale],
-            ['Country', o.country],
-          ]}
-        />
-        <FactCard
-          title="Order"
-          facts={[
-            ['Gross', formatPln(o.grossTotalPln, 'en')],
-            ['VAT', formatPln(o.vatPln, 'en')],
-            ['Tracking', o.trackingNumber ?? '—'],
-            ['Status token', o.statusToken],
-            ['Pricing config', o.pricingConfigId],
-          ]}
-        />
-        <FactCard
-          title="Shipping address"
-          facts={addressFacts(o.shippingAddress)}
-        />
-        <FactCard
-          title="Billing address"
-          facts={
-            o.billingAddress
-              ? addressFacts(o.billingAddress)
-              : [['—', 'same as shipping']]
-          }
-        />
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-sm font-bold tracking-tight">Items</h2>
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>File</TableHead>
-                <TableHead>Process</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead>Lead time</TableHead>
-                <TableHead className="text-right">Unit</TableHead>
-                <TableHead className="text-right">Line total</TableHead>
-                <TableHead>DFM</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((it, i) => (
-                <ItemRow key={i} item={it} orderId={o.orderId} />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <p className="text-muted-foreground mt-2 font-mono text-[0.65rem] tracking-[0.1em] uppercase">
-          Gross total {formatPln(o.totals.grossTotalPln, 'en')} · shipping{' '}
-          {formatPln(o.totals.shippingPln, 'en')} · order fee{' '}
-          {formatPln(o.totals.orderFeePln, 'en')}
-        </p>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <h2 className="mb-2 text-sm font-bold tracking-tight">Payments</h2>
-          {data.payments.length === 0 ? (
-            <p className="text-muted-foreground text-sm">None yet.</p>
-          ) : (
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="order-2 flex flex-col gap-6 lg:order-1">
+          <section>
+            <h2 className="text-muted-foreground mb-2 font-mono text-[0.65rem] font-bold tracking-[0.2em] uppercase">
+              Items
+            </h2>
             <div className="rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>File</TableHead>
+                    <TableHead>Process</TableHead>
+                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead>Lead time</TableHead>
+                    <TableHead className="text-right">Unit</TableHead>
+                    <TableHead className="text-right">Line total</TableHead>
+                    <TableHead>DFM</TableHead>
+                    <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {data.items.map((it, i) => (
+                    <ItemRow key={i} item={it} orderId={o.orderId} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="text-muted-foreground mt-2 font-mono text-[0.65rem] tracking-[0.1em] uppercase">
+              Gross total {formatPln(o.totals.grossTotalPln, 'en')} · shipping{' '}
+              {formatPln(o.totals.shippingPln, 'en')} · order fee{' '}
+              {formatPln(o.totals.orderFeePln, 'en')}
+            </p>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
+            <FactCard
+              title="Customer"
+              facts={[
+                ['Email', o.email],
+                ['Company', o.companyName ?? '—'],
+                ['NIP', o.nip ?? '—'],
+                ['Invoice', o.invoiceRequested ? 'requested' : 'no'],
+                ['Locale', o.locale],
+                ['Country', o.country],
+              ]}
+            />
+            <FactCard
+              title="Shipping address"
+              facts={addressFacts(o.shippingAddress)}
+            />
+            {o.billingAddress && (
+              <FactCard
+                title="Billing address"
+                facts={addressFacts(o.billingAddress)}
+              />
+            )}
+          </section>
+        </div>
+
+        <aside className="order-1 flex flex-col gap-4 self-start lg:sticky lg:top-20 lg:order-2">
+          <Card className="gap-0 py-4">
+            <CardHeader className="px-4">
+              <CardTitle className="text-muted-foreground font-mono text-[0.6rem] font-normal tracking-[0.16em] uppercase">
+                Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 px-4">
+              <StatusPill status={o.status} className="self-start" />
+              <TransitionBar
+                status={o.status}
+                busy={busy}
+                onTransition={(to, trackingNumber) =>
+                  transition.mutate({ to, trackingNumber })
+                }
+                onRefund={() => refund.mutate()}
+              />
+            </CardContent>
+          </Card>
+
+          <FactCard
+            title="Order"
+            facts={[
+              ['Gross', formatPln(o.grossTotalPln, 'en')],
+              ['VAT', formatPln(o.vatPln, 'en')],
+              ['Tracking', o.trackingNumber ?? '—'],
+              ['Status token', o.statusToken],
+              ['Pricing config', o.pricingConfigId],
+            ]}
+          />
+
+          <Card className="gap-0 py-4">
+            <CardHeader className="px-4">
+              <CardTitle className="text-muted-foreground font-mono text-[0.6rem] font-normal tracking-[0.16em] uppercase">
+                Payments
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4">
+              {data.payments.length === 0 ? (
+                <p className="text-muted-foreground text-sm">None yet.</p>
+              ) : (
+                <ul className="divide-y">
                   {data.payments.map((p, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{p.type}</TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {p.provider}
-                        {p.paymentRef ? ` · ${p.paymentRef}` : ''}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {formatPln(p.amountPln, 'en')}
-                      </TableCell>
-                      <TableCell>{p.status}</TableCell>
-                    </TableRow>
+                    <li key={i} className="flex flex-col gap-1 py-2 first:pt-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px]">{p.type}</span>
+                        <span className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs tabular-nums">
+                          {formatPln(p.amountPln, 'en')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground max-w-44 truncate font-mono text-[0.6rem] uppercase">
+                          {p.provider}
+                          {p.paymentRef ? ` · ${p.paymentRef}` : ''}
+                        </span>
+                        <span
+                          className={cn(
+                            'font-mono text-[0.6rem] tracking-[0.1em] uppercase',
+                            p.status === 'succeeded'
+                              ? 'text-signal'
+                              : p.status === 'failed'
+                                ? 'text-destructive'
+                                : 'text-muted-foreground',
+                          )}
+                        >
+                          {p.status}
+                        </span>
+                      </div>
+                    </li>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-        <div>
-          <h2 className="mb-2 text-sm font-bold tracking-tight">Invoices</h2>
-          {data.invoices.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              None (seam until plan 18).
-            </p>
-          ) : (
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Kind</TableHead>
-                    <TableHead>Number</TableHead>
-                    <TableHead>Issued</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="gap-0 py-4">
+            <CardHeader className="px-4">
+              <CardTitle className="text-muted-foreground font-mono text-[0.6rem] font-normal tracking-[0.16em] uppercase">
+                Invoices
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4">
+              {data.invoices.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  None (seam until plan 18).
+                </p>
+              ) : (
+                <ul className="divide-y">
                   {data.invoices.map((inv, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{inv.kind}</TableCell>
-                      <TableCell className="font-mono text-xs">
+                    <li
+                      key={i}
+                      className="flex items-center justify-between gap-2 py-2 first:pt-0"
+                    >
+                      <span className="text-[13px]">{inv.kind}</span>
+                      <span className="text-muted-foreground font-mono text-xs">
                         {inv.number ?? '—'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
                         {inv.issuedAt
-                          ? formatPlacedDate(inv.issuedAt, 'en')
-                          : '—'}
-                      </TableCell>
-                    </TableRow>
+                          ? ` · ${formatPlacedDate(inv.issuedAt, 'en')}`
+                          : ''}
+                      </span>
+                    </li>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-      </section>
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
     </div>
   )
 }
@@ -345,9 +365,12 @@ function FactCard({
       <CardContent className="px-4">
         <dl className="flex flex-col gap-1.5">
           {facts.map(([k, v]) => (
-            <div key={k} className="flex justify-between gap-4 text-[13px]">
+            <div
+              key={k}
+              className="flex items-center justify-between gap-4 text-[13px]"
+            >
               <dt className="text-muted-foreground">{k}</dt>
-              <dd className="m-0 max-w-64 truncate text-right font-mono text-xs">
+              <dd className="bg-muted m-0 max-w-64 truncate rounded px-1.5 py-0.5 text-right font-mono text-xs">
                 {v}
               </dd>
             </div>
@@ -446,10 +469,11 @@ function TransitionBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-2">
       {status === 'paid' && (
         <Button
           size="sm"
+          className="w-full justify-start"
           disabled={busy}
           onClick={() => onTransition('in_production')}
         >
@@ -460,7 +484,7 @@ function TransitionBar({
       {status === 'in_production' && (
         <Dialog open={shipOpen} onOpenChange={setShipOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" disabled={busy}>
+            <Button size="sm" className="w-full justify-start" disabled={busy}>
               <Truck />
               Ship…
             </Button>
@@ -500,6 +524,7 @@ function TransitionBar({
       {status === 'shipped' && (
         <Button
           size="sm"
+          className="w-full justify-start"
           disabled={busy}
           onClick={() => onTransition('delivered')}
         >
@@ -544,7 +569,12 @@ function ConfirmAction({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button size="sm" variant="destructive" disabled={busy}>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="w-full justify-start"
+          disabled={busy}
+        >
           {label}
         </Button>
       </AlertDialogTrigger>
