@@ -38,7 +38,7 @@ func setupOrdersTest(t *testing.T) (http.Handler, *store.Store, *pgxpool.Pool, *
 	pipeline := &payments.Pipeline{Store: st, Logger: slog.New(slog.DiscardHandler)}
 	provider := payments.NewStub("http://test.local", pipeline)
 	h := testHandler(t, Config{
-		Store: st, PricingConfigID: cfgID, Auth: svc,
+		Store: st, Pricing: testHolder(cfgID), Auth: svc,
 		Payments: provider, Pipeline: pipeline, PublicBaseURL: "http://test.local",
 	}, nil)
 	return h, st, pool, mailer

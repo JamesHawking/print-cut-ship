@@ -46,7 +46,7 @@ func setupAuthTest(t *testing.T) (http.Handler, *store.Store, *pgxpool.Pool, *ca
 	}
 	mailer := &captureMailer{}
 	svc := auth.NewService(st, mailer, nil, 10*time.Minute, 30*24*time.Hour)
-	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID, Auth: svc}, nil)
+	h := testHandler(t, Config{Store: st, Pricing: testHolder(cfgID), Auth: svc}, nil)
 	return h, st, pool, mailer
 }
 

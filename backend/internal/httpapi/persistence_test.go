@@ -18,12 +18,14 @@ import (
 	"github.com/JamesHawking/print-cut-ship/backend/internal/db"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/payments"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
 // setupTestStore migrates and resets a test database, seeds an active
-// pricing-config snapshot, and returns a Store plus the snapshot id (handlers
-// receive it via Config.PricingConfigID, mirroring the serve() bootstrap).
+// pricing-config snapshot (pricing.Default, mirroring the DB-wins bootstrap),
+// and returns a Store plus the snapshot id (handlers receive a holder over it
+// via testHolder, mirroring the serve() bootstrap).
 // The whole suite is skipped unless TEST_DATABASE_URL points at a throwaway
 // Postgres.
 func setupTestStore(t *testing.T) (*store.Store, uuid.UUID) {
@@ -47,8 +49,12 @@ func setupTestStore(t *testing.T) (*store.Store, uuid.UUID) {
 		t.Fatalf("truncate: %v", err)
 	}
 	st := store.NewStore(pool)
+	defJSON, err := json.Marshal(pricing.Default)
+	if err != nil {
+		t.Fatalf("marshal pricing.Default: %v", err)
+	}
 	cfgID, err := st.InsertPricingConfigSnapshot(ctx, store.InsertPricingConfigSnapshotParams{
-		Label: "test", Config: []byte(`{}`), IsActive: true,
+		Label: "test", Config: defJSON, IsActive: true,
 	})
 	if err != nil {
 		t.Fatalf("seed pricing config: %v", err)
@@ -56,9 +62,15 @@ func setupTestStore(t *testing.T) (*store.Store, uuid.UUID) {
 	return st, cfgID
 }
 
+// testHolder mirrors serve()'s bootstrap: a holder over the seeded snapshot.
+func testHolder(cfgID uuid.UUID) *pricing.Holder {
+	cfg := pricing.Default
+	return pricing.NewHolder(cfgID, &cfg)
+}
+
 func TestSubmitQuotePersists(t *testing.T) {
 	st, cfgID := setupTestStore(t)
-	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Pricing: testHolder(cfgID)}, nil)
 	ctx := context.Background()
 
 	quotePart := strings.Replace(validPart, `"metrics"`,
@@ -108,7 +120,7 @@ func TestListOrdersByEmail(t *testing.T) {
 	svc := auth.NewService(st, mailer, nil, 10*time.Minute, 30*24*time.Hour)
 	pipeline := &payments.Pipeline{Store: st, Logger: slog.New(slog.DiscardHandler)}
 	h := testHandler(t, Config{
-		Store: st, PricingConfigID: cfgID, Auth: svc,
+		Store: st, Pricing: testHolder(cfgID), Auth: svc,
 		Payments: payments.NewStub("http://test.local", pipeline),
 		Pipeline: pipeline, PublicBaseURL: "http://test.local",
 	}, nil)
@@ -159,7 +171,7 @@ func TestListOrdersByEmail(t *testing.T) {
 
 func TestSubmitStepQuotePersists(t *testing.T) {
 	st, cfgID := setupTestStore(t)
-	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Pricing: testHolder(cfgID)}, nil)
 	ctx := context.Background()
 
 	rec := doJSON(t, h, http.MethodPost, "/api/v1/step-quotes",

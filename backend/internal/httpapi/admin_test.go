@@ -400,7 +400,7 @@ func TestAdminDownloadOrderFile(t *testing.T) {
 	svc := auth.NewService(st, mailer, nil, 10*time.Minute, 30*24*time.Hour)
 	pipeline := &payments.Pipeline{Store: st, Logger: slog.New(slog.DiscardHandler)}
 	h := testHandler(t, Config{
-		Store: st, Storage: strg, Auth: svc, PricingConfigID: cfgID,
+		Store: st, Storage: strg, Auth: svc, Pricing: testHolder(cfgID),
 		Payments: payments.NewStub("http://test.local", pipeline),
 		Pipeline: pipeline, PublicBaseURL: "http://test.local",
 	}, nil)

@@ -304,6 +304,12 @@ type AdminPayment struct {
 // AdminPaymentType defines model for AdminPayment.Type.
 type AdminPaymentType string
 
+// AdminPricingConfigResponse defines model for AdminPricingConfigResponse.
+type AdminPricingConfigResponse struct {
+	Active  PricingConfigSnapshot       `json:"active"`
+	History []PricingConfigSnapshotMeta `json:"history"`
+}
+
 // ApiError defines model for ApiError.
 type ApiError struct {
 	// Code Machine code the frontend dictionary maps to localized copy.
@@ -614,8 +620,93 @@ type PriceResponse struct {
 	Totals OrderTotals `json:"totals"`
 }
 
+// PricingConfig Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge.
+type PricingConfig struct {
+	DiscountTiers            []PricingDiscountTier `json:"DiscountTiers"`
+	ExtraPlateFeePln         float64               `json:"ExtraPlateFeePln"`
+	Fdm                      PricingFdmModel       `json:"Fdm"`
+	FreeShippingThresholdPln float64               `json:"FreeShippingThresholdPln"`
+	LeadTimes                []PricingLeadTimeDef  `json:"LeadTimes"`
+	MinBillableVolumeCm3     float64               `json:"MinBillableVolumeCm3"`
+	MinFeatureMm             float64               `json:"MinFeatureMm"`
+	MinOrderPln              float64               `json:"MinOrderPln"`
+	MinPartPricePln          float64               `json:"MinPartPricePln"`
+	OrderFeePln              float64               `json:"OrderFeePln"`
+	PlateGutterMm            float64               `json:"PlateGutterMm"`
+	Processes                []PricingProcessDef   `json:"Processes"`
+	SameDayCutoffHour        int                   `json:"SameDayCutoffHour"`
+	ShippingFlatPln          float64               `json:"ShippingFlatPln"`
+	VatRate                  float64               `json:"VatRate"`
+}
+
+// PricingConfigSnapshot defines model for PricingConfigSnapshot.
+type PricingConfigSnapshot struct {
+	// Config Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge.
+	Config    PricingConfig      `json:"config"`
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+	IsActive  bool               `json:"isActive"`
+	Label     string             `json:"label"`
+}
+
+// PricingConfigSnapshotMeta defines model for PricingConfigSnapshotMeta.
+type PricingConfigSnapshotMeta struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+	IsActive  bool               `json:"isActive"`
+	Label     string             `json:"label"`
+}
+
+// PricingDiscountTier defines model for PricingDiscountTier.
+type PricingDiscountTier struct {
+	Fraction float64 `json:"Fraction"`
+	Quantity float64 `json:"Quantity"`
+}
+
+// PricingFdmModel defines model for PricingFdmModel.
+type PricingFdmModel struct {
+	InfillFraction          float64 `json:"InfillFraction"`
+	InfillGramsPerPrintHour float64 `json:"InfillGramsPerPrintHour"`
+	ShellGramsPerPrintHour  float64 `json:"ShellGramsPerPrintHour"`
+	ShellThicknessMm        float64 `json:"ShellThicknessMm"`
+}
+
+// PricingLeadTimeDef defines model for PricingLeadTimeDef.
+type PricingLeadTimeDef struct {
+	BusinessDays int     `json:"BusinessDays"`
+	ID           string  `json:"ID"`
+	Mult         float64 `json:"Mult"`
+}
+
+// PricingProcessDef defines model for PricingProcessDef.
+type PricingProcessDef struct {
+	Build struct {
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+		Z float64 `json:"z"`
+	} `json:"Build"`
+	DensityGCm3 float64 `json:"DensityGCm3"`
+	Factor      float64 `json:"Factor"`
+	ID          string  `json:"ID"`
+	Label       string  `json:"Label"`
+	PlnPerHour  float64 `json:"PlnPerHour"`
+	PlnPerKg    float64 `json:"PlnPerKg"`
+}
+
 // ProcessId defines model for ProcessId.
 type ProcessId string
+
+// ReplacePricingConfigRequest defines model for ReplacePricingConfigRequest.
+type ReplacePricingConfigRequest struct {
+	// Config Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge.
+	Config PricingConfig `json:"config"`
+	Label  string        `json:"label"`
+}
+
+// ReplacePricingConfigResponse defines model for ReplacePricingConfigResponse.
+type ReplacePricingConfigResponse struct {
+	Id openapi_types.UUID `json:"id"`
+}
 
 // RequestCodeRequest defines model for RequestCodeRequest.
 type RequestCodeRequest struct {
@@ -757,6 +848,9 @@ type AdminListOrdersParams struct {
 // AdminTransitionOrderJSONRequestBody defines body for AdminTransitionOrder for application/json ContentType.
 type AdminTransitionOrderJSONRequestBody = TransitionOrderRequest
 
+// AdminReplacePricingConfigJSONRequestBody defines body for AdminReplacePricingConfig for application/json ContentType.
+type AdminReplacePricingConfigJSONRequestBody = ReplacePricingConfigRequest
+
 // RequestLoginCodeJSONRequestBody defines body for RequestLoginCode for application/json ContentType.
 type RequestLoginCodeJSONRequestBody = RequestCodeRequest
 
@@ -798,6 +892,15 @@ type ServerInterface interface {
 	// Move an order along the lifecycle (admin only). Only board transitions are accepted — paid/refunded flip exclusively through the payment pipeline, so draft/paid/refunded targets get 400 transition_not_allowed. Shipped requires a tracking number (400 tracking_required). Illegal edges get 409 order_wrong_state.
 	// (POST /api/v1/admin/orders/{orderId}/transition)
 	AdminTransitionOrder(w http.ResponseWriter, r *http.Request, orderId string)
+	// Active pricing config plus version history (admin only). The active snapshot is what prices new quotes right now — swaps are live, no deploy needed.
+	// (GET /api/v1/admin/pricing-config)
+	AdminGetPricingConfig(w http.ResponseWriter, r *http.Request)
+	// Publish a new pricing config snapshot (admin only): validated against the Go engine's structure (formula shape is not editable), persisted as the new active row, and swapped into the running process atomically. Existing quotes/orders keep their original snapshot.
+	// (POST /api/v1/admin/pricing-config)
+	AdminReplacePricingConfig(w http.ResponseWriter, r *http.Request)
+	// Read one historical pricing config snapshot (admin only)
+	// (GET /api/v1/admin/pricing-config/{id})
+	AdminGetPricingConfigSnapshot(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// Delete the current session and clear the cookie
 	// (POST /api/v1/auth/logout)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -882,6 +985,24 @@ func (_ Unimplemented) RefundOrder(w http.ResponseWriter, r *http.Request, order
 // Move an order along the lifecycle (admin only). Only board transitions are accepted — paid/refunded flip exclusively through the payment pipeline, so draft/paid/refunded targets get 400 transition_not_allowed. Shipped requires a tracking number (400 tracking_required). Illegal edges get 409 order_wrong_state.
 // (POST /api/v1/admin/orders/{orderId}/transition)
 func (_ Unimplemented) AdminTransitionOrder(w http.ResponseWriter, r *http.Request, orderId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Active pricing config plus version history (admin only). The active snapshot is what prices new quotes right now — swaps are live, no deploy needed.
+// (GET /api/v1/admin/pricing-config)
+func (_ Unimplemented) AdminGetPricingConfig(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Publish a new pricing config snapshot (admin only): validated against the Go engine's structure (formula shape is not editable), persisted as the new active row, and swapped into the running process atomically. Existing quotes/orders keep their original snapshot.
+// (POST /api/v1/admin/pricing-config)
+func (_ Unimplemented) AdminReplacePricingConfig(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one historical pricing config snapshot (admin only)
+// (GET /api/v1/admin/pricing-config/{id})
+func (_ Unimplemented) AdminGetPricingConfigSnapshot(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1139,6 +1260,59 @@ func (siw *ServerInterfaceWrapper) AdminTransitionOrder(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AdminTransitionOrder(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetPricingConfig operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetPricingConfig(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetPricingConfig(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminReplacePricingConfig operation middleware
+func (siw *ServerInterfaceWrapper) AdminReplacePricingConfig(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminReplacePricingConfig(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetPricingConfigSnapshot operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetPricingConfigSnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetPricingConfigSnapshot(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1557,6 +1731,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/admin/orders/{orderId}/transition", wrapper.AdminTransitionOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/pricing-config", wrapper.AdminGetPricingConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/pricing-config", wrapper.AdminReplacePricingConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/pricing-config/{id}", wrapper.AdminGetPricingConfigSnapshot)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)

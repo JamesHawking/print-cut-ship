@@ -197,7 +197,7 @@ func firstQuotePartBillable(t *testing.T, st *store.Store, shortID string) float
 func TestRecomputeOverridesFabricatedMetrics(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	strg := setupTestStorage(t)
-	h := testHandler(t, Config{Store: st, Storage: strg, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Storage: strg, Pricing: testHolder(cfgID)}, nil)
 
 	data := cubeBinaryStl(10) // 1 cm^3
 	fileID := storeFile(t, st, strg, "stl", data, "", "")
@@ -226,7 +226,7 @@ func TestRecomputeOverridesFabricatedMetrics(t *testing.T) {
 func TestRecomputeRejectsTamperedBytes(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	strg := setupTestStorage(t)
-	h := testHandler(t, Config{Store: st, Storage: strg, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Storage: strg, Pricing: testHolder(cfgID)}, nil)
 
 	data := cubeBinaryStl(10)
 	// Row hash differs from the actual stored object's sha.
@@ -246,7 +246,7 @@ func TestRecomputeRejectsTamperedBytes(t *testing.T) {
 func TestRecompute3mfPieces(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	strg := setupTestStorage(t)
-	h := testHandler(t, Config{Store: st, Storage: strg, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Storage: strg, Pricing: testHolder(cfgID)}, nil)
 
 	data := goldenCaseBytes(t, "multi-item 3mf s=10 count=3 spacing=20 (pieces)")
 	fileID := storeFile(t, st, strg, "3mf", data, "", "")
@@ -267,7 +267,7 @@ func TestRecompute3mfPieces(t *testing.T) {
 func TestRecomputeSoftFallbackOnMissingObject(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	strg := setupTestStorage(t)
-	h := testHandler(t, Config{Store: st, Storage: strg, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Storage: strg, Pricing: testHolder(cfgID)}, nil)
 
 	data := cubeBinaryStl(10)
 	sum := sha256.Sum256(data)
@@ -294,7 +294,7 @@ func TestRecomputeSoftFallbackOnMissingObject(t *testing.T) {
 func TestRecomputeSkipsStep(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	strg := setupTestStorage(t)
-	h := testHandler(t, Config{Store: st, Storage: strg, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Storage: strg, Pricing: testHolder(cfgID)}, nil)
 
 	data := []byte("ISO-10303-21;\nHEADER;\nENDSEC;\n") // stand-in STEP bytes
 	sum := sha256.Sum256(data)
@@ -319,7 +319,7 @@ func TestRecomputeSkipsStep(t *testing.T) {
 func TestRecomputeNonWatertightDefersToClient(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	strg := setupTestStorage(t)
-	h := testHandler(t, Config{Store: st, Storage: strg, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Storage: strg, Pricing: testHolder(cfgID)}, nil)
 
 	data := openBoxBinaryStl(10) // not watertight
 	fileID := storeFile(t, st, strg, "stl", data, "", "")

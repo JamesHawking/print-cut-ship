@@ -50,13 +50,14 @@ func (s *server) shipBy(status string, leadTimeIDs []string, paidAt pgtype.Times
 	if !paidAt.Valid {
 		return nil
 	}
+	cfg := s.activePricing().Cfg
 	days := 0
 	for _, id := range leadTimeIDs {
-		if lt, ok := priceCfg.LeadTime(id); ok && lt.BusinessDays > days {
+		if lt, ok := cfg.LeadTime(id); ok && lt.BusinessDays > days {
 			days = lt.BusinessDays
 		}
 	}
-	sd := leadtime.ComputeShipDate(days, priceCfg.SameDayCutoffHour, paidAt.Time)
+	sd := leadtime.ComputeShipDate(days, cfg.SameDayCutoffHour, paidAt.Time)
 	return &sd.Date
 }
 

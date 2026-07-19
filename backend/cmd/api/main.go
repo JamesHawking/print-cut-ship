@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"strconv"
 	"syscall"
 	"time"
@@ -17,7 +16,6 @@ import (
 	// Embed tzdata so Europe/Warsaw works in minimal container images.
 	_ "time/tzdata"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
@@ -96,7 +94,7 @@ func serve(logger *slog.Logger) {
 	defer pool.Close()
 
 	st := store.NewStore(pool)
-	pricingConfigID, err := ensureActivePricingConfig(context.Background(), st, logger)
+	pricingHolder, err := loadActivePricingConfig(context.Background(), st, logger)
 	if err != nil {
 		logger.Error("pricing config bootstrap failed", "err", err)
 		os.Exit(1)
@@ -144,11 +142,11 @@ func serve(logger *slog.Logger) {
 				envDurationMinutes("LOGIN_CODE_TTL_MINUTES", 10),
 				envDurationDays("SESSION_TTL_DAYS", 30),
 			),
-			Payments:        provider,
-			Pipeline:        pipeline,
-			PublicBaseURL:   publicBaseURL,
-			CookieSecure:    os.Getenv("COOKIE_SECURE") == "true",
-			PricingConfigID: pricingConfigID,
+			Payments:      provider,
+			Pipeline:      pipeline,
+			PublicBaseURL: publicBaseURL,
+			CookieSecure:  os.Getenv("COOKIE_SECURE") == "true",
+			Pricing:       pricingHolder,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
@@ -172,16 +170,16 @@ func serve(logger *slog.Logger) {
 	}
 }
 
-// seed ensures the active pricing-config snapshot matches pricing.Default.
-// Idempotent; serve() runs the same bootstrap at startup, so this subcommand
-// exists mainly for CI and manual setup.
+// seed ensures an active pricing-config snapshot exists (from pricing.Default
+// when the DB has none). It never overwrites an existing active row — with
+// plan 07 the DB is the source of truth and admin edits are legitimate.
 func seed(ctx context.Context, logger *slog.Logger) error {
 	pool, err := db.New(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
-	_, err = ensureActivePricingConfig(ctx, store.NewStore(pool), logger)
+	_, err = loadActivePricingConfig(ctx, store.NewStore(pool), logger)
 	return err
 }
 
@@ -269,45 +267,50 @@ func envDuration(name string, def int, unit time.Duration) time.Duration {
 	return time.Duration(def) * unit
 }
 
-// ensureActivePricingConfig guarantees the DB's active pricing_config_snapshots
-// row equals the compiled-in pricing.Default, so the pricing_config_id stamped
-// onto quotes always describes the config that actually priced them. Until
-// plan 07 makes the engine load config from the DB, the binary is the source
-// of truth and the DB row follows it: no active row → insert; active row with
-// a different config → replace with a new active snapshot.
-func ensureActivePricingConfig(ctx context.Context, st *store.Store, logger *slog.Logger) (uuid.UUID, error) {
-	wantJSON, err := json.Marshal(pricing.Default)
-	if err != nil {
-		return uuid.Nil, err
-	}
-
+// loadActivePricingConfig builds the engine's live config holder (plan 07,
+// DB-wins): the active pricing_config_snapshots row is the source of truth.
+// No active row → seed one from pricing.Default. An active row that differs
+// from the binary is legitimate (admin editor) and loads as-is — code-side
+// rate changes now land via the editor or plan 14, not by redeploy. Invalid
+// stored JSON self-heals loudly: log Error and replace with a fresh Default
+// snapshot.
+func loadActivePricingConfig(ctx context.Context, st *store.Store, logger *slog.Logger) (*pricing.Holder, error) {
 	row, err := st.GetActivePricingConfig(ctx)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
+		wantJSON, err := json.Marshal(pricing.Default)
+		if err != nil {
+			return nil, err
+		}
 		id, err := st.InsertPricingConfigSnapshot(ctx, store.InsertPricingConfigSnapshotParams{
 			Label:    "auto: pricing.Default",
 			Config:   wantJSON,
 			IsActive: true,
 		})
 		if err != nil {
-			return uuid.Nil, err
+			return nil, err
 		}
 		logger.Info("seeded active pricing config", "id", id)
-		return id, nil
+		cfg := pricing.Default
+		return pricing.NewHolder(id, &cfg), nil
 	case err != nil:
-		return uuid.Nil, err
+		return nil, err
 	}
 
-	var stored pricing.Config
-	if json.Unmarshal(row.Config, &stored) == nil && reflect.DeepEqual(stored, pricing.Default) {
-		return row.ID, nil
+	var cfg pricing.Config
+	if err := json.Unmarshal(row.Config, &cfg); err != nil {
+		wantJSON, merr := json.Marshal(pricing.Default)
+		if merr != nil {
+			return nil, merr
+		}
+		id, rerr := st.ReplaceActivePricingConfig(ctx, "auto: pricing.Default (self-heal after invalid "+row.Label+")", wantJSON)
+		if rerr != nil {
+			return nil, rerr
+		}
+		logger.Error("active pricing config was invalid JSON; replaced with pricing.Default",
+			"oldId", row.ID, "oldLabel", row.Label, "newId", id, "err", err)
+		fresh := pricing.Default
+		return pricing.NewHolder(id, &fresh), nil
 	}
-
-	id, err := st.ReplaceActivePricingConfig(ctx, "auto: pricing.Default (superseded "+row.Label+")", wantJSON)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	logger.Warn("active pricing config differed from the binary; replaced it",
-		"oldId", row.ID, "oldLabel", row.Label, "newId", id)
-	return id, nil
+	return pricing.NewHolder(row.ID, &cfg), nil
 }

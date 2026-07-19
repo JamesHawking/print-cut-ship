@@ -389,6 +389,79 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/v1/admin/pricing-config:
+    get:
+      operationId: adminGetPricingConfig
+      tags: [admin]
+      summary: >-
+        Active pricing config plus version history (admin only). The active
+        snapshot is what prices new quotes right now — swaps are live, no
+        deploy needed.
+      responses:
+        '200':
+          description: Active snapshot and version history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPricingConfigResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: adminReplacePricingConfig
+      tags: [admin]
+      summary: >-
+        Publish a new pricing config snapshot (admin only): validated against
+        the Go engine's structure (formula shape is not editable), persisted
+        as the new active row, and swapped into the running process
+        atomically. Existing quotes/orders keep their original snapshot.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplacePricingConfigRequest'
+      responses:
+        '200':
+          description: New active snapshot id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplacePricingConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/pricing-config/{id}:
+    get:
+      operationId: adminGetPricingConfigSnapshot
+      tags: [admin]
+      summary: Read one historical pricing config snapshot (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingConfigSnapshot'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/admin/orders/{orderId}/refund:
     post:
       operationId: refundOrder
@@ -1201,6 +1274,157 @@ components:
           type: string
           minLength: 1
           description: Required for to=shipped; stored on the order.
+
+    PricingConfig:
+      type: object
+      additionalProperties: false
+      description: >-
+        Mirrors the Go pricing.Config struct's JSON exactly — Go field names
+        (the struct has no json tags; Build keeps its lowercase x/y/z tags).
+        The drift-guard test fails the build if the struct and this schema
+        diverge.
+      required:
+        [Processes, LeadTimes, Fdm, DiscountTiers, ExtraPlateFeePln,
+         PlateGutterMm, MinOrderPln, MinPartPricePln, OrderFeePln,
+         ShippingFlatPln, FreeShippingThresholdPln, VatRate,
+         MinBillableVolumeCm3, MinFeatureMm, SameDayCutoffHour]
+      properties:
+        Processes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingProcessDef'
+        LeadTimes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingLeadTimeDef'
+        Fdm:
+          $ref: '#/components/schemas/PricingFdmModel'
+        DiscountTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingDiscountTier'
+        ExtraPlateFeePln: { type: number, format: double }
+        PlateGutterMm: { type: number, format: double }
+        MinOrderPln: { type: number, format: double }
+        MinPartPricePln: { type: number, format: double }
+        OrderFeePln: { type: number, format: double }
+        ShippingFlatPln: { type: number, format: double }
+        FreeShippingThresholdPln: { type: number, format: double }
+        VatRate: { type: number, format: double }
+        MinBillableVolumeCm3: { type: number, format: double }
+        MinFeatureMm: { type: number, format: double }
+        SameDayCutoffHour: { type: integer }
+
+    PricingProcessDef:
+      type: object
+      additionalProperties: false
+      required: [ID, Label, DensityGCm3, PlnPerKg, Factor, PlnPerHour, Build]
+      properties:
+        ID: { type: string }
+        Label: { type: string }
+        DensityGCm3: { type: number, format: double }
+        PlnPerKg: { type: number, format: double }
+        Factor: { type: number, format: double }
+        PlnPerHour: { type: number, format: double }
+        Build:
+          type: object
+          additionalProperties: false
+          required: [x, y, z]
+          properties:
+            x: { type: number, format: double }
+            y: { type: number, format: double }
+            z: { type: number, format: double }
+
+    PricingLeadTimeDef:
+      type: object
+      additionalProperties: false
+      required: [ID, Mult, BusinessDays]
+      properties:
+        ID: { type: string }
+        Mult: { type: number, format: double }
+        BusinessDays: { type: integer }
+
+    PricingFdmModel:
+      type: object
+      additionalProperties: false
+      required:
+        [InfillFraction, ShellThicknessMm, ShellGramsPerPrintHour,
+         InfillGramsPerPrintHour]
+      properties:
+        InfillFraction: { type: number, format: double }
+        ShellThicknessMm: { type: number, format: double }
+        ShellGramsPerPrintHour: { type: number, format: double }
+        InfillGramsPerPrintHour: { type: number, format: double }
+
+    PricingDiscountTier:
+      type: object
+      additionalProperties: false
+      required: [Quantity, Fraction]
+      properties:
+        Quantity: { type: number, format: double }
+        Fraction: { type: number, format: double }
+
+    PricingConfigSnapshotMeta:
+      type: object
+      required: [id, label, createdAt, isActive]
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+
+    PricingConfigSnapshot:
+      type: object
+      required: [id, label, createdAt, isActive, config]
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+        config:
+          $ref: '#/components/schemas/PricingConfig'
+
+    AdminPricingConfigResponse:
+      type: object
+      required: [active, history]
+      properties:
+        active:
+          $ref: '#/components/schemas/PricingConfigSnapshot'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingConfigSnapshotMeta'
+
+    ReplacePricingConfigRequest:
+      type: object
+      additionalProperties: false
+      required: [label, config]
+      properties:
+        label:
+          type: string
+          minLength: 1
+        config:
+          $ref: '#/components/schemas/PricingConfig'
+
+    ReplacePricingConfigResponse:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: uuid
 
     AdminOrderSummary:
       type: object

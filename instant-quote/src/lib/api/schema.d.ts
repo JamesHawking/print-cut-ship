@@ -277,6 +277,41 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/admin/pricing-config': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Active pricing config plus version history (admin only). The active snapshot is what prices new quotes right now — swaps are live, no deploy needed. */
+    get: operations['adminGetPricingConfig']
+    put?: never
+    /** Publish a new pricing config snapshot (admin only): validated against the Go engine's structure (formula shape is not editable), persisted as the new active row, and swapped into the running process atomically. Existing quotes/orders keep their original snapshot. */
+    post: operations['adminReplacePricingConfig']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/pricing-config/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Read one historical pricing config snapshot (admin only) */
+    get: operations['adminGetPricingConfigSnapshot']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/admin/orders/{orderId}/refund': {
     parameters: {
       query?: never
@@ -777,6 +812,105 @@ export interface components {
       to: components['schemas']['OrderStatus']
       /** @description Required for to=shipped; stored on the order. */
       trackingNumber?: string
+    }
+    /** @description Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge. */
+    PricingConfig: {
+      Processes: components['schemas']['PricingProcessDef'][]
+      LeadTimes: components['schemas']['PricingLeadTimeDef'][]
+      Fdm: components['schemas']['PricingFdmModel']
+      DiscountTiers: components['schemas']['PricingDiscountTier'][]
+      /** Format: double */
+      ExtraPlateFeePln: number
+      /** Format: double */
+      PlateGutterMm: number
+      /** Format: double */
+      MinOrderPln: number
+      /** Format: double */
+      MinPartPricePln: number
+      /** Format: double */
+      OrderFeePln: number
+      /** Format: double */
+      ShippingFlatPln: number
+      /** Format: double */
+      FreeShippingThresholdPln: number
+      /** Format: double */
+      VatRate: number
+      /** Format: double */
+      MinBillableVolumeCm3: number
+      /** Format: double */
+      MinFeatureMm: number
+      SameDayCutoffHour: number
+    }
+    PricingProcessDef: {
+      ID: string
+      Label: string
+      /** Format: double */
+      DensityGCm3: number
+      /** Format: double */
+      PlnPerKg: number
+      /** Format: double */
+      Factor: number
+      /** Format: double */
+      PlnPerHour: number
+      Build: {
+        /** Format: double */
+        x: number
+        /** Format: double */
+        y: number
+        /** Format: double */
+        z: number
+      }
+    }
+    PricingLeadTimeDef: {
+      ID: string
+      /** Format: double */
+      Mult: number
+      BusinessDays: number
+    }
+    PricingFdmModel: {
+      /** Format: double */
+      InfillFraction: number
+      /** Format: double */
+      ShellThicknessMm: number
+      /** Format: double */
+      ShellGramsPerPrintHour: number
+      /** Format: double */
+      InfillGramsPerPrintHour: number
+    }
+    PricingDiscountTier: {
+      /** Format: double */
+      Quantity: number
+      /** Format: double */
+      Fraction: number
+    }
+    PricingConfigSnapshotMeta: {
+      /** Format: uuid */
+      id: string
+      label: string
+      /** Format: date-time */
+      createdAt: string
+      isActive: boolean
+    }
+    PricingConfigSnapshot: {
+      /** Format: uuid */
+      id: string
+      label: string
+      /** Format: date-time */
+      createdAt: string
+      isActive: boolean
+      config: components['schemas']['PricingConfig']
+    }
+    AdminPricingConfigResponse: {
+      active: components['schemas']['PricingConfigSnapshot']
+      history: components['schemas']['PricingConfigSnapshotMeta'][]
+    }
+    ReplacePricingConfigRequest: {
+      label: string
+      config: components['schemas']['PricingConfig']
+    }
+    ReplacePricingConfigResponse: {
+      /** Format: uuid */
+      id: string
     }
     AdminOrderSummary: {
       orderId: string
@@ -1390,6 +1524,80 @@ export interface operations {
         }
         content: {
           'application/octet-stream': string
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+    }
+  }
+  adminGetPricingConfig: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Active snapshot and version history */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminPricingConfigResponse']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminReplacePricingConfig: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReplacePricingConfigRequest']
+      }
+    }
+    responses: {
+      /** @description New active snapshot id */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ReplacePricingConfigResponse']
+        }
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminGetPricingConfigSnapshot: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The snapshot */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PricingConfigSnapshot']
         }
       }
       401: components['responses']['UnauthorizedError']

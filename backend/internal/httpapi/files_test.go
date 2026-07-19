@@ -36,7 +36,7 @@ func setupTestStorage(t *testing.T) *storage.Store {
 func TestFileUploadRoundTrip(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	strg := setupTestStorage(t)
-	h := testHandler(t, Config{Store: st, Storage: strg, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Storage: strg, Pricing: testHolder(cfgID)}, nil)
 
 	body := []byte("solid cube\nfacet normal 0 0 0\n") // stand-in STL bytes
 	sum := sha256.Sum256(body)
@@ -101,7 +101,7 @@ func TestFileUploadRoundTrip(t *testing.T) {
 func TestConfirmSizeMismatchKeepsPending(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	strg := setupTestStorage(t)
-	h := testHandler(t, Config{Store: st, Storage: strg, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Storage: strg, Pricing: testHolder(cfgID)}, nil)
 
 	body := []byte("obj v 0 0 0")
 	sum := sha256.Sum256(body)

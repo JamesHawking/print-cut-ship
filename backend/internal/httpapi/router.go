@@ -14,6 +14,7 @@ import (
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/payments"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
@@ -42,13 +43,24 @@ type Config struct {
 	// CookieSecure forces the Secure flag on the session cookie even over
 	// plain http (COOKIE_SECURE). TLS requests always get Secure.
 	CookieSecure bool
-	// PricingConfigID is the active pricing_config_snapshots row verified at
-	// startup to equal the compiled-in pricing.Default (see cmd/api). Quotes
-	// are stamped with it; plan 07 replaces this with a live-swappable config.
-	PricingConfigID uuid.UUID
+	// Pricing is the live-swappable active pricing config (plan 07): readers
+	// take one snapshot per request so price and stamped config id can't
+	// skew. Nil falls back to pricing.Default with a nil id (DB-less unit
+	// tests).
+	Pricing *pricing.Holder
 	// Now is the clock seam for ship-by/ops derivations (plan 07); nil means
 	// time.Now. Tests pin it for deterministic ship-date assertions.
 	Now func() time.Time
+}
+
+// activePricing returns the current (id, config) pair; the nil-holder
+// fallback keeps DB-less unit tests on pricing.Default — golden fixtures pin
+// exactly that, so any holder-threading mistake shows up as fixture churn.
+func (s *server) activePricing() pricing.Active {
+	if s.cfg.Pricing == nil {
+		return pricing.Active{ID: uuid.Nil, Cfg: &pricing.Default}
+	}
+	return s.cfg.Pricing.Get()
 }
 
 func NewRouter(cfg Config) http.Handler {
