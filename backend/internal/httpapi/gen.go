@@ -27,11 +27,15 @@ const (
 	InvalidFileSize     ApiErrorCode = "invalid_file_size"
 	InvalidHash         ApiErrorCode = "invalid_hash"
 	InvalidMetrics      ApiErrorCode = "invalid_metrics"
+	InvalidNip          ApiErrorCode = "invalid_nip"
 	InvalidProfileId    ApiErrorCode = "invalid_profile_id"
 	MissingFileFields   ApiErrorCode = "missing_file_fields"
 	MissingFileName     ApiErrorCode = "missing_file_name"
+	OrderNotFound       ApiErrorCode = "order_not_found"
+	OrderWrongState     ApiErrorCode = "order_wrong_state"
 	PartsCount          ApiErrorCode = "parts_count"
 	QuantityRange       ApiErrorCode = "quantity_range"
+	QuoteAlreadyOrdered ApiErrorCode = "quote_already_ordered"
 	QuoteFileInvalid    ApiErrorCode = "quote_file_invalid"
 	QuoteNotFound       ApiErrorCode = "quote_not_found"
 	StorageUnavailable  ApiErrorCode = "storage_unavailable"
@@ -123,11 +127,15 @@ const (
 	TooLarge       MakerworldErrorCode = "too_large"
 )
 
-// Defines values for OrderSummaryStatus.
+// Defines values for OrderStatus.
 const (
-	Expired   OrderSummaryStatus = "expired"
-	Ordered   OrderSummaryStatus = "ordered"
-	Submitted OrderSummaryStatus = "submitted"
+	Cancelled    OrderStatus = "cancelled"
+	Delivered    OrderStatus = "delivered"
+	Draft        OrderStatus = "draft"
+	InProduction OrderStatus = "in_production"
+	Paid         OrderStatus = "paid"
+	Refunded     OrderStatus = "refunded"
+	Shipped      OrderStatus = "shipped"
 )
 
 // Defines values for ProcessId.
@@ -146,6 +154,18 @@ const (
 	En SubmitQuoteRequestLocale = "en"
 	Pl SubmitQuoteRequestLocale = "pl"
 )
+
+// Address defines model for Address.
+type Address struct {
+	City string `json:"city"`
+
+	// Name Full name (B2C) or company name (B2B)
+	Name       string `json:"name"`
+	PostalCode string `json:"postalCode"`
+
+	// Street Street and number
+	Street string `json:"street"`
+}
 
 // ApiError defines model for ApiError.
 type ApiError struct {
@@ -221,6 +241,12 @@ type CatalogResponse struct {
 	VatRate                  float64           `json:"vatRate"`
 }
 
+// CheckoutResponse defines model for CheckoutResponse.
+type CheckoutResponse struct {
+	// Url Provider-hosted checkout URL to redirect the browser to
+	Url string `json:"url"`
+}
+
 // ConfirmFileResponse defines model for ConfirmFileResponse.
 type ConfirmFileResponse struct {
 	FileId openapi_types.UUID `json:"fileId"`
@@ -245,6 +271,37 @@ type CreateFileResponse struct {
 
 	// UploadUrl Presigned PUT URL; absent when alreadyStored is true
 	UploadUrl *string `json:"uploadUrl,omitempty"`
+}
+
+// CreateOrderRequest defines model for CreateOrderRequest.
+type CreateOrderRequest struct {
+	BillingAddress *Address `json:"billingAddress,omitempty"`
+
+	// CompanyName B2B only; presence together with nip implies always-invoice
+	CompanyName *string `json:"companyName,omitempty"`
+
+	// Country Supported EU shipping destinations
+	Country EuCountry           `json:"country"`
+	Email   openapi_types.Email `json:"email"`
+
+	// InvoiceRequested B2C opt-in for a faktura VAT (B2B is always invoiced)
+	InvoiceRequested *bool `json:"invoiceRequested,omitempty"`
+
+	// Nip Polish NIP (10 digits); checksum validated server-side
+	Nip *string `json:"nip,omitempty"`
+
+	// QuoteId The quoteId returned by submitQuote, e.g. "Q-1A2B3C4D"
+	QuoteId         string  `json:"quoteId"`
+	ShippingAddress Address `json:"shippingAddress"`
+}
+
+// CreateOrderResponse defines model for CreateOrderResponse.
+type CreateOrderResponse struct {
+	// OrderId e.g. "O-1A2B3C4D"
+	OrderId string `json:"orderId"`
+
+	// StatusToken Bearer capability for the public status page (GET /api/v1/orders/track/{statusToken}); also embedded in the checkout success redirect.
+	StatusToken string `json:"statusToken"`
 }
 
 // DfmFlag defines model for DfmFlag.
@@ -321,23 +378,28 @@ type MeshMetrics struct {
 	VolumeCm3        float64         `json:"volumeCm3"`
 }
 
+// OrderStatus Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+type OrderStatus string
+
 // OrderSummary defines model for OrderSummary.
 type OrderSummary struct {
 	CreatedAt time.Time `json:"createdAt"`
 
-	// FileName First part's file name
+	// FileName First item's file name
 	FileName      string     `json:"fileName"`
 	GrossTotalPln float64    `json:"grossTotalPln"`
 	LeadTime      LeadTimeId `json:"leadTime"`
-	PartCount     int        `json:"partCount"`
 
-	// QuoteId e.g. "Q-1A2B3C4D"
-	QuoteId string             `json:"quoteId"`
-	Status  OrderSummaryStatus `json:"status"`
+	// OrderId e.g. "O-1A2B3C4D"
+	OrderId   string `json:"orderId"`
+	PartCount int    `json:"partCount"`
+
+	// Status Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+	Status OrderStatus `json:"status"`
+
+	// StatusToken The order's public status-page capability — exposed here because this endpoint is session-guarded and the session proves ownership.
+	StatusToken string `json:"statusToken"`
 }
-
-// OrderSummaryStatus defines model for OrderSummary.Status.
-type OrderSummaryStatus string
 
 // OrderTotals defines model for OrderTotals.
 type OrderTotals struct {
@@ -485,6 +547,28 @@ type SubmitQuoteResponse struct {
 	Totals  OrderTotals `json:"totals"`
 }
 
+// TrackedOrder defines model for TrackedOrder.
+type TrackedOrder struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Items     []TrackedOrderItem `json:"items"`
+	OrderId   string             `json:"orderId"`
+	PaidAt    *time.Time         `json:"paidAt,omitempty"`
+
+	// Status Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+	Status OrderStatus `json:"status"`
+	Totals OrderTotals `json:"totals"`
+}
+
+// TrackedOrderItem defines model for TrackedOrderItem.
+type TrackedOrderItem struct {
+	FileName     string     `json:"fileName"`
+	LeadTime     LeadTimeId `json:"leadTime"`
+	LineTotalPln float64    `json:"lineTotalPln"`
+	Process      ProcessId  `json:"process"`
+	Quantity     int        `json:"quantity"`
+	UnitPricePln float64    `json:"unitPricePln"`
+}
+
 // Vec3Mm defines model for Vec3Mm.
 type Vec3Mm struct {
 	X float64 `json:"x"`
@@ -500,6 +584,12 @@ type VerifyCodeRequest struct {
 
 // BadRequest defines model for BadRequest.
 type BadRequest = ApiError
+
+// Conflict defines model for Conflict.
+type Conflict = ApiError
+
+// Forbidden defines model for Forbidden.
+type Forbidden = ApiError
 
 // NotFound defines model for NotFound.
 type NotFound = ApiError
@@ -519,6 +609,9 @@ type CreateFileUploadJSONRequestBody = CreateFileRequest
 // FetchMakerworldModelJSONRequestBody defines body for FetchMakerworldModel for application/json ContentType.
 type FetchMakerworldModelJSONRequestBody = MakerworldFetchRequest
 
+// CreateOrderJSONRequestBody defines body for CreateOrder for application/json ContentType.
+type CreateOrderJSONRequestBody = CreateOrderRequest
+
 // PriceJSONRequestBody defines body for Price for application/json ContentType.
 type PriceJSONRequestBody = PriceRequest
 
@@ -530,6 +623,9 @@ type SubmitStepQuoteJSONRequestBody = StepQuoteRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment).
+	// (POST /api/v1/admin/orders/{orderId}/refund)
+	RefundOrder(w http.ResponseWriter, r *http.Request, orderId string)
 	// Delete the current session and clear the cookie
 	// (POST /api/v1/auth/logout)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -554,9 +650,18 @@ type ServerInterface interface {
 	// Download a MakerWorld model's 3MF via Bambu Cloud
 	// (POST /api/v1/makerworld/fetch)
 	FetchMakerworldModel(w http.ResponseWriter, r *http.Request)
-	// List the signed-in user's order requests (submitted quotes), newest first. The email is derived from the session server-side.
+	// List the signed-in user's orders, newest first. Identity is derived from the session server-side; guest checkouts appear via their email.
 	// (GET /api/v1/orders)
 	ListOrders(w http.ResponseWriter, r *http.Request)
+	// Create a draft order from a persisted quote. The client sends no prices — every money value is copied verbatim from the stored, server-recomputed quote rows (anti-tamper boundary).
+	// (POST /api/v1/orders)
+	CreateOrder(w http.ResponseWriter, r *http.Request)
+	// Public order status view. The statusToken (returned by createOrder and embedded in the post-payment redirect) is the bearer capability; the response is redacted — no internal ids, no raw provider objects, no PII beyond the line items.
+	// (GET /api/v1/orders/track/{statusToken})
+	TrackOrder(w http.ResponseWriter, r *http.Request, statusToken string)
+	// Create (or return the live) payment-provider checkout session for a draft order. The returned URL is provider-hosted (Stripe Checkout in plan 18, a stub page while PAYMENTS_PROVIDER=stub) — the browser redirects to it and never asserts payment itself.
+	// (POST /api/v1/orders/{orderId}/checkout)
+	CreateOrderCheckout(w http.ResponseWriter, r *http.Request, orderId string)
 	// Price a set of parts and compute order totals
 	// (POST /api/v1/price)
 	Price(w http.ResponseWriter, r *http.Request)
@@ -577,6 +682,12 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment).
+// (POST /api/v1/admin/orders/{orderId}/refund)
+func (_ Unimplemented) RefundOrder(w http.ResponseWriter, r *http.Request, orderId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Delete the current session and clear the cookie
 // (POST /api/v1/auth/logout)
@@ -626,9 +737,27 @@ func (_ Unimplemented) FetchMakerworldModel(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List the signed-in user's order requests (submitted quotes), newest first. The email is derived from the session server-side.
+// List the signed-in user's orders, newest first. Identity is derived from the session server-side; guest checkouts appear via their email.
 // (GET /api/v1/orders)
 func (_ Unimplemented) ListOrders(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a draft order from a persisted quote. The client sends no prices — every money value is copied verbatim from the stored, server-recomputed quote rows (anti-tamper boundary).
+// (POST /api/v1/orders)
+func (_ Unimplemented) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Public order status view. The statusToken (returned by createOrder and embedded in the post-payment redirect) is the bearer capability; the response is redacted — no internal ids, no raw provider objects, no PII beyond the line items.
+// (GET /api/v1/orders/track/{statusToken})
+func (_ Unimplemented) TrackOrder(w http.ResponseWriter, r *http.Request, statusToken string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create (or return the live) payment-provider checkout session for a draft order. The returned URL is provider-hosted (Stripe Checkout in plan 18, a stub page while PAYMENTS_PROVIDER=stub) — the browser redirects to it and never asserts payment itself.
+// (POST /api/v1/orders/{orderId}/checkout)
+func (_ Unimplemented) CreateOrderCheckout(w http.ResponseWriter, r *http.Request, orderId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -670,6 +799,31 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// RefundOrder operation middleware
+func (siw *ServerInterfaceWrapper) RefundOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", chi.URLParam(r, "orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RefundOrder(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // Logout operation middleware
 func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
@@ -799,6 +953,70 @@ func (siw *ServerInterfaceWrapper) ListOrders(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListOrders(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateOrder operation middleware
+func (siw *ServerInterfaceWrapper) CreateOrder(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOrder(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TrackOrder operation middleware
+func (siw *ServerInterfaceWrapper) TrackOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "statusToken" -------------
+	var statusToken string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "statusToken", chi.URLParam(r, "statusToken"), &statusToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "statusToken", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TrackOrder(w, r, statusToken)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateOrderCheckout operation middleware
+func (siw *ServerInterfaceWrapper) CreateOrderCheckout(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", chi.URLParam(r, "orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOrderCheckout(w, r, orderId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1003,6 +1221,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/orders/{orderId}/refund", wrapper.RefundOrder)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)
 	})
 	r.Group(func(r chi.Router) {
@@ -1028,6 +1249,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/orders", wrapper.ListOrders)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/orders", wrapper.CreateOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/orders/track/{statusToken}", wrapper.TrackOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/orders/{orderId}/checkout", wrapper.CreateOrderCheckout)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/price", wrapper.Price)

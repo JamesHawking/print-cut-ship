@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/payments"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
@@ -27,6 +28,16 @@ type Config struct {
 	Storage *storage.Store
 	// Auth runs the OTP login flow (plan 04). Nil in unit tests without a DB.
 	Auth *auth.Service
+	// Payments moves money through the provider port (plan 05). The stub
+	// provider is the interim implementation; Stripe lands in plan 18.
+	// Nil disables checkout/refund (500s on those endpoints).
+	Payments payments.Provider
+	// Pipeline applies provider payment events to orders (the only path that
+	// flips paid/refunded). Nil in unit tests without a DB.
+	Pipeline *payments.Pipeline
+	// PublicBaseURL is the frontend origin used for provider redirect URLs
+	// (PUBLIC_BASE_URL, e.g. http://localhost:3001).
+	PublicBaseURL string
 	// CookieSecure forces the Secure flag on the session cookie even over
 	// plain http (COOKIE_SECURE). TLS requests always get Secure.
 	CookieSecure bool
@@ -49,10 +60,25 @@ func NewRouter(cfg Config) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(s.sessionMiddleware)
 
+	return s.routes(r)
+}
+
+// routes mounts the health check, the guarded admin group, the dev-only stub
+// surface, and the generated OpenAPI routes. Shared with tests so guard/stub
+// wiring has a single source of truth.
+func (s *server) routes(r chi.Router) http.Handler {
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+
+	// The stub provider's fake-checkout confirmation is dev-only surface:
+	// registered only when the stub is active, so a Stripe-configured deploy
+	// (plan 18) has no synthetic-payment path. Deliberately outside the
+	// generated OpenAPI surface — it's not our contract.
+	if _, ok := s.cfg.Payments.(*payments.Stub); ok {
+		r.Post("/api/v1/payments/stub/complete", s.stubComplete)
+	}
 
 	return HandlerFromMux(s, r)
 }

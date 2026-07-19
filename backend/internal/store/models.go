@@ -25,6 +25,19 @@ type File struct {
 	CreatedAt     pgtype.Timestamptz
 }
 
+type Invoice struct {
+	ID             uuid.UUID
+	OrderID        uuid.UUID
+	ProviderID     *string
+	Number         *string
+	PdfUrl         *string
+	PdfStorageKey  *string
+	Kind           string
+	IssuedAt       pgtype.Timestamptz
+	RetentionUntil pgtype.Date
+	CreatedAt      pgtype.Timestamptz
+}
+
 type LoginCode struct {
 	ID         uuid.UUID
 	Email      string
@@ -36,17 +49,61 @@ type LoginCode struct {
 }
 
 type Order struct {
-	ID               uuid.UUID
-	ShortID          string
-	QuoteID          uuid.UUID
-	UserID           *uuid.UUID
-	Email            string
-	Status           string
-	GrossTotalGrosze int32
-	VatGrosze        int32
-	PricingConfigID  uuid.UUID
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
+	ID      uuid.UUID
+	ShortID string
+	QuoteID uuid.UUID
+	UserID  *uuid.UUID
+	Email   string
+	// draft | paid | in_production | shipped | delivered | cancelled | refunded — internal/orders/status.go owns the transitions
+	Status                   string
+	GrossTotalGrosze         int32
+	VatGrosze                int32
+	PricingConfigID          uuid.UUID
+	CreatedAt                pgtype.Timestamptz
+	UpdatedAt                pgtype.Timestamptz
+	PricingSnapshot          []byte
+	Locale                   string
+	Country                  string
+	CompanyName              *string
+	Nip                      *string
+	InvoiceRequested         bool
+	ShippingAddress          []byte
+	BillingAddress           []byte
+	StatusToken              string
+	CheckoutSessionID        *string
+	CheckoutSessionUrl       *string
+	CheckoutSessionExpiresAt pgtype.Timestamptz
+	PaymentRef               *string
+	RetentionUntil           pgtype.Date
+	PaidAt                   pgtype.Timestamptz
+}
+
+type OrderItem struct {
+	ID                uuid.UUID
+	OrderID           uuid.UUID
+	FileID            *uuid.UUID
+	FileName          string
+	Hash              string
+	Process           string
+	Quantity          int32
+	LeadTime          string
+	UnitPriceGrosze   int32
+	LineTotalGrosze   int32
+	PartQuoteSnapshot []byte
+	CreatedAt         pgtype.Timestamptz
+}
+
+type Payment struct {
+	ID              uuid.UUID
+	OrderID         uuid.UUID
+	Provider        string
+	ProviderEventID string
+	PaymentRef      *string
+	Type            string
+	AmountGrosze    int32
+	Status          string
+	Raw             []byte
+	CreatedAt       pgtype.Timestamptz
 }
 
 type PricingConfigSnapshot struct {

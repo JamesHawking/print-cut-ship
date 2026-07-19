@@ -13,6 +13,7 @@ interface Props {
   selectedId: string | null
   onSelect: (id: string) => void
   onRemove: (id: string) => void
+  onRetryUpload?: (id: string) => void
 }
 
 export function PartsList({
@@ -21,6 +22,7 @@ export function PartsList({
   selectedId,
   onSelect,
   onRemove,
+  onRetryUpload,
 }: Props) {
   const strings = useStrings()
   const locale = useLocale()
@@ -77,7 +79,10 @@ export function PartsList({
                 >
                   {part.fileName}
                 </span>
-                <span className="text-muted-foreground mt-1 block truncate font-mono text-[0.59375rem] tracking-wider uppercase tabular-nums">
+                <span
+                  key={part.status}
+                  className="text-muted-foreground motion-safe:animate-status-settle mt-1 block truncate font-mono text-[0.59375rem] tracking-wider uppercase tabular-nums"
+                >
                   {part.status === 'parsing'
                     ? strings.partsList.reading
                     : part.status === 'error'
@@ -86,6 +91,19 @@ export function PartsList({
                         : strings.partsList.failed
                       : `${processLabel(part.config.process)} · ×${part.config.quantity}`}
                 </span>
+                {part.uploadStatus === 'failed' && onRetryUpload && (
+                  <button
+                    type="button"
+                    className="text-destructive mt-0.5 block font-mono text-[0.59375rem] tracking-wider uppercase underline underline-offset-2"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRetryUpload(part.id)
+                    }}
+                  >
+                    {strings.partsList.uploadFailed} ·{' '}
+                    {strings.partsList.retryUpload}
+                  </button>
+                )}
               </span>
               <span className="font-mono text-[0.8125rem] font-bold whitespace-nowrap tabular-nums">
                 {quote && !quote.blocked

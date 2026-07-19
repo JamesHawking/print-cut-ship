@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/db"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/payments"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
@@ -104,15 +106,17 @@ func TestListOrdersByEmail(t *testing.T) {
 	st, cfgID := setupTestStore(t)
 	mailer := &captureMailer{}
 	svc := auth.NewService(st, mailer, nil, 10*time.Minute, 30*24*time.Hour)
-	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID, Auth: svc}, nil)
+	pipeline := &payments.Pipeline{Store: st, Logger: slog.New(slog.DiscardHandler)}
+	h := testHandler(t, Config{
+		Store: st, PricingConfigID: cfgID, Auth: svc,
+		Payments: payments.NewStub("http://test.local", pipeline),
+		Pipeline: pipeline, PublicBaseURL: "http://test.local",
+	}, nil)
 
-	quotePart := strings.Replace(validPart, `"metrics"`,
-		`"fileName": "plate.stl", "hash": "abc123", "metrics"`, 1)
+	// Two guest checkouts under the same email (no session on create).
 	for range 2 {
-		body := fmt.Sprintf(`{"email": "jan@example.com", "country": "PL", "parts": [%s]}`, quotePart)
-		if rec := doJSON(t, h, http.MethodPost, "/api/v1/quotes", body); rec.Code != http.StatusOK {
-			t.Fatalf("submit status %d: %s", rec.Code, rec.Body)
-		}
+		quoteID := submitTestQuote(t, h, st, "jan@example.com")
+		createTestOrder(t, h, quoteID, "jan@example.com", "")
 	}
 
 	// Anonymous: 401.
@@ -133,8 +137,8 @@ func TestListOrdersByEmail(t *testing.T) {
 		t.Fatalf("orders len %d, want 2", len(res.Orders))
 	}
 	o := res.Orders[0]
-	if o.FileName != "plate.stl" || o.PartCount != 1 || o.Status != "submitted" ||
-		o.GrossTotalPln <= 0 || !strings.HasPrefix(o.QuoteId, "Q-") {
+	if o.FileName != "widget.stl" || o.PartCount != 1 || o.Status != "draft" ||
+		o.GrossTotalPln <= 0 || !strings.HasPrefix(o.OrderId, "O-") {
 		t.Errorf("order summary wrong: %+v", o)
 	}
 

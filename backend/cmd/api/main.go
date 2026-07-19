@@ -23,6 +23,7 @@ import (
 	"github.com/JamesHawking/print-cut-ship/backend/internal/db"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/email"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/httpapi"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/payments"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
@@ -55,13 +56,18 @@ func main() {
 			logger.Error("sweep failed", "err", err)
 			os.Exit(1)
 		}
+	case "retry-invoices":
+		if err := retryInvoices(context.Background(), logger); err != nil {
+			logger.Error("retry-invoices failed", "err", err)
+			os.Exit(1)
+		}
 	case "reference-prices":
 		if err := referencePrices(); err != nil {
 			logger.Error("reference-prices failed", "err", err)
 			os.Exit(1)
 		}
 	default:
-		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed|sweep|reference-prices]")
+		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed|sweep|retry-invoices|reference-prices]")
 		os.Exit(2)
 	}
 }
@@ -96,6 +102,23 @@ func serve(logger *slog.Logger) {
 		os.Exit(1)
 	}
 
+	// Payment provider port (plan 05). Only the stub exists until plan 18
+	// adds Stripe; PAYMENTS_PROVIDER selects it, defaulting to stub.
+	pipeline := &payments.Pipeline{Store: st, Logger: logger}
+	publicBaseURL := os.Getenv("PUBLIC_BASE_URL")
+	if publicBaseURL == "" {
+		publicBaseURL = "http://localhost:3000"
+	}
+	var provider payments.Provider
+	switch name := os.Getenv("PAYMENTS_PROVIDER"); name {
+	case "", "stub":
+		logger.Warn("payments: stub provider active — no real money moves (plan 18 wires Stripe)")
+		provider = payments.NewStub(publicBaseURL, pipeline)
+	default:
+		logger.Error("unknown PAYMENTS_PROVIDER", "value", name, "known", []string{"stub"})
+		os.Exit(1)
+	}
+
 	srv := &http.Server{
 		Addr: ":" + port,
 		Handler: httpapi.NewRouter(httpapi.Config{
@@ -111,6 +134,9 @@ func serve(logger *slog.Logger) {
 				envDurationMinutes("LOGIN_CODE_TTL_MINUTES", 10),
 				envDurationDays("SESSION_TTL_DAYS", 30),
 			),
+			Payments:        provider,
+			Pipeline:        pipeline,
+			PublicBaseURL:   publicBaseURL,
 			CookieSecure:    os.Getenv("COOKIE_SECURE") == "true",
 			PricingConfigID: pricingConfigID,
 		}),
@@ -168,6 +194,27 @@ func sweep(ctx context.Context, logger *slog.Logger) error {
 		}
 	}
 	return storage.RunSweep(ctx, store.NewStore(pool), strg, days, logger)
+}
+
+// retryInvoices lists paid, invoice-eligible orders that have no VAT invoice
+// row yet (plan 05 seam). It is a deliberate no-op until plan 18 lands the
+// Fakturownia client — then the Coolify scheduled task (plan 03) re-attempts
+// issuance after a provider outage.
+func retryInvoices(ctx context.Context, logger *slog.Logger) error {
+	pool, err := db.New(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	orders, err := store.NewStore(pool).ListInvoiceableOrders(ctx)
+	if err != nil {
+		return err
+	}
+	for _, o := range orders {
+		logger.Info("invoice pending (no-op until plan 18)", "orderId", o.ShortID)
+	}
+	logger.Info("retry-invoices complete", "pending", len(orders))
+	return nil
 }
 
 // envDurationDays reads a whole-days duration env var with a default.

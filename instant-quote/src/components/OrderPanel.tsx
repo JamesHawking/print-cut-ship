@@ -6,6 +6,7 @@ import { HowWePriceDialog } from './HowWePriceDialog'
 import { formatPln } from '@/lib/format'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { useCatalog } from '@/hooks/useApi'
+import { cn } from '@/lib/utils'
 import type { OrderTotals, PartQuote } from '@/lib/api/client'
 
 interface Props {
@@ -14,6 +15,14 @@ interface Props {
   pricesExVat: boolean
   onTogglePricesExVat: (value: boolean) => void
   orderableCount: number
+  /** Parts quoted but outside print limits — excluded from the order total. */
+  excludedCount?: number
+  /** Set when the selected part is blocked and the breakdown shows another part. */
+  breakdownForName?: string
+  /** priceQuery.dataUpdatedAt — keyed remount fires the flash only on fresh data. */
+  priceEpoch: number
+  /** A reprice is in flight (keepPreviousData holds the old values). */
+  recalculating?: boolean
   onOrderClick: () => void
 }
 
@@ -23,6 +32,10 @@ export function OrderPanel({
   pricesExVat,
   onTogglePricesExVat,
   orderableCount,
+  excludedCount = 0,
+  breakdownForName,
+  priceEpoch,
+  recalculating = false,
   onOrderClick,
 }: Props) {
   const strings = useStrings()
@@ -98,6 +111,11 @@ export function OrderPanel({
             <p className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
               {strings.quote.breakdownTitle}
             </p>
+            {breakdownForName && (
+              <p className="text-muted-foreground mt-1 font-mono text-[0.625rem] tracking-[0.2em] uppercase">
+                {strings.orderPanel.breakdownFor(breakdownForName)}
+              </p>
+            )}
             <dl className="mt-3 flex flex-col gap-2">
               {rows.map((row) => (
                 <div
@@ -118,7 +136,10 @@ export function OrderPanel({
                     ? strings.orderPanel.totalExVat
                     : strings.orderPanel.totalIncVat}
                 </dt>
-                <dd className="font-mono text-[0.8125rem] font-bold whitespace-nowrap tabular-nums">
+                <dd
+                  key={priceEpoch}
+                  className="motion-safe:animate-price-flash font-mono text-[0.8125rem] font-bold whitespace-nowrap tabular-nums"
+                >
                   {formatPln(displayTotal, locale)}
                 </dd>
               </div>
@@ -136,13 +157,19 @@ export function OrderPanel({
           </div>
         )}
 
-        <div className="border-t pt-3">
+        <div
+          className={cn(
+            'border-t pt-3 transition-opacity duration-200',
+            recalculating && 'opacity-60',
+          )}
+        >
           <p className="text-muted-foreground text-xs">
             {strings.order.orderTotal}
           </p>
           <p
+            key={priceEpoch}
             aria-live="polite"
-            className="mt-1 font-mono text-2xl font-bold tracking-tight tabular-nums"
+            className="motion-safe:animate-price-flash mt-1 font-mono text-2xl font-bold tracking-tight tabular-nums"
           >
             {formatPln(displayTotal, locale)}
           </p>
@@ -158,6 +185,12 @@ export function OrderPanel({
             ? strings.orderPanel.freeShippingApplied
             : strings.quote.shippingNote}
         </p>
+
+        {excludedCount > 0 && (
+          <p className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
+            {strings.orderPanel.excludedParts(excludedCount)}
+          </p>
+        )}
 
         <Button
           size="lg"

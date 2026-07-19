@@ -1,9 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { OrderAccessShell } from '@/components/OrderAccessShell'
+import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api/client'
+import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
 import { useLogout, useSession } from '@/lib/useSession'
 import { formatPlacedDate, formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -35,7 +38,7 @@ export const Route = createFileRoute('/$locale/orders')({
 type OrderSummary = components['schemas']['OrderSummary']
 
 // Statuses that mean the factory is actively on it get the signal chip.
-const ACTIVE_STATUSES = new Set(['submitted', 'ordered'])
+const ACTIVE_STATUSES = new Set(['paid', 'in_production', 'shipped'])
 
 function Orders() {
   const s = useStrings().orders
@@ -96,7 +99,7 @@ function Orders() {
       ) : (
         <div className="flex flex-col gap-2">
           {data.map((o) => (
-            <OrderRow key={o.quoteId} order={o} />
+            <OrderRow key={o.orderId} order={o} />
           ))}
         </div>
       )}
@@ -140,11 +143,34 @@ function OrderRow({ order: o }: { order: OrderSummary }) {
     o.partCount > 1
       ? `${o.fileName} ${s.moreParts(o.partCount - 1)}`
       : o.fileName
+  const [paying, setPaying] = useState(false)
+
+  // Draft = checkout abandoned (or never started): resume the provider
+  // session; the endpoint returns the live one when it hasn't expired.
+  async function resumePayment(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setPaying(true)
+    try {
+      const res = await api.POST('/api/v1/orders/{orderId}/checkout', {
+        params: { path: { orderId: o.orderId } },
+      })
+      if (!res.data) throw new ApiRequestError(res.error)
+      window.location.assign(res.data.url)
+    } catch (err) {
+      toast.error(apiErrorMessage(err, strings, strings.order.failed))
+      setPaying(false)
+    }
+  }
 
   return (
-    <div className="hover:bg-primary/[0.045] flex items-center gap-3.5 rounded-lg border px-4 py-3.5 transition-colors">
+    <Link
+      to="/$locale/order/$statusToken"
+      params={{ locale, statusToken: o.statusToken }}
+      className="hover:bg-primary/[0.045] flex items-center gap-3.5 rounded-lg border px-4 py-3.5 transition-colors"
+    >
       <span className="shrink-0 font-mono text-xs font-bold tabular-nums">
-        {o.quoteId}
+        {o.orderId}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13.5px] font-semibold">
@@ -154,6 +180,15 @@ function OrderRow({ order: o }: { order: OrderSummary }) {
           {meta}
         </span>
       </span>
+      {o.status === 'draft' && (
+        <Button
+          size="sm"
+          disabled={paying}
+          onClick={(e) => void resumePayment(e)}
+        >
+          {paying ? strings.order.redirecting : s.payCta}
+        </Button>
+      )}
       <span
         className={cn(
           'shrink-0 rounded px-2 py-1 font-mono text-[9px] font-bold tracking-[0.12em] uppercase',
@@ -164,6 +199,6 @@ function OrderRow({ order: o }: { order: OrderSummary }) {
       >
         {s.status[o.status] ?? o.status}
       </span>
-    </div>
+    </Link>
   )
 }

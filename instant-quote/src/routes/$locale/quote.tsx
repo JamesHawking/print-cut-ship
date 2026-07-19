@@ -24,6 +24,7 @@ import {
 } from '@/lib/api/client'
 import { MAX_PARTS } from '@/lib/upload'
 import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
+import { pickSelectedPart } from '@/lib/select-part'
 import { track } from '@/lib/funnel'
 import { useWarsawClock } from '@/hooks/useWarsawClock'
 import { useCatalog, useShipDates } from '@/hooks/useApi'
@@ -62,6 +63,7 @@ function QuoteWorkspace() {
     mwPending,
     updateConfig,
     remove,
+    retryUpload,
   } = useParts()
   const navigate = useNavigate()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -136,11 +138,24 @@ function QuoteWorkspace() {
 
   const totals = priceQuery.data?.totals ?? null
 
-  const selectedPart =
-    parts.find((p) => p.id === selectedId) ?? parts[parts.length - 1] ?? null
+  // Price-change feedback: dataUpdatedAt only moves when fresh data lands
+  // (keepPreviousData holds stale values without bumping it), and isFetching
+  // tells the cards a reprice is in flight behind those held values.
+  const priceEpoch = priceQuery.dataUpdatedAt
+  const recalculating = priceQuery.isFetching && !priceQuery.isPending
+
+  // Blocked parts are quoted but excluded from the order — say so.
+  const blockedCount = readyParts.filter(
+    (p) => quotesById.get(p.id)?.blocked,
+  ).length
+
+  const selectedPart = pickSelectedPart(parts, selectedId)
   const selectedQuote = selectedPart
     ? (quotesById.get(selectedPart.id) ?? null)
     : null
+  // When the selected part is blocked, OrderPanel shows another part's
+  // breakdown — name it so the switch isn't silent.
+  const breakdownSwitched = !!selectedQuote?.blocked
 
   // Running-quote summary for the header sub-bar. Reflects the selected part's
   // material/lead/ship (parts can differ) and the order total; shown only once
@@ -217,7 +232,8 @@ function QuoteWorkspace() {
             </div>
 
             <div className="space-y-6">
-              {selectedPart?.status === 'parsing' ? (
+              {selectedPart?.status === 'parsing' ||
+              (selectedPart && !selectedQuote && priceQuery.isPending) ? (
                 <QuoteSkeleton />
               ) : selectedPart?.status === 'error' ? (
                 // STEP files that OCCT can't read fall back to a manual quote.
@@ -259,6 +275,9 @@ function QuoteWorkspace() {
                   onConfigChange={(patch) =>
                     handleConfigChange(selectedPart.id, patch)
                   }
+                  onRetryUpload={() => retryUpload(selectedPart.id)}
+                  priceEpoch={priceEpoch}
+                  recalculating={recalculating}
                 />
               ) : null}
 
@@ -273,6 +292,14 @@ function QuoteWorkspace() {
                   pricesExVat={pricesExVat}
                   onTogglePricesExVat={setPricesExVat}
                   orderableCount={orderableEntries.length}
+                  excludedCount={blockedCount}
+                  breakdownForName={
+                    breakdownSwitched
+                      ? orderableEntries[0].part.fileName
+                      : undefined
+                  }
+                  priceEpoch={priceEpoch}
+                  recalculating={recalculating}
                   onOrderClick={handleOrderClick}
                 />
               )}
@@ -286,6 +313,7 @@ function QuoteWorkspace() {
               selectedId={selectedPart?.id ?? null}
               onSelect={setSelectedId}
               onRemove={remove}
+              onRetryUpload={retryUpload}
             />
           )}
 

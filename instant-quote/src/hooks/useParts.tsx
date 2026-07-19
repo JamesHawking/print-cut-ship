@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useReducer,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -142,6 +143,8 @@ interface PartsContextValue {
   handleMakerworldUrl: (url: string) => Promise<string[]>
   mwPending: boolean
   updateConfig: (id: string, config: Partial<PartConfig>) => void
+  /** Re-runs the background file upload after a failure. */
+  retryUpload: (id: string) => void
   remove: (id: string) => void
   clear: () => void
 }
@@ -158,6 +161,36 @@ export function PartsProvider({ children }: { children: ReactNode }) {
   const [parts, dispatch] = useReducer(reducer, [])
   const [mwPending, setMwPending] = useState(false)
   const { analyze } = useMeshWorker()
+  // Parsed files kept for upload retry — Part holds no File bytes. Entries
+  // are deleted on remove/clear.
+  const filesRef = useRef(
+    new Map<
+      string,
+      { file: File; hash: string; kind: Exclude<FileKind, 'unsupported'> }
+    >(),
+  )
+
+  // Store the file in the background so production can print it and the
+  // order-time price check has the geometry. Non-blocking; a failure only
+  // prevents ordering later (plan 05), not the quote.
+  function startUpload(
+    id: string,
+    fileName: string,
+    file: File,
+    hash: string,
+    kind: Exclude<FileKind, 'unsupported'>,
+  ) {
+    dispatch({ type: 'upload_started', id })
+    uploadFile(file, hash, kind)
+      .then((fileId) => dispatch({ type: 'uploaded', id, fileId }))
+      .catch((err: unknown) => {
+        dispatch({ type: 'upload_failed', id })
+        track('file_upload_failed', {
+          fileName,
+          message: err instanceof Error ? err.message : String(err),
+        })
+      })
+  }
 
   async function handleFiles(files: File[]): Promise<string[]> {
     // Event-handler path — resolve copy at call time (see src/lib/i18n).
@@ -210,19 +243,8 @@ export function PartsProvider({ children }: { children: ReactNode }) {
           })
           track('quote_shown', { fileName: file.name })
 
-          // Store the file in the background so production can print it and the
-          // order-time price check has the geometry. Non-blocking; a failure
-          // only prevents ordering later (plan 05), not the quote.
-          dispatch({ type: 'upload_started', id })
-          uploadFile(file, res.hash, kind)
-            .then((fileId) => dispatch({ type: 'uploaded', id, fileId }))
-            .catch((err: unknown) => {
-              dispatch({ type: 'upload_failed', id })
-              track('file_upload_failed', {
-                fileName: file.name,
-                message: err instanceof Error ? err.message : String(err),
-              })
-            })
+          filesRef.current.set(id, { file, hash: res.hash, kind })
+          startUpload(id, file.name, file, res.hash, kind)
         })
         .catch((err: unknown) => {
           // Worker errors are English dev prose — display the dictionary
@@ -292,8 +314,19 @@ export function PartsProvider({ children }: { children: ReactNode }) {
     mwPending,
     updateConfig: (id, config) =>
       dispatch({ type: 'updateConfig', id, config }),
-    remove: (id) => dispatch({ type: 'remove', id }),
-    clear: () => dispatch({ type: 'clear' }),
+    retryUpload: (id) => {
+      const entry = filesRef.current.get(id)
+      if (!entry) return
+      startUpload(id, entry.file.name, entry.file, entry.hash, entry.kind)
+    },
+    remove: (id) => {
+      filesRef.current.delete(id)
+      dispatch({ type: 'remove', id })
+    },
+    clear: () => {
+      filesRef.current.clear()
+      dispatch({ type: 'clear' })
+    },
   }
 
   return <PartsContext.Provider value={value}>{children}</PartsContext.Provider>

@@ -442,36 +442,40 @@ func (s *server) GetQuote(w http.ResponseWriter, r *http.Request, id string) {
 	})
 }
 
-// ListOrders returns the signed-in user's order history (persisted quotes),
-// newest first. The email is derived from the session server-side (plan 04).
+// ListOrders returns the signed-in user's order history (plan 05: real
+// orders, attributed by session user id or guest-checkout email), newest
+// first. Identity is derived from the session server-side (plan 04).
 func (s *server) ListOrders(w http.ResponseWriter, r *http.Request) {
 	u := CurrentUser(r.Context())
 	if u == nil {
 		apiError(w, http.StatusUnauthorized, Unauthorized, "authentication required", nil)
 		return
 	}
-	email := u.Email
 	orders := []OrderSummary{}
 	if s.cfg.Store == nil {
 		s.cfg.Logger.Warn("store not configured; returning empty order list")
 		writeJSON(w, http.StatusOK, ListOrdersResponse{Orders: orders})
 		return
 	}
-	rows, err := s.cfg.Store.ListQuotesByEmail(r.Context(), &email)
+	rows, err := s.cfg.Store.ListOrdersByEmailOrUser(r.Context(), store.ListOrdersByEmailOrUserParams{
+		UserID: u.ID,
+		Email:  u.Email,
+	})
 	if err != nil {
 		s.cfg.Logger.Error("list orders failed", "err", err)
 		internalError(w, "failed to list orders")
 		return
 	}
-	for _, q := range rows {
+	for _, o := range rows {
 		orders = append(orders, OrderSummary{
-			QuoteId:       q.ShortID,
-			CreatedAt:     q.CreatedAt.Time,
-			Status:        OrderSummaryStatus(q.Status),
-			GrossTotalPln: money.FromGrosze(q.GrossTotalGrosze),
-			PartCount:     int(q.PartCount),
-			FileName:      q.FirstFileName,
-			LeadTime:      LeadTimeId(q.FirstLeadTime),
+			OrderId:       o.ShortID,
+			CreatedAt:     o.CreatedAt.Time,
+			Status:        OrderStatus(o.Status),
+			GrossTotalPln: money.FromGrosze(o.GrossTotalGrosze),
+			PartCount:     int(o.PartCount),
+			FileName:      o.FirstFileName,
+			LeadTime:      LeadTimeId(o.FirstLeadTime),
+			StatusToken:   o.StatusToken,
 		})
 	}
 	writeJSON(w, http.StatusOK, ListOrdersResponse{Orders: orders})
