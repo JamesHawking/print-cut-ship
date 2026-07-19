@@ -627,6 +627,9 @@ export const pl = {
     totalIncVat: 'Suma brutto',
     includesVat: (pct: number) => `Zawiera VAT (${pct}% PL)`,
     freeShippingApplied: 'Zastosowano darmową wysyłkę',
+    breakdownFor: (name: string) => `Rozbicie: ${name}`,
+    excludedParts: (n: number) =>
+      `Poza zamówieniem: ${n} ${plPlural(n, 'część', 'części', 'części')} — poza zakresem druku`,
   },
   howWePrice: {
     subtitle: 'Żadnej ukrytej matematyki. Każda wycena powstaje z tych liczb.',

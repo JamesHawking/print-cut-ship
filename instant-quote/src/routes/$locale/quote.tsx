@@ -24,6 +24,7 @@ import {
 } from '@/lib/api/client'
 import { MAX_PARTS } from '@/lib/upload'
 import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
+import { pickSelectedPart } from '@/lib/select-part'
 import { track } from '@/lib/funnel'
 import { useWarsawClock } from '@/hooks/useWarsawClock'
 import { useCatalog, useShipDates } from '@/hooks/useApi'
@@ -136,11 +137,18 @@ function QuoteWorkspace() {
 
   const totals = priceQuery.data?.totals ?? null
 
-  const selectedPart =
-    parts.find((p) => p.id === selectedId) ?? parts[parts.length - 1] ?? null
+  // Blocked parts are quoted but excluded from the order — say so.
+  const blockedCount = readyParts.filter(
+    (p) => quotesById.get(p.id)?.blocked,
+  ).length
+
+  const selectedPart = pickSelectedPart(parts, selectedId)
   const selectedQuote = selectedPart
     ? (quotesById.get(selectedPart.id) ?? null)
     : null
+  // When the selected part is blocked, OrderPanel shows another part's
+  // breakdown — name it so the switch isn't silent.
+  const breakdownSwitched = !!selectedQuote?.blocked
 
   // Running-quote summary for the header sub-bar. Reflects the selected part's
   // material/lead/ship (parts can differ) and the order total; shown only once
@@ -273,6 +281,12 @@ function QuoteWorkspace() {
                   pricesExVat={pricesExVat}
                   onTogglePricesExVat={setPricesExVat}
                   orderableCount={orderableEntries.length}
+                  excludedCount={blockedCount}
+                  breakdownForName={
+                    breakdownSwitched
+                      ? orderableEntries[0].part.fileName
+                      : undefined
+                  }
                   onOrderClick={handleOrderClick}
                 />
               )}

@@ -598,6 +598,9 @@ export const en = {
     totalIncVat: 'Total incl. VAT',
     includesVat: (pct: number) => `Includes VAT (${pct}% PL)`,
     freeShippingApplied: 'Free shipping applied',
+    breakdownFor: (name: string) => `Breakdown: ${name}`,
+    excludedParts: (n: number) =>
+      `Excluded from order: ${n} ${n === 1 ? 'part' : 'parts'} — outside print limits`,
   },
   howWePrice: {
     subtitle: 'No hidden math. Every quote is built from these numbers.',
