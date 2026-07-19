@@ -15,6 +15,7 @@ import { ViewerFrame } from '@/components/ViewerFrame'
 import { ViewerPane } from '@/components/ViewerPane'
 import { ViewerFallback } from '@/components/ViewerFallback'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 import { useParts, type Part } from '@/hooks/useParts'
 import {
@@ -29,7 +30,7 @@ import { pickSelectedPart } from '@/lib/select-part'
 import { track } from '@/lib/funnel'
 import { useWarsawClock } from '@/hooks/useWarsawClock'
 import { useCatalog, useShipDates } from '@/hooks/useApi'
-import { formatShipWeekday } from '@/lib/format'
+import { formatPln, formatShipWeekday } from '@/lib/format'
 import {
   DEFAULT_LOCALE,
   getStrings,
@@ -215,7 +216,11 @@ function QuoteWorkspace() {
   return (
     <>
       <SiteHeader variant="quote" summary={summary} />
-      <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 sm:px-6">
+      <main
+        className={`mx-auto min-h-screen w-full max-w-6xl px-4 py-10 sm:px-6${
+          totals && orderableEntries.length > 0 ? 'pb-24 lg:pb-10' : ''
+        }`}
+      >
         <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="lg:sticky lg:top-20 lg:self-start">
@@ -352,6 +357,37 @@ function QuoteWorkspace() {
             totals={totals}
             pricesExVat={pricesExVat}
           />
+        )}
+
+        {/* Mobile: persistent total + order CTA (desktop has OrderPanel). */}
+        {totals && orderableEntries.length > 0 && (
+          <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:fade-in fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur duration-300 lg:hidden">
+            <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
+              <div className="min-w-0">
+                <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase">
+                  {strings.order.orderTotal}
+                </p>
+                <p
+                  key={priceEpoch}
+                  aria-live="polite"
+                  className="motion-safe:animate-price-flash font-mono text-lg font-bold tabular-nums"
+                >
+                  {formatPln(
+                    pricesExVat ? totals.netTotalPln : totals.grossTotalPln,
+                    locale,
+                  )}
+                </p>
+              </div>
+              <Button className="ml-auto font-bold" onClick={handleOrderClick}>
+                {strings.quote.orderButton(
+                  formatPln(
+                    pricesExVat ? totals.netTotalPln : totals.grossTotalPln,
+                    locale,
+                  ),
+                )}
+              </Button>
+            </div>
+          </div>
         )}
       </main>
     </>

@@ -123,7 +123,7 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
                 onClick={() => onChange({ quantity: q })}
                 className={cn(
                   // Near-imperceptible press acknowledgment — felt, not seen.
-                  'min-w-[52px] cursor-pointer rounded-md border px-3 py-1.5 text-center font-mono transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
+                  'min-h-[44px] min-w-[52px] cursor-pointer rounded-md border px-3 py-1.5 text-center font-mono transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
                   'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                   active
                     ? 'border-foreground bg-foreground text-background'
@@ -150,7 +150,7 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
             min={1}
             value={qtyText}
             onChange={(e) => handleQtyInput(e.target.value)}
-            className="h-auto w-20 self-stretch font-mono text-[0.8125rem]"
+            className="h-auto min-h-11 w-24 self-stretch font-mono text-[0.8125rem]"
           />
         </div>
       </div>
