@@ -46,7 +46,10 @@ export function PartsOutliner({
     catalog?.processes.find((p) => p.id === id)?.label ?? id
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r">
+    <aside
+      aria-label={strings.editor.partsHeading(parts.length, MAX_PARTS)}
+      className="flex w-64 shrink-0 flex-col border-r"
+    >
       <div className="text-muted-foreground border-b px-3 py-2.5 font-mono text-[0.625rem] tracking-[0.2em] uppercase">
         {strings.editor.partsHeading(parts.length, MAX_PARTS)}
       </div>
@@ -69,9 +72,12 @@ export function PartsOutliner({
                 <div
                   role="button"
                   tabIndex={0}
-                  aria-pressed={selected}
+                  aria-current={selected || undefined}
                   onClick={() => onSelect(part.id)}
                   onKeyDown={(e) => {
+                    // Bubbled keydowns from the inner remove/retry buttons:
+                    // preventDefault here would cancel their activation.
+                    if (e.target !== e.currentTarget) return
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
                       onSelect(part.id)

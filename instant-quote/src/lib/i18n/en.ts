@@ -518,6 +518,7 @@ export const en = {
     partsHeading: (count: number, max: number) => `Parts · ${count}/${max}`,
     outlinerEmpty: 'No parts — drop a file on the stage.',
     inspectorEmpty: 'Select a part to configure it.',
+    inspectorLabel: 'Configuration & order',
     viewFront: 'Front',
     viewTop: 'Top',
     viewRight: 'Right',

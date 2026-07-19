@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -40,6 +41,9 @@ export function OrderPanel({
 }: Props) {
   const strings = useStrings()
   const locale = useLocale()
+  // useId: QuoteColumnContent mounts in both breakpoint trees at once, so a
+  // hardcoded id would duplicate.
+  const vatSwitchId = useId()
   const catalog = useCatalog()
   const displayTotal = pricesExVat ? totals.netTotalPln : totals.grossTotalPln
 
@@ -92,12 +96,12 @@ export function OrderPanel({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Switch
-              id="ex-vat"
+              id={vatSwitchId}
               checked={pricesExVat}
               onCheckedChange={onTogglePricesExVat}
             />
             <Label
-              htmlFor="ex-vat"
+              htmlFor={vatSwitchId}
               className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase"
             >
               {pricesExVat ? strings.quote.exVat : strings.quote.incVat}

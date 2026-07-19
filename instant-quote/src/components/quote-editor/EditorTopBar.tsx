@@ -57,7 +57,10 @@ export function EditorTopBar({
           {strings.hero.wordmark}
         </Link>
         {summary && (
-          <span className="flex min-w-0 items-center gap-2.5">
+          // Hidden below xl: in the 1024–1280 band the summary crowds the
+          // toolbar into the right cluster (the same data is in the
+          // inspector anyway).
+          <span className="hidden min-w-0 items-center gap-2.5 xl:flex">
             <span className="bg-foreground text-background shrink-0 rounded px-2 py-1">
               {strings.quote.metaPieces(summary.partCount)}
             </span>
@@ -70,9 +73,7 @@ export function EditorTopBar({
         )}
       </div>
 
-      {toolbar && (
-        <div className="absolute left-1/2 -translate-x-1/2">{toolbar}</div>
-      )}
+      {toolbar && <div className="flex flex-1 justify-center">{toolbar}</div>}
 
       <div className="flex shrink-0 items-center gap-3">
         {totals && orderableCount > 0 && (

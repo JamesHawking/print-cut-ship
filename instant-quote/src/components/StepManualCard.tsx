@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { FileClock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,9 @@ export function StepManualCard({ part }: { part: Part }) {
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  // useId: the card can mount in both breakpoint trees at once (mobile
+  // column + desktop inspector), so a part-derived id would duplicate.
+  const emailId = useId()
 
   async function submit() {
     if (!email) return
@@ -57,13 +60,13 @@ export function StepManualCard({ part }: { part: Part }) {
           >
             <div className="space-y-2">
               <Label
-                htmlFor={`step-email-${part.id}`}
+                htmlFor={emailId}
                 className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase"
               >
                 {strings.step.emailLabel}
               </Label>
               <Input
-                id={`step-email-${part.id}`}
+                id={emailId}
                 type="email"
                 required
                 value={email}

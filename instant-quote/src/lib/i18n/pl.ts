@@ -542,6 +542,7 @@ export const pl = {
     partsHeading: (count: number, max: number) => `Części · ${count}/${max}`,
     outlinerEmpty: 'Brak części — upuść plik na scenę.',
     inspectorEmpty: 'Wybierz część, by ją skonfigurować.',
+    inspectorLabel: 'Konfiguracja i zamówienie',
     viewFront: 'Przód',
     viewTop: 'Góra',
     viewRight: 'Prawo',

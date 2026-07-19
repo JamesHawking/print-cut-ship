@@ -29,7 +29,10 @@ export function InspectorPanel({ empty, ...content }: Props) {
   const strings = useStrings()
 
   return (
-    <aside className="w-[380px] shrink-0 overflow-y-auto border-l p-4">
+    <aside
+      aria-label={strings.editor.inspectorLabel}
+      className="w-[380px] shrink-0 overflow-y-auto border-l p-4"
+    >
       {empty ? (
         <p className="text-muted-foreground px-2 py-6 text-center text-sm">
           {strings.editor.inspectorEmpty}
