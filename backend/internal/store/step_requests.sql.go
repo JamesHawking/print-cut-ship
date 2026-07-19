@@ -62,3 +62,60 @@ func (q *Queries) InsertStepRequest(ctx context.Context, arg InsertStepRequestPa
 	err := row.Scan(&i.ID, &i.ShortID)
 	return i, err
 }
+
+const listStepRequests = `-- name: ListStepRequests :many
+SELECT id, short_id, email, file_name, file_size_bytes, file_id, status, created_at FROM step_requests
+WHERE ($1::text IS NULL OR status = $1::text)
+ORDER BY created_at DESC
+LIMIT 200
+`
+
+// STEP manual-quote queue (plan 07), newest first, optionally by status.
+func (q *Queries) ListStepRequests(ctx context.Context, status *string) ([]StepRequest, error) {
+	rows, err := q.db.Query(ctx, listStepRequests, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StepRequest
+	for rows.Next() {
+		var i StepRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.ShortID,
+			&i.Email,
+			&i.FileName,
+			&i.FileSizeBytes,
+			&i.FileID,
+			&i.Status,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateStepRequestStatus = `-- name: UpdateStepRequestStatus :execrows
+UPDATE step_requests SET status = $2
+WHERE short_id = $1 AND status <> 'closed'
+`
+
+type UpdateStepRequestStatusParams struct {
+	ShortID string
+	Status  string
+}
+
+// Closed is terminal: the guard makes any transition out of 'closed' a 0-row
+// no-op, which the handler maps to 409 step_request_wrong_state.
+func (q *Queries) UpdateStepRequestStatus(ctx context.Context, arg UpdateStepRequestStatusParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateStepRequestStatus, arg.ShortID, arg.Status)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

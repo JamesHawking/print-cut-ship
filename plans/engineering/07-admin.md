@@ -1,6 +1,15 @@
 # 07 — Back-office admin
 
-> **Status: ⬜ Not started** (as of 2026-07-16).
+> **Status: ✅ Done** (2026-07-19 — implemented on `backend/admin` in phases A–E; pending review + merge).
+>
+> **Amendments applied during implementation (2026-07-19):**
+> - **Guard = path-prefix middleware, not a chi subrouter.** oapi-codegen mounts spec routes flat, so one `adminPrefixGuard` fail-closes every `/api/v1/admin/*` path (401 anon / 403 non-admin) with zero per-route wiring; `RefundOrder`'s inline guard stays as defense-in-depth.
+> - **`refunded` is not a transition-endpoint target** — money moves only through `payments.Pipeline`; the board transition endpoint accepts `in_production | shipped | delivered | cancelled` and 400s (`transition_not_allowed`) on `draft/paid/refunded`.
+> - **Emails deferred to plan 06.** No email machinery; each applied transition logs one structured "notify seam" line at the exact point plan 06 Phase 6 hooks `SendTransactional` (see the dated note in `06-email.md`).
+> - **`manual_verify` flag is code-agnostic**: the board flags orders whose items carry any `severity ∈ {warn, block}` DFM flag OR `code = 'manual_verify'` (forward-compatible with plan 02's STEP seam, which doesn't exist yet).
+> - **Erase is dry-run only** (`dryRun != true` → 400 `erase_not_enabled`); no destructive code path — plan 09 owns deletion.
+> - **Pricing bootstrap is DB-wins** (was: binary clobbers DB on restart). `loadActivePricingConfig` seeds from `pricing.Default` only when no active row exists; admin edits survive restarts; invalid stored JSON self-heals loudly.
+> - **Admin UI is EN-only** under `src/routes/admin/` (already exempt in `scripts/check-strings.ts`).
 
 ## 1. Context
 

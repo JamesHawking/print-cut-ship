@@ -47,6 +47,25 @@ func (q *Queries) GetActivePricingConfig(ctx context.Context) (GetActivePricingC
 	return i, err
 }
 
+const getPricingConfigSnapshotByID = `-- name: GetPricingConfigSnapshotByID :one
+SELECT id, label, config, is_active, created_at
+FROM pricing_config_snapshots
+WHERE id = $1
+`
+
+func (q *Queries) GetPricingConfigSnapshotByID(ctx context.Context, id uuid.UUID) (PricingConfigSnapshot, error) {
+	row := q.db.QueryRow(ctx, getPricingConfigSnapshotByID, id)
+	var i PricingConfigSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.Label,
+		&i.Config,
+		&i.IsActive,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const insertPricingConfigSnapshot = `-- name: InsertPricingConfigSnapshot :one
 INSERT INTO pricing_config_snapshots (label, config, is_active)
 VALUES ($1, $2, $3)
@@ -64,4 +83,45 @@ func (q *Queries) InsertPricingConfigSnapshot(ctx context.Context, arg InsertPri
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const listPricingConfigSnapshots = `-- name: ListPricingConfigSnapshots :many
+SELECT id, label, is_active, created_at
+FROM pricing_config_snapshots
+ORDER BY created_at DESC
+LIMIT 100
+`
+
+type ListPricingConfigSnapshotsRow struct {
+	ID        uuid.UUID
+	Label     string
+	IsActive  bool
+	CreatedAt pgtype.Timestamptz
+}
+
+// Version history for the admin editor, newest first (bounded — one row per
+// published edit).
+func (q *Queries) ListPricingConfigSnapshots(ctx context.Context) ([]ListPricingConfigSnapshotsRow, error) {
+	rows, err := q.db.Query(ctx, listPricingConfigSnapshots)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPricingConfigSnapshotsRow
+	for rows.Next() {
+		var i ListPricingConfigSnapshotsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Label,
+			&i.IsActive,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

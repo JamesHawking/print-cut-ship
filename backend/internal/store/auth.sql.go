@@ -181,6 +181,25 @@ func (q *Queries) InvalidateLoginCodesForEmail(ctx context.Context, email string
 	return err
 }
 
+const setUserRoleByEmail = `-- name: SetUserRoleByEmail :execrows
+UPDATE users SET role = $2, updated_at = now() WHERE email = $1
+`
+
+type SetUserRoleByEmailParams struct {
+	Email string
+	Role  string
+}
+
+// api promote-admin: the only role-escalation path (SQL-only by design; the
+// 0-rows case means the email has never verified a login code).
+func (q *Queries) SetUserRoleByEmail(ctx context.Context, arg SetUserRoleByEmailParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setUserRoleByEmail, arg.Email, arg.Role)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const touchSession = `-- name: TouchSession :exec
 UPDATE sessions SET last_seen_at = now(), expires_at = $2 WHERE id = $1
 `

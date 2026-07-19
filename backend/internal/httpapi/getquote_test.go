@@ -12,7 +12,7 @@ import (
 
 func TestGetQuoteReadBack(t *testing.T) {
 	st, cfgID := setupTestStore(t)
-	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Pricing: testHolder(cfgID)}, nil)
 
 	quotePart := strings.Replace(validPart, `"metrics"`,
 		`"fileName": "part.stl", "hash": "abc123", "metrics"`, 1)
@@ -44,7 +44,7 @@ func TestGetQuoteReadBack(t *testing.T) {
 
 func TestGetQuoteNotFound(t *testing.T) {
 	st, cfgID := setupTestStore(t)
-	h := testHandler(t, Config{Store: st, PricingConfigID: cfgID}, nil)
+	h := testHandler(t, Config{Store: st, Pricing: testHolder(cfgID)}, nil)
 
 	rec := doJSON(t, h, http.MethodGet, "/api/v1/quotes/Q-"+strings.ToUpper(uuid.NewString()[:8]), "")
 	if rec.Code != http.StatusNotFound {

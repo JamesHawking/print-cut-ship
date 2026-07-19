@@ -92,7 +92,7 @@ CREATE INDEX ON email_log (order_id);
 
 - **Order confirmation:** plan 05's order-creation handler (`POST /api/v1/orders`) → `SendTransactional(OrderConfirmation, dedupe "order_confirmation:<orderId>")`.
 - **Payment receipt / refund:** plan 05's Stripe webhook → `PaymentReceipt` / `StatusChange(refunded)`.
-- **Admin transitions:** plan 07's lifecycle endpoints → matching `StatusChange`/`Shipped` (tracking number passed through).
+- **Admin transitions:** plan 07's lifecycle endpoints → matching `StatusChange`/`Shipped` (tracking number passed through). *(Note, 2026-07-19: plan 07 shipped with the seam in place — `AdminTransitionOrder` in `backend/internal/httpapi/admin.go` logs one structured "notify seam: order status email" line per applied transition, carrying `orderId`, `from`, `to`, and `trackingNumber` for shipped. Hook `SendTransactional` at exactly that log point.)*
 - **STEP manual path:** `POST /api/v1/step-quotes` → customer acknowledgement + support-inbox notification (feeds plan 07's queue).
 - **Auth:** plan 04's flows already call the `Sender` port — swap `ConsoleSender` for `ResendSender` + real `AuthVerify`/`AuthReset` templates.
 - **Verify:** drive each trigger against a seed inbox (§5); one message per event even on webhook replay.

@@ -83,6 +83,29 @@ func formatLabel(d CalDate) string {
 	return fmt.Sprintf("%s %d %s", weekdayShort[weekdayOf(d)], d.D, monthShort[d.M])
 }
 
+// Today returns the Warsaw wall-clock date for an instant (plan 07's ops
+// derivations compare ship-by dates against it).
+func Today(now time.Time) CalDate {
+	d, _ := warsawDate(now)
+	return d
+}
+
+// ISO formats the date as YYYY-MM-DD (admin API wire form).
+func (d CalDate) ISO() string {
+	return fmt.Sprintf("%04d-%02d-%02d", d.Y, d.M, d.D)
+}
+
+// Before reports whether d is an earlier calendar date than o.
+func (d CalDate) Before(o CalDate) bool {
+	if d.Y != o.Y {
+		return d.Y < o.Y
+	}
+	if d.M != o.M {
+		return d.M < o.M
+	}
+	return d.D < o.D
+}
+
 // ComputeShipDate returns the estimated ship date for a lead time of
 // businessDays, given the same-day dispatch cutoff hour (Warsaw wall clock).
 func ComputeShipDate(businessDays, cutoffHour int, now time.Time) ShipDate {

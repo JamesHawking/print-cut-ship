@@ -28,7 +28,7 @@ func (q *Queries) CountStoredFilesByIDs(ctx context.Context, dollar_1 []uuid.UUI
 }
 
 const getOrderByCheckoutSessionID = `-- name: GetOrderByCheckoutSessionID :one
-SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at FROM orders WHERE checkout_session_id = $1
+SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at, tracking_number FROM orders WHERE checkout_session_id = $1
 `
 
 func (q *Queries) GetOrderByCheckoutSessionID(ctx context.Context, checkoutSessionID *string) (Order, error) {
@@ -61,12 +61,13 @@ func (q *Queries) GetOrderByCheckoutSessionID(ctx context.Context, checkoutSessi
 		&i.PaymentRef,
 		&i.RetentionUntil,
 		&i.PaidAt,
+		&i.TrackingNumber,
 	)
 	return i, err
 }
 
 const getOrderByPaymentRef = `-- name: GetOrderByPaymentRef :one
-SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at FROM orders WHERE payment_ref = $1
+SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at, tracking_number FROM orders WHERE payment_ref = $1
 `
 
 func (q *Queries) GetOrderByPaymentRef(ctx context.Context, paymentRef *string) (Order, error) {
@@ -99,12 +100,13 @@ func (q *Queries) GetOrderByPaymentRef(ctx context.Context, paymentRef *string) 
 		&i.PaymentRef,
 		&i.RetentionUntil,
 		&i.PaidAt,
+		&i.TrackingNumber,
 	)
 	return i, err
 }
 
 const getOrderByShortID = `-- name: GetOrderByShortID :one
-SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at FROM orders WHERE short_id = $1
+SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at, tracking_number FROM orders WHERE short_id = $1
 `
 
 func (q *Queries) GetOrderByShortID(ctx context.Context, shortID string) (Order, error) {
@@ -137,12 +139,13 @@ func (q *Queries) GetOrderByShortID(ctx context.Context, shortID string) (Order,
 		&i.PaymentRef,
 		&i.RetentionUntil,
 		&i.PaidAt,
+		&i.TrackingNumber,
 	)
 	return i, err
 }
 
 const getOrderByStatusToken = `-- name: GetOrderByStatusToken :one
-SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at FROM orders WHERE status_token = $1
+SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at, tracking_number FROM orders WHERE status_token = $1
 `
 
 func (q *Queries) GetOrderByStatusToken(ctx context.Context, statusToken string) (Order, error) {
@@ -175,6 +178,7 @@ func (q *Queries) GetOrderByStatusToken(ctx context.Context, statusToken string)
 		&i.PaymentRef,
 		&i.RetentionUntil,
 		&i.PaidAt,
+		&i.TrackingNumber,
 	)
 	return i, err
 }
@@ -355,7 +359,7 @@ func (q *Queries) InsertPaymentEvent(ctx context.Context, arg InsertPaymentEvent
 }
 
 const listInvoiceableOrders = `-- name: ListInvoiceableOrders :many
-SELECT o.id, o.short_id, o.quote_id, o.user_id, o.email, o.status, o.gross_total_grosze, o.vat_grosze, o.pricing_config_id, o.created_at, o.updated_at, o.pricing_snapshot, o.locale, o.country, o.company_name, o.nip, o.invoice_requested, o.shipping_address, o.billing_address, o.status_token, o.checkout_session_id, o.checkout_session_url, o.checkout_session_expires_at, o.payment_ref, o.retention_until, o.paid_at FROM orders o
+SELECT o.id, o.short_id, o.quote_id, o.user_id, o.email, o.status, o.gross_total_grosze, o.vat_grosze, o.pricing_config_id, o.created_at, o.updated_at, o.pricing_snapshot, o.locale, o.country, o.company_name, o.nip, o.invoice_requested, o.shipping_address, o.billing_address, o.status_token, o.checkout_session_id, o.checkout_session_url, o.checkout_session_expires_at, o.payment_ref, o.retention_until, o.paid_at, o.tracking_number FROM orders o
 WHERE o.status = 'paid'
   AND (o.nip IS NOT NULL OR o.invoice_requested)
   AND NOT EXISTS (
@@ -402,6 +406,7 @@ func (q *Queries) ListInvoiceableOrders(ctx context.Context) ([]Order, error) {
 			&i.PaymentRef,
 			&i.RetentionUntil,
 			&i.PaidAt,
+			&i.TrackingNumber,
 		); err != nil {
 			return nil, err
 		}

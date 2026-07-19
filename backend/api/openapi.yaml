@@ -251,6 +251,428 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/v1/admin/orders:
+    get:
+      operationId: adminListOrders
+      tags: [admin]
+      summary: >-
+        Orders board list (admin only), newest first. shipBy/overdue are
+        derived from the lead-time engine with paid_at as the anchor; dfmCodes
+        collects warn/block/manual_verify flag codes across items.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Page of orders plus the unfiltered total
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListOrdersResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/orders/{orderId}:
+    get:
+      operationId: adminGetOrder
+      tags: [admin]
+      summary: >-
+        Full order detail for the operator (admin only): addresses, NIP,
+        status capability token, totals, line items with their frozen pricing
+        snapshots, and the payment/invoice ledgers. No email log (plan 06).
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The orderId returned by createOrder, e.g. "O-1A2B3C4D"
+      responses:
+        '200':
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrderDetail'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/orders/{orderId}/transition:
+    post:
+      operationId: adminTransitionOrder
+      tags: [admin]
+      summary: >-
+        Move an order along the lifecycle (admin only). Only board transitions
+        are accepted — paid/refunded flip exclusively through the payment
+        pipeline, so draft/paid/refunded targets get 400 transition_not_allowed.
+        Shipped requires a tracking number (400 tracking_required). Illegal
+        edges get 409 order_wrong_state.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitionOrderRequest'
+      responses:
+        '204':
+          description: Transition applied
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/admin/orders/{orderId}/files/{fileId}:
+    get:
+      operationId: adminDownloadOrderFile
+      tags: [admin]
+      summary: >-
+        Download a stored model file that is part of the order (admin only) —
+        production needs the actual geometry. 404 file_not_found when the file
+        is not attached to this order (or was deleted).
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Raw file bytes as an attachment
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/pricing-config:
+    get:
+      operationId: adminGetPricingConfig
+      tags: [admin]
+      summary: >-
+        Active pricing config plus version history (admin only). The active
+        snapshot is what prices new quotes right now — swaps are live, no
+        deploy needed.
+      responses:
+        '200':
+          description: Active snapshot and version history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPricingConfigResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: adminReplacePricingConfig
+      tags: [admin]
+      summary: >-
+        Publish a new pricing config snapshot (admin only): validated against
+        the Go engine's structure (formula shape is not editable), persisted
+        as the new active row, and swapped into the running process
+        atomically. Existing quotes/orders keep their original snapshot.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplacePricingConfigRequest'
+      responses:
+        '200':
+          description: New active snapshot id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplacePricingConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/pricing-config/{id}:
+    get:
+      operationId: adminGetPricingConfigSnapshot
+      tags: [admin]
+      summary: Read one historical pricing config snapshot (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingConfigSnapshot'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/customers:
+    get:
+      operationId: adminLookupCustomer
+      tags: [admin]
+      summary: >-
+        Customer lookup by email (admin only): user account, orders, quotes,
+        STEP requests, and linked files. Guests included — email is the join
+        key. Unknown emails return empty arrays, not 404.
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: The customer's trail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCustomerLookup'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/customers/export:
+    post:
+      operationId: adminExportCustomer
+      tags: [admin]
+      summary: >-
+        GDPR data-portability export (admin only): everything keyed to an
+        email as one JSON bundle — orders in full detail shape (items,
+        payments, invoices). The frontend downloads it as a blob.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerEmailRequest'
+      responses:
+        '200':
+          description: Full export bundle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCustomerExport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/customers/erase:
+    post:
+      operationId: adminEraseCustomer
+      tags: [admin]
+      summary: >-
+        GDPR erasure — DRY-RUN ONLY (admin only). Reports what would be
+        deleted vs retained (invoice-retention carve-out, plan 09). dryRun
+        must be true; anything else is 400 erase_not_enabled. There is no
+        destructive code path.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EraseCustomerRequest'
+      responses:
+        '200':
+          description: Dry-run erasure report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEraseReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/ops/today:
+    get:
+      operationId: adminGetOpsToday
+      tags: [admin]
+      summary: >-
+        "What must ship today" (admin only): paid and in_production orders
+        whose derived ship-by date is today or earlier (Warsaw business
+        calendar), soonest first. Ship dates recompute from the lead-time
+        engine with paid_at as the anchor — nothing is denormalized.
+      responses:
+        '200':
+          description: Warsaw today plus the due orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOpsToday'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/ops/stats:
+    get:
+      operationId: adminGetOpsStats
+      tags: [admin]
+      summary: >-
+        Board KPI strip (admin only): today vs yesterday order counts and
+        gross (Warsaw calendar), per-status counts, overdue open orders
+        (engine-derived ship-by), new STEP requests, and a 14-day orders
+        sparkline (oldest first, zero-filled, ending today).
+      responses:
+        '200':
+          description: Aggregated board stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOpsStats'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/step-requests:
+    get:
+      operationId: adminListStepRequests
+      tags: [admin]
+      summary: STEP manual-quote queue (admin only), newest first
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [new, quoted, closed]
+      responses:
+        '200':
+          description: Queue entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStepRequestList'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/step-requests/{requestId}/status:
+    post:
+      operationId: adminUpdateStepRequestStatus
+      tags: [admin]
+      summary: >-
+        Advance a STEP request to quoted or closed (admin only). Closed is
+        terminal — any further change is 409 step_request_wrong_state.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: e.g. "STEP-1A2B3C4D"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStepRequestStatusRequest'
+      responses:
+        '204':
+          description: Status updated
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/admin/step-requests/{requestId}/file:
+    get:
+      operationId: adminDownloadStepRequestFile
+      tags: [admin]
+      summary: >-
+        Download the STEP file attached to the request (admin only). 404
+        file_not_found when no file is attached or its bytes are not stored.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Raw file bytes as an attachment
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/admin/orders/{orderId}/refund:
     post:
       operationId: refundOrder
@@ -1044,11 +1466,650 @@ components:
 
     MeResponse:
       type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [customer, admin]
+
+    TransitionOrderRequest:
+      type: object
+      required: [to]
+      properties:
+        to:
+          $ref: '#/components/schemas/OrderStatus'
+        trackingNumber:
+          type: string
+          minLength: 1
+          description: Required for to=shipped; stored on the order.
+
+    PricingConfig:
+      type: object
+      additionalProperties: false
+      description: >-
+        Mirrors the Go pricing.Config struct's JSON exactly — Go field names
+        (the struct has no json tags; Build keeps its lowercase x/y/z tags).
+        The drift-guard test fails the build if the struct and this schema
+        diverge.
+      required:
+        [Processes, LeadTimes, Fdm, DiscountTiers, ExtraPlateFeePln,
+         PlateGutterMm, MinOrderPln, MinPartPricePln, OrderFeePln,
+         ShippingFlatPln, FreeShippingThresholdPln, VatRate,
+         MinBillableVolumeCm3, MinFeatureMm, SameDayCutoffHour]
+      properties:
+        Processes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingProcessDef'
+        LeadTimes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingLeadTimeDef'
+        Fdm:
+          $ref: '#/components/schemas/PricingFdmModel'
+        DiscountTiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingDiscountTier'
+        ExtraPlateFeePln: { type: number, format: double }
+        PlateGutterMm: { type: number, format: double }
+        MinOrderPln: { type: number, format: double }
+        MinPartPricePln: { type: number, format: double }
+        OrderFeePln: { type: number, format: double }
+        ShippingFlatPln: { type: number, format: double }
+        FreeShippingThresholdPln: { type: number, format: double }
+        VatRate: { type: number, format: double }
+        MinBillableVolumeCm3: { type: number, format: double }
+        MinFeatureMm: { type: number, format: double }
+        SameDayCutoffHour: { type: integer }
+
+    PricingProcessDef:
+      type: object
+      additionalProperties: false
+      required: [ID, Label, DensityGCm3, PlnPerKg, Factor, PlnPerHour, Build]
+      properties:
+        ID: { type: string }
+        Label: { type: string }
+        DensityGCm3: { type: number, format: double }
+        PlnPerKg: { type: number, format: double }
+        Factor: { type: number, format: double }
+        PlnPerHour: { type: number, format: double }
+        Build:
+          type: object
+          additionalProperties: false
+          required: [x, y, z]
+          properties:
+            x: { type: number, format: double }
+            y: { type: number, format: double }
+            z: { type: number, format: double }
+
+    PricingLeadTimeDef:
+      type: object
+      additionalProperties: false
+      required: [ID, Mult, BusinessDays]
+      properties:
+        ID: { type: string }
+        Mult: { type: number, format: double }
+        BusinessDays: { type: integer }
+
+    PricingFdmModel:
+      type: object
+      additionalProperties: false
+      required:
+        [InfillFraction, ShellThicknessMm, ShellGramsPerPrintHour,
+         InfillGramsPerPrintHour]
+      properties:
+        InfillFraction: { type: number, format: double }
+        ShellThicknessMm: { type: number, format: double }
+        ShellGramsPerPrintHour: { type: number, format: double }
+        InfillGramsPerPrintHour: { type: number, format: double }
+
+    PricingDiscountTier:
+      type: object
+      additionalProperties: false
+      required: [Quantity, Fraction]
+      properties:
+        Quantity: { type: number, format: double }
+        Fraction: { type: number, format: double }
+
+    PricingConfigSnapshotMeta:
+      type: object
+      required: [id, label, createdAt, isActive]
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+
+    PricingConfigSnapshot:
+      type: object
+      required: [id, label, createdAt, isActive, config]
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+        config:
+          $ref: '#/components/schemas/PricingConfig'
+
+    AdminPricingConfigResponse:
+      type: object
+      required: [active, history]
+      properties:
+        active:
+          $ref: '#/components/schemas/PricingConfigSnapshot'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingConfigSnapshotMeta'
+
+    ReplacePricingConfigRequest:
+      type: object
+      additionalProperties: false
+      required: [label, config]
+      properties:
+        label:
+          type: string
+          minLength: 1
+        config:
+          $ref: '#/components/schemas/PricingConfig'
+
+    ReplacePricingConfigResponse:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: uuid
+
+    AdminOpsToday:
+      type: object
+      required: [date, orders]
+      properties:
+        date:
+          type: string
+          description: Today in Europe/Warsaw, YYYY-MM-DD.
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderSummary'
+
+    AdminOpsStats:
+      type: object
+      required:
+        - date
+        - todayOrders
+        - todayGrossPln
+        - yesterdayOrders
+        - yesterdayGrossPln
+        - byStatus
+        - overdue
+        - stepNew
+        - daily
+      properties:
+        date:
+          type: string
+          description: Today in Europe/Warsaw, YYYY-MM-DD.
+        todayOrders:
+          type: integer
+        todayGrossPln:
+          type: number
+        yesterdayOrders:
+          type: integer
+        yesterdayGrossPln:
+          type: number
+        byStatus:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status:
+                type: string
+              count:
+                type: integer
+        overdue:
+          type: integer
+          description: Open orders (paid/in_production) whose ship-by is past.
+        stepNew:
+          type: integer
+        daily:
+          type: array
+          description: 14 entries, oldest first, ending today; zero-filled.
+          items:
+            type: object
+            required: [date, orders, grossPln]
+            properties:
+              date:
+                type: string
+              orders:
+                type: integer
+              grossPln:
+                type: number
+
+    AdminStepRequestList:
+      type: object
+      required: [requests]
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminStepRequestSummary'
+
+    UpdateStepRequestStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [quoted, closed]
+
+    AdminUserSummary:
+      type: object
+      required: [id, email, role, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminQuoteSummary:
+      type: object
+      required: [quoteId, status, grossTotalPln, createdAt, partCount]
+      properties:
+        quoteId:
+          type: string
+        status:
+          type: string
+        grossTotalPln:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        partCount:
+          type: integer
+        fileName:
+          type: string
+
+    AdminStepRequestSummary:
+      type: object
+      required: [requestId, email, fileName, fileSizeBytes, status, createdAt]
+      properties:
+        requestId:
+          type: string
+        email:
+          type: string
+        fileName:
+          type: string
+        fileSizeBytes:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [new, quoted, closed]
+        fileId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminFileSummary:
+      type: object
+      required: [fileId, fileName, kind, sizeBytes, stored, createdAt]
+      properties:
+        fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        kind:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        stored:
+          type: boolean
+          description: True when the object bytes are in storage.
+        createdAt:
+          type: string
+          format: date-time
+
+    CustomerEmailRequest:
+      type: object
+      additionalProperties: false
       required: [email]
       properties:
         email:
           type: string
           format: email
+
+    EraseCustomerRequest:
+      type: object
+      additionalProperties: false
+      required: [email, dryRun]
+      properties:
+        email:
+          type: string
+          format: email
+        dryRun:
+          type: boolean
+          description: Must be true — there is no destructive path (plan 09).
+
+    AdminCustomerLookup:
+      type: object
+      required: [email, orders, quotes, stepRequests, files]
+      properties:
+        email:
+          type: string
+        user:
+          $ref: '#/components/schemas/AdminUserSummary'
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderSummary'
+        quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminQuoteSummary'
+        stepRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminStepRequestSummary'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFileSummary'
+
+    AdminCustomerExport:
+      type: object
+      required: [email, exportedAt, orders, quotes, stepRequests, files]
+      properties:
+        email:
+          type: string
+        exportedAt:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/AdminUserSummary'
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderDetail'
+        quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminQuoteSummary'
+        stepRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminStepRequestSummary'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFileSummary'
+
+    AdminEraseEntry:
+      type: object
+      required: [table, count]
+      properties:
+        table:
+          type: string
+        count:
+          type: integer
+        note:
+          type: string
+
+    AdminEraseRetained:
+      type: object
+      required: [table, count, reason]
+      properties:
+        table:
+          type: string
+        count:
+          type: integer
+        reason:
+          type: string
+
+    AdminEraseReport:
+      type: object
+      required: [email, dryRun, wouldDelete, retained]
+      properties:
+        email:
+          type: string
+        dryRun:
+          type: boolean
+        wouldDelete:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminEraseEntry'
+        retained:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminEraseRetained'
+
+    AdminOrderSummary:
+      type: object
+      required:
+        [orderId, email, status, grossTotalPln, createdAt, partCount,
+         dfmFlagged]
+      properties:
+        orderId:
+          type: string
+        email:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        grossTotalPln:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+        shipBy:
+          type: string
+          description: >-
+            Ship-by date (YYYY-MM-DD, Warsaw business calendar) derived from
+            the lead-time engine; present only once the order is paid.
+        overdue:
+          type: boolean
+          description: Present and true when shipBy is before today (Warsaw).
+        partCount:
+          type: integer
+        dfmFlagged:
+          type: boolean
+          description: Any item carries a warn/block/manual_verify DFM flag.
+        dfmCodes:
+          type: array
+          items: { type: string }
+          description: Distinct flag codes behind dfmFlagged.
+        trackingNumber:
+          type: string
+
+    AdminListOrdersResponse:
+      type: object
+      required: [orders, total, limit, offset]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderSummary'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    AdminOrder:
+      type: object
+      required:
+        [orderId, email, status, locale, country, createdAt, invoiceRequested,
+         shippingAddress, totals, grossTotalPln, vatPln, pricingConfigId,
+         statusToken]
+      properties:
+        orderId:
+          type: string
+        email:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        locale:
+          type: string
+        country:
+          type: string
+        companyName:
+          type: string
+        nip:
+          type: string
+        invoiceRequested:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        billingAddress:
+          $ref: '#/components/schemas/Address'
+        statusToken:
+          type: string
+          description: >-
+            Public status-page capability — exposed because this endpoint is
+            admin-only (support may send the customer their tracking link).
+        trackingNumber:
+          type: string
+        totals:
+          $ref: '#/components/schemas/OrderTotals'
+        grossTotalPln:
+          type: number
+          format: double
+        vatPln:
+          type: number
+          format: double
+        pricingConfigId:
+          type: string
+          format: uuid
+
+    AdminOrderItem:
+      type: object
+      required: [fileName, process, quantity, leadTime, unitPricePln, lineTotalPln]
+      properties:
+        fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        process:
+          $ref: '#/components/schemas/ProcessId'
+        quantity:
+          type: integer
+        leadTime:
+          $ref: '#/components/schemas/LeadTimeId'
+        unitPricePln:
+          type: number
+          format: double
+        lineTotalPln:
+          type: number
+          format: double
+        partQuoteSnapshot:
+          type: object
+          additionalProperties: true
+          description: >-
+            The part's frozen PartQuote (breakdown, dfmFlags, plates) copied
+            at order time; shape pinned by the pricing engine, not the spec.
+
+    AdminPayment:
+      type: object
+      required: [provider, providerEventId, type, amountPln, status, createdAt]
+      properties:
+        provider:
+          type: string
+        providerEventId:
+          type: string
+        paymentRef:
+          type: string
+        type:
+          type: string
+          enum: [payment, refund]
+        amountPln:
+          type: number
+          format: double
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminInvoice:
+      type: object
+      required: [kind, createdAt]
+      properties:
+        providerId:
+          type: string
+        number:
+          type: string
+        pdfUrl:
+          type: string
+        kind:
+          type: string
+          enum: [vat, proforma, correction]
+        issuedAt:
+          type: string
+          format: date-time
+        retentionUntil:
+          type: string
+          description: YYYY-MM-DD; blocks GDPR erasure (plan 09).
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminOrderDetail:
+      type: object
+      required: [order, items, payments, invoices]
+      properties:
+        order:
+          $ref: '#/components/schemas/AdminOrder'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderItem'
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPayment'
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminInvoice'
 
     ApiError:
       type: object
@@ -1099,4 +2160,10 @@ components:
         - order_wrong_state
         - quote_already_ordered
         - invalid_nip
+        - transition_not_allowed
+        - tracking_required
+        - pricing_config_invalid
+        - erase_not_enabled
+        - step_request_not_found
+        - step_request_wrong_state
         - internal

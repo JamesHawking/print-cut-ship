@@ -209,6 +209,245 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/admin/orders': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items. */
+    get: operations['adminListOrders']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/orders/{orderId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Full order detail for the operator (admin only): addresses, NIP, status capability token, totals, line items with their frozen pricing snapshots, and the payment/invoice ledgers. No email log (plan 06). */
+    get: operations['adminGetOrder']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/orders/{orderId}/transition': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Move an order along the lifecycle (admin only). Only board transitions are accepted — paid/refunded flip exclusively through the payment pipeline, so draft/paid/refunded targets get 400 transition_not_allowed. Shipped requires a tracking number (400 tracking_required). Illegal edges get 409 order_wrong_state. */
+    post: operations['adminTransitionOrder']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/orders/{orderId}/files/{fileId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Download a stored model file that is part of the order (admin only) — production needs the actual geometry. 404 file_not_found when the file is not attached to this order (or was deleted). */
+    get: operations['adminDownloadOrderFile']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/pricing-config': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Active pricing config plus version history (admin only). The active snapshot is what prices new quotes right now — swaps are live, no deploy needed. */
+    get: operations['adminGetPricingConfig']
+    put?: never
+    /** Publish a new pricing config snapshot (admin only): validated against the Go engine's structure (formula shape is not editable), persisted as the new active row, and swapped into the running process atomically. Existing quotes/orders keep their original snapshot. */
+    post: operations['adminReplacePricingConfig']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/pricing-config/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Read one historical pricing config snapshot (admin only) */
+    get: operations['adminGetPricingConfigSnapshot']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/customers': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Customer lookup by email (admin only): user account, orders, quotes, STEP requests, and linked files. Guests included — email is the join key. Unknown emails return empty arrays, not 404. */
+    get: operations['adminLookupCustomer']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/customers/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob. */
+    post: operations['adminExportCustomer']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/customers/erase': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** GDPR erasure — DRY-RUN ONLY (admin only). Reports what would be deleted vs retained (invoice-retention carve-out, plan 09). dryRun must be true; anything else is 400 erase_not_enabled. There is no destructive code path. */
+    post: operations['adminEraseCustomer']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/ops/today': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** "What must ship today" (admin only): paid and in_production orders whose derived ship-by date is today or earlier (Warsaw business calendar), soonest first. Ship dates recompute from the lead-time engine with paid_at as the anchor — nothing is denormalized. */
+    get: operations['adminGetOpsToday']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/ops/stats': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Board KPI strip (admin only): today vs yesterday order counts and gross (Warsaw calendar), per-status counts, overdue open orders (engine-derived ship-by), new STEP requests, and a 14-day orders sparkline (oldest first, zero-filled, ending today). */
+    get: operations['adminGetOpsStats']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/step-requests': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** STEP manual-quote queue (admin only), newest first */
+    get: operations['adminListStepRequests']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/step-requests/{requestId}/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Advance a STEP request to quoted or closed (admin only). Closed is terminal — any further change is 409 step_request_wrong_state. */
+    post: operations['adminUpdateStepRequestStatus']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/step-requests/{requestId}/file': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Download the STEP file attached to the request (admin only). 404 file_not_found when no file is attached or its bytes are not stored. */
+    get: operations['adminDownloadStepRequestFile']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/admin/orders/{orderId}/refund': {
     parameters: {
       query?: never
@@ -702,6 +941,332 @@ export interface components {
     MeResponse: {
       /** Format: email */
       email: string
+      /** @enum {string} */
+      role: 'customer' | 'admin'
+    }
+    TransitionOrderRequest: {
+      to: components['schemas']['OrderStatus']
+      /** @description Required for to=shipped; stored on the order. */
+      trackingNumber?: string
+    }
+    /** @description Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge. */
+    PricingConfig: {
+      Processes: components['schemas']['PricingProcessDef'][]
+      LeadTimes: components['schemas']['PricingLeadTimeDef'][]
+      Fdm: components['schemas']['PricingFdmModel']
+      DiscountTiers: components['schemas']['PricingDiscountTier'][]
+      /** Format: double */
+      ExtraPlateFeePln: number
+      /** Format: double */
+      PlateGutterMm: number
+      /** Format: double */
+      MinOrderPln: number
+      /** Format: double */
+      MinPartPricePln: number
+      /** Format: double */
+      OrderFeePln: number
+      /** Format: double */
+      ShippingFlatPln: number
+      /** Format: double */
+      FreeShippingThresholdPln: number
+      /** Format: double */
+      VatRate: number
+      /** Format: double */
+      MinBillableVolumeCm3: number
+      /** Format: double */
+      MinFeatureMm: number
+      SameDayCutoffHour: number
+    }
+    PricingProcessDef: {
+      ID: string
+      Label: string
+      /** Format: double */
+      DensityGCm3: number
+      /** Format: double */
+      PlnPerKg: number
+      /** Format: double */
+      Factor: number
+      /** Format: double */
+      PlnPerHour: number
+      Build: {
+        /** Format: double */
+        x: number
+        /** Format: double */
+        y: number
+        /** Format: double */
+        z: number
+      }
+    }
+    PricingLeadTimeDef: {
+      ID: string
+      /** Format: double */
+      Mult: number
+      BusinessDays: number
+    }
+    PricingFdmModel: {
+      /** Format: double */
+      InfillFraction: number
+      /** Format: double */
+      ShellThicknessMm: number
+      /** Format: double */
+      ShellGramsPerPrintHour: number
+      /** Format: double */
+      InfillGramsPerPrintHour: number
+    }
+    PricingDiscountTier: {
+      /** Format: double */
+      Quantity: number
+      /** Format: double */
+      Fraction: number
+    }
+    PricingConfigSnapshotMeta: {
+      /** Format: uuid */
+      id: string
+      label: string
+      /** Format: date-time */
+      createdAt: string
+      isActive: boolean
+    }
+    PricingConfigSnapshot: {
+      /** Format: uuid */
+      id: string
+      label: string
+      /** Format: date-time */
+      createdAt: string
+      isActive: boolean
+      config: components['schemas']['PricingConfig']
+    }
+    AdminPricingConfigResponse: {
+      active: components['schemas']['PricingConfigSnapshot']
+      history: components['schemas']['PricingConfigSnapshotMeta'][]
+    }
+    ReplacePricingConfigRequest: {
+      label: string
+      config: components['schemas']['PricingConfig']
+    }
+    ReplacePricingConfigResponse: {
+      /** Format: uuid */
+      id: string
+    }
+    AdminOpsToday: {
+      /** @description Today in Europe/Warsaw, YYYY-MM-DD. */
+      date: string
+      orders: components['schemas']['AdminOrderSummary'][]
+    }
+    AdminOpsStats: {
+      /** @description Today in Europe/Warsaw, YYYY-MM-DD. */
+      date: string
+      todayOrders: number
+      todayGrossPln: number
+      yesterdayOrders: number
+      yesterdayGrossPln: number
+      byStatus: {
+        status: string
+        count: number
+      }[]
+      /** @description Open orders (paid/in_production) whose ship-by is past. */
+      overdue: number
+      stepNew: number
+      /** @description 14 entries, oldest first, ending today; zero-filled. */
+      daily: {
+        date: string
+        orders: number
+        grossPln: number
+      }[]
+    }
+    AdminStepRequestList: {
+      requests: components['schemas']['AdminStepRequestSummary'][]
+    }
+    UpdateStepRequestStatusRequest: {
+      /** @enum {string} */
+      status: 'quoted' | 'closed'
+    }
+    AdminUserSummary: {
+      /** Format: uuid */
+      id: string
+      email: string
+      role: string
+      /** Format: date-time */
+      createdAt: string
+    }
+    AdminQuoteSummary: {
+      quoteId: string
+      status: string
+      /** Format: double */
+      grossTotalPln: number
+      /** Format: date-time */
+      createdAt: string
+      partCount: number
+      fileName?: string
+    }
+    AdminStepRequestSummary: {
+      requestId: string
+      email: string
+      fileName: string
+      /** Format: int64 */
+      fileSizeBytes: number
+      /** @enum {string} */
+      status: 'new' | 'quoted' | 'closed'
+      /** Format: uuid */
+      fileId?: string
+      /** Format: date-time */
+      createdAt: string
+    }
+    AdminFileSummary: {
+      /** Format: uuid */
+      fileId: string
+      fileName: string
+      kind: string
+      /** Format: int64 */
+      sizeBytes: number
+      /** @description True when the object bytes are in storage. */
+      stored: boolean
+      /** Format: date-time */
+      createdAt: string
+    }
+    CustomerEmailRequest: {
+      /** Format: email */
+      email: string
+    }
+    EraseCustomerRequest: {
+      /** Format: email */
+      email: string
+      /** @description Must be true — there is no destructive path (plan 09). */
+      dryRun: boolean
+    }
+    AdminCustomerLookup: {
+      email: string
+      user?: components['schemas']['AdminUserSummary']
+      orders: components['schemas']['AdminOrderSummary'][]
+      quotes: components['schemas']['AdminQuoteSummary'][]
+      stepRequests: components['schemas']['AdminStepRequestSummary'][]
+      files: components['schemas']['AdminFileSummary'][]
+    }
+    AdminCustomerExport: {
+      email: string
+      /** Format: date-time */
+      exportedAt: string
+      user?: components['schemas']['AdminUserSummary']
+      orders: components['schemas']['AdminOrderDetail'][]
+      quotes: components['schemas']['AdminQuoteSummary'][]
+      stepRequests: components['schemas']['AdminStepRequestSummary'][]
+      files: components['schemas']['AdminFileSummary'][]
+    }
+    AdminEraseEntry: {
+      table: string
+      count: number
+      note?: string
+    }
+    AdminEraseRetained: {
+      table: string
+      count: number
+      reason: string
+    }
+    AdminEraseReport: {
+      email: string
+      dryRun: boolean
+      wouldDelete: components['schemas']['AdminEraseEntry'][]
+      retained: components['schemas']['AdminEraseRetained'][]
+    }
+    AdminOrderSummary: {
+      orderId: string
+      email: string
+      status: components['schemas']['OrderStatus']
+      /** Format: double */
+      grossTotalPln: number
+      /** Format: date-time */
+      createdAt: string
+      /** Format: date-time */
+      paidAt?: string
+      /** @description Ship-by date (YYYY-MM-DD, Warsaw business calendar) derived from the lead-time engine; present only once the order is paid. */
+      shipBy?: string
+      /** @description Present and true when shipBy is before today (Warsaw). */
+      overdue?: boolean
+      partCount: number
+      /** @description Any item carries a warn/block/manual_verify DFM flag. */
+      dfmFlagged: boolean
+      /** @description Distinct flag codes behind dfmFlagged. */
+      dfmCodes?: string[]
+      trackingNumber?: string
+    }
+    AdminListOrdersResponse: {
+      orders: components['schemas']['AdminOrderSummary'][]
+      total: number
+      limit: number
+      offset: number
+    }
+    AdminOrder: {
+      orderId: string
+      email: string
+      status: components['schemas']['OrderStatus']
+      locale: string
+      country: string
+      companyName?: string
+      nip?: string
+      invoiceRequested: boolean
+      /** Format: date-time */
+      createdAt: string
+      /** Format: date-time */
+      paidAt?: string
+      shippingAddress: components['schemas']['Address']
+      billingAddress?: components['schemas']['Address']
+      /** @description Public status-page capability — exposed because this endpoint is admin-only (support may send the customer their tracking link). */
+      statusToken: string
+      trackingNumber?: string
+      totals: components['schemas']['OrderTotals']
+      /** Format: double */
+      grossTotalPln: number
+      /** Format: double */
+      vatPln: number
+      /** Format: uuid */
+      pricingConfigId: string
+    }
+    AdminOrderItem: {
+      /** Format: uuid */
+      fileId?: string
+      fileName: string
+      process: components['schemas']['ProcessId']
+      quantity: number
+      leadTime: components['schemas']['LeadTimeId']
+      /** Format: double */
+      unitPricePln: number
+      /** Format: double */
+      lineTotalPln: number
+      /** @description The part's frozen PartQuote (breakdown, dfmFlags, plates) copied at order time; shape pinned by the pricing engine, not the spec. */
+      partQuoteSnapshot?: {
+        [key: string]: unknown
+      }
+    }
+    AdminPayment: {
+      provider: string
+      providerEventId: string
+      paymentRef?: string
+      /** @enum {string} */
+      type: 'payment' | 'refund'
+      /** Format: double */
+      amountPln: number
+      status: string
+      /** Format: date-time */
+      createdAt: string
+    }
+    AdminInvoice: {
+      providerId?: string
+      number?: string
+      pdfUrl?: string
+      /** @enum {string} */
+      kind: 'vat' | 'proforma' | 'correction'
+      /** Format: date-time */
+      issuedAt?: string
+      /** @description YYYY-MM-DD; blocks GDPR erasure (plan 09). */
+      retentionUntil?: string
+      /** Format: date-time */
+      createdAt: string
+    }
+    AdminOrderDetail: {
+      order: components['schemas']['AdminOrder']
+      items: components['schemas']['AdminOrderItem'][]
+      payments: components['schemas']['AdminPayment'][]
+      invoices: components['schemas']['AdminInvoice'][]
     }
     ApiError: {
       code: components['schemas']['ApiErrorCode']
@@ -748,6 +1313,12 @@ export interface components {
       | 'order_wrong_state'
       | 'quote_already_ordered'
       | 'invalid_nip'
+      | 'transition_not_allowed'
+      | 'tracking_required'
+      | 'pricing_config_invalid'
+      | 'erase_not_enabled'
+      | 'step_request_not_found'
+      | 'step_request_wrong_state'
       | 'internal'
   }
   responses: {
@@ -1106,6 +1677,388 @@ export interface operations {
           'application/json': components['schemas']['TrackedOrder']
         }
       }
+      404: components['responses']['NotFound']
+    }
+  }
+  adminListOrders: {
+    parameters: {
+      query?: {
+        status?: components['schemas']['OrderStatus']
+        limit?: number
+        offset?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Page of orders plus the unfiltered total */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminListOrdersResponse']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminGetOrder: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The orderId returned by createOrder, e.g. "O-1A2B3C4D" */
+        orderId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Order detail */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminOrderDetail']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+    }
+  }
+  adminTransitionOrder: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        orderId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TransitionOrderRequest']
+      }
+    }
+    responses: {
+      /** @description Transition applied */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+      409: components['responses']['Conflict']
+    }
+  }
+  adminDownloadOrderFile: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        orderId: string
+        fileId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Raw file bytes as an attachment */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/octet-stream': string
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+    }
+  }
+  adminGetPricingConfig: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Active snapshot and version history */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminPricingConfigResponse']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminReplacePricingConfig: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReplacePricingConfigRequest']
+      }
+    }
+    responses: {
+      /** @description New active snapshot id */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ReplacePricingConfigResponse']
+        }
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminGetPricingConfigSnapshot: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The snapshot */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PricingConfigSnapshot']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+    }
+  }
+  adminLookupCustomer: {
+    parameters: {
+      query: {
+        email: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The customer's trail */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminCustomerLookup']
+        }
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminExportCustomer: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerEmailRequest']
+      }
+    }
+    responses: {
+      /** @description Full export bundle */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminCustomerExport']
+        }
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminEraseCustomer: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EraseCustomerRequest']
+      }
+    }
+    responses: {
+      /** @description Dry-run erasure report */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminEraseReport']
+        }
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminGetOpsToday: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Warsaw today plus the due orders */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminOpsToday']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminGetOpsStats: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Aggregated board stats */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminOpsStats']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminListStepRequests: {
+    parameters: {
+      query?: {
+        status?: 'new' | 'quoted' | 'closed'
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Queue entries */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminStepRequestList']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminUpdateStepRequestStatus: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description e.g. "STEP-1A2B3C4D" */
+        requestId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateStepRequestStatusRequest']
+      }
+    }
+    responses: {
+      /** @description Status updated */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+      409: components['responses']['Conflict']
+    }
+  }
+  adminDownloadStepRequestFile: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        requestId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Raw file bytes as an attachment */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/octet-stream': string
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
       404: components['responses']['NotFound']
     }
   }

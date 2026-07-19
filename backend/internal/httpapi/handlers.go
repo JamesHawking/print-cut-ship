@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/leadtime"
@@ -28,8 +29,6 @@ import (
 // errQuoteFileInvalid marks a client-supplied part.fileId that doesn't resolve
 // to a stored file with a matching hash — a 400, not a 500.
 var errQuoteFileInvalid = errors.New("referenced file not found or hash mismatch")
-
-var priceCfg = &pricing.Default
 
 // ------------------------------------------------------------------ helpers
 
@@ -192,13 +191,13 @@ type validationError struct {
 
 // validatePart checks the shared metrics/config fields of price and quote
 // submissions, mirroring the original Zod schemas.
-func validatePart(metrics MeshMetrics, process ProcessId, quantity int, lead LeadTimeId) *validationError {
-	if _, ok := priceCfg.Process(string(process)); !ok {
+func validatePart(cfg *pricing.Config, metrics MeshMetrics, process ProcessId, quantity int, lead LeadTimeId) *validationError {
+	if _, ok := cfg.Process(string(process)); !ok {
 		return &validationError{UnknownProcess,
 			fmt.Sprintf("unknown process %q", process),
 			map[string]any{"process": string(process)}}
 	}
-	if _, ok := priceCfg.LeadTime(string(lead)); !ok {
+	if _, ok := cfg.LeadTime(string(lead)); !ok {
 		return &validationError{UnknownLeadTime,
 			fmt.Sprintf("unknown leadTime %q", lead),
 			map[string]any{"leadTime": string(lead)}}
@@ -214,16 +213,16 @@ func validatePart(metrics MeshMetrics, process ProcessId, quantity int, lead Lea
 	return nil
 }
 
-func priceParts(parts []SubmitQuotePart) ([]pricing.PartQuote, pricing.OrderTotals) {
+func priceParts(cfg *pricing.Config, parts []SubmitQuotePart) ([]pricing.PartQuote, pricing.OrderTotals) {
 	quotes := make([]pricing.PartQuote, 0, len(parts))
 	for _, p := range parts {
-		quotes = append(quotes, priceCfg.ComputePartQuote(toDomainMetrics(p.Metrics), pricing.PartConfig{
+		quotes = append(quotes, cfg.ComputePartQuote(toDomainMetrics(p.Metrics), pricing.PartConfig{
 			Process:  string(p.Process),
 			Quantity: float64(p.Quantity),
 			LeadTime: string(p.LeadTime),
 		}))
 	}
-	return quotes, priceCfg.ComputeOrderTotals(quotes)
+	return quotes, cfg.ComputeOrderTotals(quotes)
 }
 
 // ----------------------------------------------------------------- handlers
@@ -239,14 +238,15 @@ func (s *server) Price(w http.ResponseWriter, r *http.Request) {
 			map[string]any{"max": pricing.MaxParts})
 		return
 	}
+	cfg := s.activePricing().Cfg
 	quotes := make([]PartQuote, 0, len(req.Parts))
 	domainQuotes := make([]pricing.PartQuote, 0, len(req.Parts))
 	for _, p := range req.Parts {
-		if v := validatePart(p.Metrics, p.Process, p.Quantity, p.LeadTime); v != nil {
+		if v := validatePart(cfg, p.Metrics, p.Process, p.Quantity, p.LeadTime); v != nil {
 			badRequest(w, v.code, v.msg, v.params)
 			return
 		}
-		q := priceCfg.ComputePartQuote(toDomainMetrics(p.Metrics), pricing.PartConfig{
+		q := cfg.ComputePartQuote(toDomainMetrics(p.Metrics), pricing.PartConfig{
 			Process:  string(p.Process),
 			Quantity: float64(p.Quantity),
 			LeadTime: string(p.LeadTime),
@@ -256,11 +256,12 @@ func (s *server) Price(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, PriceResponse{
 		Parts:  quotes,
-		Totals: fromDomainTotals(priceCfg.ComputeOrderTotals(domainQuotes)),
+		Totals: fromDomainTotals(cfg.ComputeOrderTotals(domainQuotes)),
 	})
 }
 
 func (s *server) GetConfig(w http.ResponseWriter, _ *http.Request) {
+	priceCfg := s.activePricing().Cfg
 	processes := make([]CatalogProcess, 0, len(priceCfg.Processes))
 	for _, p := range priceCfg.Processes {
 		processes = append(processes, CatalogProcess{
@@ -306,6 +307,7 @@ func (s *server) GetConfig(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *server) GetShipDates(w http.ResponseWriter, _ *http.Request) {
+	priceCfg := s.activePricing().Cfg
 	now := time.Now()
 	dates := make([]ShipDate, 0, len(priceCfg.LeadTimes))
 	for _, lt := range priceCfg.LeadTimes {
@@ -341,12 +343,13 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 			map[string]any{"max": pricing.MaxParts})
 		return
 	}
+	act := s.activePricing()
 	for _, p := range req.Parts {
 		if p.FileName == "" || p.Hash == "" {
 			badRequest(w, MissingFileFields, "fileName and hash are required", nil)
 			return
 		}
-		if v := validatePart(p.Metrics, p.Process, p.Quantity, p.LeadTime); v != nil {
+		if v := validatePart(act.Cfg, p.Metrics, p.Process, p.Quantity, p.LeadTime); v != nil {
 			badRequest(w, v.code, v.msg, v.params)
 			return
 		}
@@ -370,7 +373,7 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 
 	// The server's own pricing is authoritative; the client total is only
 	// telemetry for catching drift between the UI and this engine.
-	partQuotes, totals := priceParts(req.Parts)
+	partQuotes, totals := priceParts(act.Cfg, req.Parts)
 	quoteID := makeID("Q")
 	logAttrs := []any{
 		"quoteId", quoteID,
@@ -386,7 +389,7 @@ func (s *server) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 	s.cfg.Logger.Info("submitQuote", logAttrs...)
 
 	if s.cfg.Store != nil {
-		if err := s.persistQuote(r.Context(), req, quoteID, partQuotes, totals); err != nil {
+		if err := s.persistQuote(r.Context(), req, quoteID, act.ID, partQuotes, totals); err != nil {
 			if errors.Is(err, errQuoteFileInvalid) {
 				badRequest(w, QuoteFileInvalid, err.Error(), nil)
 				return
@@ -483,10 +486,9 @@ func (s *server) ListOrders(w http.ResponseWriter, r *http.Request) {
 
 // persistQuote writes the server-authored quote and its parts. Money is stored
 // as integer grosze; breakdown/dfmFlags are serialized to jsonb. The quote is
-// attached to the startup-verified pricing-config snapshot (cfg.PricingConfigID,
-// guaranteed by cmd/api to match the pricing.Default that priced it) so later
-// rate changes never reprice it.
-func (s *server) persistQuote(ctx context.Context, req SubmitQuoteRequest, quoteID string, partQuotes []pricing.PartQuote, totals pricing.OrderTotals) error {
+// stamped with the pricing-config snapshot that priced it (the holder's id
+// from the same Get() that priced it) so later rate changes never reprice it.
+func (s *server) persistQuote(ctx context.Context, req SubmitQuoteRequest, quoteID string, pricingConfigID uuid.UUID, partQuotes []pricing.PartQuote, totals pricing.OrderTotals) error {
 	var convErr error
 	grosze := func(pln float64) int32 {
 		v, err := money.ToGrosze(pln)
@@ -508,7 +510,7 @@ func (s *server) persistQuote(ctx context.Context, req SubmitQuoteRequest, quote
 		Email:               &email,
 		Country:             &country,
 		Locale:              locale,
-		PricingConfigID:     s.cfg.PricingConfigID,
+		PricingConfigID:     pricingConfigID,
 		PartsSubtotalGrosze: grosze(totals.PartsSubtotalPln),
 		MinOrderTopupGrosze: grosze(totals.MinOrderTopUpPln),
 		OrderFeeGrosze:      grosze(totals.OrderFeePln),

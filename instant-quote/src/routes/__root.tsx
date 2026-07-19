@@ -4,6 +4,7 @@ import {
   Scripts,
   createRootRoute,
   useParams,
+  useRouterState,
 } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -60,6 +61,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   )
 
   const { locale } = useParams({ strict: false })
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   return (
     <html lang={locale && isLocale(locale) ? locale : DEFAULT_LOCALE}>
@@ -73,7 +75,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
             </FilePickerProvider>
           </PartsProvider>
-          <Toaster richColors position="top-right" />
+          <Toaster
+            richColors
+            position="top-right"
+            {...(pathname.startsWith('/admin')
+              ? { theme: 'dark' as const }
+              : {})}
+          />
         </QueryClientProvider>
         <Scripts />
       </body>

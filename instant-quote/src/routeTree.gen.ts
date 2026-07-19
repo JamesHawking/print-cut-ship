@@ -9,20 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as LocaleRouteRouteImport } from './routes/$locale/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as LocaleIndexRouteImport } from './routes/$locale/index'
+import { Route as AdminStepRequestsRouteImport } from './routes/admin/step-requests'
+import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
+import { Route as AdminCustomersRouteImport } from './routes/admin/customers'
 import { Route as LocaleQuoteRouteImport } from './routes/$locale/quote'
 import { Route as LocaleOrdersRouteImport } from './routes/$locale/orders'
 import { Route as LocaleLoginRouteImport } from './routes/$locale/login'
 import { Route as LocaleSectionRouteRouteImport } from './routes/$locale/$section/route'
+import { Route as AdminOrdersIndexRouteImport } from './routes/admin/orders.index'
 import { Route as LocaleSectionIndexRouteImport } from './routes/$locale/$section/index'
 import { Route as PlBazaWiedzyRssDotxmlRouteImport } from './routes/pl/baza-wiedzy/rss[.]xml'
 import { Route as EnBlogRssDotxmlRouteImport } from './routes/en/blog/rss[.]xml'
+import { Route as AdminOrdersShortIdRouteImport } from './routes/admin/orders.$shortId'
 import { Route as LocalePaySessionIdRouteImport } from './routes/$locale/pay/$sessionId'
 import { Route as LocaleOrderStatusTokenRouteImport } from './routes/$locale/order/$statusToken'
 import { Route as LocaleSectionDetailRouteImport } from './routes/$locale/$section/$detail'
 
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocaleRouteRoute = LocaleRouteRouteImport.update({
   id: '/$locale',
   path: '/$locale',
@@ -33,10 +45,30 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const LocaleIndexRoute = LocaleIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LocaleRouteRoute,
+} as any)
+const AdminStepRequestsRoute = AdminStepRequestsRouteImport.update({
+  id: '/step-requests',
+  path: '/step-requests',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPricingRoute = AdminPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminCustomersRoute = AdminCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const LocaleQuoteRoute = LocaleQuoteRouteImport.update({
   id: '/quote',
@@ -58,6 +90,11 @@ const LocaleSectionRouteRoute = LocaleSectionRouteRouteImport.update({
   path: '/$section',
   getParentRoute: () => LocaleRouteRoute,
 } as any)
+const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const LocaleSectionIndexRoute = LocaleSectionIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -72,6 +109,11 @@ const EnBlogRssDotxmlRoute = EnBlogRssDotxmlRouteImport.update({
   id: '/en/blog/rss.xml',
   path: '/en/blog/rss.xml',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminOrdersShortIdRoute = AdminOrdersShortIdRouteImport.update({
+  id: '/orders/$shortId',
+  path: '/orders/$shortId',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const LocalePaySessionIdRoute = LocalePaySessionIdRouteImport.update({
   id: '/pay/$sessionId',
@@ -92,102 +134,150 @@ const LocaleSectionDetailRoute = LocaleSectionDetailRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$locale': typeof LocaleRouteRouteWithChildren
+  '/admin': typeof AdminRouteRouteWithChildren
   '/$locale/$section': typeof LocaleSectionRouteRouteWithChildren
   '/$locale/login': typeof LocaleLoginRoute
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/pricing': typeof AdminPricingRoute
+  '/admin/step-requests': typeof AdminStepRequestsRoute
   '/$locale/': typeof LocaleIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
   '/$locale/order/$statusToken': typeof LocaleOrderStatusTokenRoute
   '/$locale/pay/$sessionId': typeof LocalePaySessionIdRoute
+  '/admin/orders/$shortId': typeof AdminOrdersShortIdRoute
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
+  '/admin/orders/': typeof AdminOrdersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$locale/login': typeof LocaleLoginRoute
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/pricing': typeof AdminPricingRoute
+  '/admin/step-requests': typeof AdminStepRequestsRoute
   '/$locale': typeof LocaleIndexRoute
+  '/admin': typeof AdminIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
   '/$locale/order/$statusToken': typeof LocaleOrderStatusTokenRoute
   '/$locale/pay/$sessionId': typeof LocalePaySessionIdRoute
+  '/admin/orders/$shortId': typeof AdminOrdersShortIdRoute
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section': typeof LocaleSectionIndexRoute
+  '/admin/orders': typeof AdminOrdersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$locale': typeof LocaleRouteRouteWithChildren
+  '/admin': typeof AdminRouteRouteWithChildren
   '/$locale/$section': typeof LocaleSectionRouteRouteWithChildren
   '/$locale/login': typeof LocaleLoginRoute
   '/$locale/orders': typeof LocaleOrdersRoute
   '/$locale/quote': typeof LocaleQuoteRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/pricing': typeof AdminPricingRoute
+  '/admin/step-requests': typeof AdminStepRequestsRoute
   '/$locale/': typeof LocaleIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
   '/$locale/order/$statusToken': typeof LocaleOrderStatusTokenRoute
   '/$locale/pay/$sessionId': typeof LocalePaySessionIdRoute
+  '/admin/orders/$shortId': typeof AdminOrdersShortIdRoute
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
+  '/admin/orders/': typeof AdminOrdersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/$locale'
+    | '/admin'
     | '/$locale/$section'
     | '/$locale/login'
     | '/$locale/orders'
     | '/$locale/quote'
+    | '/admin/customers'
+    | '/admin/pricing'
+    | '/admin/step-requests'
     | '/$locale/'
+    | '/admin/'
     | '/$locale/$section/$detail'
     | '/$locale/order/$statusToken'
     | '/$locale/pay/$sessionId'
+    | '/admin/orders/$shortId'
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section/'
+    | '/admin/orders/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/$locale/login'
     | '/$locale/orders'
     | '/$locale/quote'
+    | '/admin/customers'
+    | '/admin/pricing'
+    | '/admin/step-requests'
     | '/$locale'
+    | '/admin'
     | '/$locale/$section/$detail'
     | '/$locale/order/$statusToken'
     | '/$locale/pay/$sessionId'
+    | '/admin/orders/$shortId'
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section'
+    | '/admin/orders'
   id:
     | '__root__'
     | '/'
     | '/$locale'
+    | '/admin'
     | '/$locale/$section'
     | '/$locale/login'
     | '/$locale/orders'
     | '/$locale/quote'
+    | '/admin/customers'
+    | '/admin/pricing'
+    | '/admin/step-requests'
     | '/$locale/'
+    | '/admin/'
     | '/$locale/$section/$detail'
     | '/$locale/order/$statusToken'
     | '/$locale/pay/$sessionId'
+    | '/admin/orders/$shortId'
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section/'
+    | '/admin/orders/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LocaleRouteRoute: typeof LocaleRouteRouteWithChildren
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   EnBlogRssDotxmlRoute: typeof EnBlogRssDotxmlRoute
   PlBazaWiedzyRssDotxmlRoute: typeof PlBazaWiedzyRssDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$locale': {
       id: '/$locale'
       path: '/$locale'
@@ -202,12 +292,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/$locale/': {
       id: '/$locale/'
       path: '/'
       fullPath: '/$locale/'
       preLoaderRoute: typeof LocaleIndexRouteImport
       parentRoute: typeof LocaleRouteRoute
+    }
+    '/admin/step-requests': {
+      id: '/admin/step-requests'
+      path: '/step-requests'
+      fullPath: '/admin/step-requests'
+      preLoaderRoute: typeof AdminStepRequestsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/pricing': {
+      id: '/admin/pricing'
+      path: '/pricing'
+      fullPath: '/admin/pricing'
+      preLoaderRoute: typeof AdminPricingRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/$locale/quote': {
       id: '/$locale/quote'
@@ -237,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleSectionRouteRouteImport
       parentRoute: typeof LocaleRouteRoute
     }
+    '/admin/orders/': {
+      id: '/admin/orders/'
+      path: '/orders'
+      fullPath: '/admin/orders/'
+      preLoaderRoute: typeof AdminOrdersIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/$locale/$section/': {
       id: '/$locale/$section/'
       path: '/'
@@ -257,6 +382,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/en/blog/rss.xml'
       preLoaderRoute: typeof EnBlogRssDotxmlRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/orders/$shortId': {
+      id: '/admin/orders/$shortId'
+      path: '/orders/$shortId'
+      fullPath: '/admin/orders/$shortId'
+      preLoaderRoute: typeof AdminOrdersShortIdRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/$locale/pay/$sessionId': {
       id: '/$locale/pay/$sessionId'
@@ -319,9 +451,32 @@ const LocaleRouteRouteWithChildren = LocaleRouteRoute._addFileChildren(
   LocaleRouteRouteChildren,
 )
 
+interface AdminRouteRouteChildren {
+  AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminPricingRoute: typeof AdminPricingRoute
+  AdminStepRequestsRoute: typeof AdminStepRequestsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminOrdersShortIdRoute: typeof AdminOrdersShortIdRoute
+  AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminCustomersRoute: AdminCustomersRoute,
+  AdminPricingRoute: AdminPricingRoute,
+  AdminStepRequestsRoute: AdminStepRequestsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminOrdersShortIdRoute: AdminOrdersShortIdRoute,
+  AdminOrdersIndexRoute: AdminOrdersIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LocaleRouteRoute: LocaleRouteRouteWithChildren,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   EnBlogRssDotxmlRoute: EnBlogRssDotxmlRoute,
   PlBazaWiedzyRssDotxmlRoute: PlBazaWiedzyRssDotxmlRoute,
 }

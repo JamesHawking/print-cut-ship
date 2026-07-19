@@ -223,10 +223,10 @@ func (s *server) TrackOrder(w http.ResponseWriter, r *http.Request, statusToken 
 
 // RefundOrder initiates a provider refund for a paid order. The status flip
 // is the pipeline's job (request/confirm split): the stub confirms
-// synchronously in-process; Stripe's webhook confirms in plan 18. Guarded
-// inline because the generated chi mounts can't be wrapped per-route (the
-// plan-04 deviation; RequireAdmin middleware remains for plan 07's manual
-// mounts).
+// synchronously in-process; Stripe's webhook confirms in plan 18. The inline
+// guard is defense-in-depth under plan 07's adminPrefixGuard, which already
+// fail-closes every /api/v1/admin/* path (generated chi mounts can't be
+// wrapped per-route).
 func (s *server) RefundOrder(w http.ResponseWriter, r *http.Request, orderId string) {
 	if s.requireAdmin(w, r) == nil {
 		return

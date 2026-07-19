@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -85,6 +86,30 @@ func RequireUser(next http.Handler) http.Handler {
 // unmounted — plan 07 mounts it on /api/v1/admin/*.
 func RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := CurrentUser(r.Context())
+		if u == nil {
+			apiError(w, http.StatusUnauthorized, Unauthorized, "authentication required", nil)
+			return
+		}
+		if u.Role != "admin" {
+			apiError(w, http.StatusForbidden, Unauthorized, "admin role required", nil)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// adminPrefixGuard fail-closes every path under /api/v1/admin/ — 401
+// anonymous, 403 non-admin — and passes everything else through. oapi-codegen
+// mounts spec routes flat (no per-group middleware), so the path prefix is
+// the guard boundary: it covers current AND future admin ops with zero
+// per-route wiring (plan 07, replacing the plan file's chi-subrouter idea).
+func adminPrefixGuard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/v1/admin/") {
+			next.ServeHTTP(w, r)
+			return
+		}
 		u := CurrentUser(r.Context())
 		if u == nil {
 			apiError(w, http.StatusUnauthorized, Unauthorized, "authentication required", nil)

@@ -13,40 +13,66 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AdminInvoiceKind.
+const (
+	Correction AdminInvoiceKind = "correction"
+	Proforma   AdminInvoiceKind = "proforma"
+	Vat        AdminInvoiceKind = "vat"
+)
+
+// Defines values for AdminPaymentType.
+const (
+	Payment AdminPaymentType = "payment"
+	Refund  AdminPaymentType = "refund"
+)
+
+// Defines values for AdminStepRequestSummaryStatus.
+const (
+	AdminStepRequestSummaryStatusClosed AdminStepRequestSummaryStatus = "closed"
+	AdminStepRequestSummaryStatusNew    AdminStepRequestSummaryStatus = "new"
+	AdminStepRequestSummaryStatusQuoted AdminStepRequestSummaryStatus = "quoted"
+)
+
 // Defines values for ApiErrorCode.
 const (
-	CodeExpired         ApiErrorCode = "code_expired"
-	CodeInvalid         ApiErrorCode = "code_invalid"
-	FileMissingHash     ApiErrorCode = "file_missing_hash"
-	FileNotFound        ApiErrorCode = "file_not_found"
-	FileSizeRange       ApiErrorCode = "file_size_range"
-	Internal            ApiErrorCode = "internal"
-	InvalidBody         ApiErrorCode = "invalid_body"
-	InvalidDesignId     ApiErrorCode = "invalid_design_id"
-	InvalidEmail        ApiErrorCode = "invalid_email"
-	InvalidFileSize     ApiErrorCode = "invalid_file_size"
-	InvalidHash         ApiErrorCode = "invalid_hash"
-	InvalidMetrics      ApiErrorCode = "invalid_metrics"
-	InvalidNip          ApiErrorCode = "invalid_nip"
-	InvalidProfileId    ApiErrorCode = "invalid_profile_id"
-	MissingFileFields   ApiErrorCode = "missing_file_fields"
-	MissingFileName     ApiErrorCode = "missing_file_name"
-	OrderNotFound       ApiErrorCode = "order_not_found"
-	OrderWrongState     ApiErrorCode = "order_wrong_state"
-	PartsCount          ApiErrorCode = "parts_count"
-	QuantityRange       ApiErrorCode = "quantity_range"
-	QuoteAlreadyOrdered ApiErrorCode = "quote_already_ordered"
-	QuoteFileInvalid    ApiErrorCode = "quote_file_invalid"
-	QuoteNotFound       ApiErrorCode = "quote_not_found"
-	StorageUnavailable  ApiErrorCode = "storage_unavailable"
-	TooManyAttempts     ApiErrorCode = "too_many_attempts"
-	Unauthorized        ApiErrorCode = "unauthorized"
-	UnknownLeadTime     ApiErrorCode = "unknown_lead_time"
-	UnknownProcess      ApiErrorCode = "unknown_process"
-	UnsupportedCountry  ApiErrorCode = "unsupported_country"
-	UnsupportedKind     ApiErrorCode = "unsupported_kind"
-	UploadObjectMissing ApiErrorCode = "upload_object_missing"
-	UploadSizeMismatch  ApiErrorCode = "upload_size_mismatch"
+	CodeExpired           ApiErrorCode = "code_expired"
+	CodeInvalid           ApiErrorCode = "code_invalid"
+	EraseNotEnabled       ApiErrorCode = "erase_not_enabled"
+	FileMissingHash       ApiErrorCode = "file_missing_hash"
+	FileNotFound          ApiErrorCode = "file_not_found"
+	FileSizeRange         ApiErrorCode = "file_size_range"
+	Internal              ApiErrorCode = "internal"
+	InvalidBody           ApiErrorCode = "invalid_body"
+	InvalidDesignId       ApiErrorCode = "invalid_design_id"
+	InvalidEmail          ApiErrorCode = "invalid_email"
+	InvalidFileSize       ApiErrorCode = "invalid_file_size"
+	InvalidHash           ApiErrorCode = "invalid_hash"
+	InvalidMetrics        ApiErrorCode = "invalid_metrics"
+	InvalidNip            ApiErrorCode = "invalid_nip"
+	InvalidProfileId      ApiErrorCode = "invalid_profile_id"
+	MissingFileFields     ApiErrorCode = "missing_file_fields"
+	MissingFileName       ApiErrorCode = "missing_file_name"
+	OrderNotFound         ApiErrorCode = "order_not_found"
+	OrderWrongState       ApiErrorCode = "order_wrong_state"
+	PartsCount            ApiErrorCode = "parts_count"
+	PricingConfigInvalid  ApiErrorCode = "pricing_config_invalid"
+	QuantityRange         ApiErrorCode = "quantity_range"
+	QuoteAlreadyOrdered   ApiErrorCode = "quote_already_ordered"
+	QuoteFileInvalid      ApiErrorCode = "quote_file_invalid"
+	QuoteNotFound         ApiErrorCode = "quote_not_found"
+	StepRequestNotFound   ApiErrorCode = "step_request_not_found"
+	StepRequestWrongState ApiErrorCode = "step_request_wrong_state"
+	StorageUnavailable    ApiErrorCode = "storage_unavailable"
+	TooManyAttempts       ApiErrorCode = "too_many_attempts"
+	TrackingRequired      ApiErrorCode = "tracking_required"
+	TransitionNotAllowed  ApiErrorCode = "transition_not_allowed"
+	Unauthorized          ApiErrorCode = "unauthorized"
+	UnknownLeadTime       ApiErrorCode = "unknown_lead_time"
+	UnknownProcess        ApiErrorCode = "unknown_process"
+	UnsupportedCountry    ApiErrorCode = "unsupported_country"
+	UnsupportedKind       ApiErrorCode = "unsupported_kind"
+	UploadObjectMissing   ApiErrorCode = "upload_object_missing"
+	UploadSizeMismatch    ApiErrorCode = "upload_size_mismatch"
 )
 
 // Defines values for BreakdownLineKey.
@@ -127,6 +153,12 @@ const (
 	TooLarge       MakerworldErrorCode = "too_large"
 )
 
+// Defines values for MeResponseRole.
+const (
+	Admin    MeResponseRole = "admin"
+	Customer MeResponseRole = "customer"
+)
+
 // Defines values for OrderStatus.
 const (
 	Cancelled    OrderStatus = "cancelled"
@@ -155,6 +187,19 @@ const (
 	Pl SubmitQuoteRequestLocale = "pl"
 )
 
+// Defines values for UpdateStepRequestStatusRequestStatus.
+const (
+	UpdateStepRequestStatusRequestStatusClosed UpdateStepRequestStatusRequestStatus = "closed"
+	UpdateStepRequestStatusRequestStatusQuoted UpdateStepRequestStatusRequestStatus = "quoted"
+)
+
+// Defines values for AdminListStepRequestsParamsStatus.
+const (
+	Closed AdminListStepRequestsParamsStatus = "closed"
+	New    AdminListStepRequestsParamsStatus = "new"
+	Quoted AdminListStepRequestsParamsStatus = "quoted"
+)
+
 // Address defines model for Address.
 type Address struct {
 	City string `json:"city"`
@@ -165,6 +210,249 @@ type Address struct {
 
 	// Street Street and number
 	Street string `json:"street"`
+}
+
+// AdminCustomerExport defines model for AdminCustomerExport.
+type AdminCustomerExport struct {
+	Email        string                    `json:"email"`
+	ExportedAt   time.Time                 `json:"exportedAt"`
+	Files        []AdminFileSummary        `json:"files"`
+	Orders       []AdminOrderDetail        `json:"orders"`
+	Quotes       []AdminQuoteSummary       `json:"quotes"`
+	StepRequests []AdminStepRequestSummary `json:"stepRequests"`
+	User         *AdminUserSummary         `json:"user,omitempty"`
+}
+
+// AdminCustomerLookup defines model for AdminCustomerLookup.
+type AdminCustomerLookup struct {
+	Email        string                    `json:"email"`
+	Files        []AdminFileSummary        `json:"files"`
+	Orders       []AdminOrderSummary       `json:"orders"`
+	Quotes       []AdminQuoteSummary       `json:"quotes"`
+	StepRequests []AdminStepRequestSummary `json:"stepRequests"`
+	User         *AdminUserSummary         `json:"user,omitempty"`
+}
+
+// AdminEraseEntry defines model for AdminEraseEntry.
+type AdminEraseEntry struct {
+	Count int     `json:"count"`
+	Note  *string `json:"note,omitempty"`
+	Table string  `json:"table"`
+}
+
+// AdminEraseReport defines model for AdminEraseReport.
+type AdminEraseReport struct {
+	DryRun      bool                 `json:"dryRun"`
+	Email       string               `json:"email"`
+	Retained    []AdminEraseRetained `json:"retained"`
+	WouldDelete []AdminEraseEntry    `json:"wouldDelete"`
+}
+
+// AdminEraseRetained defines model for AdminEraseRetained.
+type AdminEraseRetained struct {
+	Count  int    `json:"count"`
+	Reason string `json:"reason"`
+	Table  string `json:"table"`
+}
+
+// AdminFileSummary defines model for AdminFileSummary.
+type AdminFileSummary struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	FileId    openapi_types.UUID `json:"fileId"`
+	FileName  string             `json:"fileName"`
+	Kind      string             `json:"kind"`
+	SizeBytes int64              `json:"sizeBytes"`
+
+	// Stored True when the object bytes are in storage.
+	Stored bool `json:"stored"`
+}
+
+// AdminInvoice defines model for AdminInvoice.
+type AdminInvoice struct {
+	CreatedAt  time.Time        `json:"createdAt"`
+	IssuedAt   *time.Time       `json:"issuedAt,omitempty"`
+	Kind       AdminInvoiceKind `json:"kind"`
+	Number     *string          `json:"number,omitempty"`
+	PdfUrl     *string          `json:"pdfUrl,omitempty"`
+	ProviderId *string          `json:"providerId,omitempty"`
+
+	// RetentionUntil YYYY-MM-DD; blocks GDPR erasure (plan 09).
+	RetentionUntil *string `json:"retentionUntil,omitempty"`
+}
+
+// AdminInvoiceKind defines model for AdminInvoice.Kind.
+type AdminInvoiceKind string
+
+// AdminListOrdersResponse defines model for AdminListOrdersResponse.
+type AdminListOrdersResponse struct {
+	Limit  int                 `json:"limit"`
+	Offset int                 `json:"offset"`
+	Orders []AdminOrderSummary `json:"orders"`
+	Total  int                 `json:"total"`
+}
+
+// AdminOpsStats defines model for AdminOpsStats.
+type AdminOpsStats struct {
+	ByStatus []struct {
+		Count  int    `json:"count"`
+		Status string `json:"status"`
+	} `json:"byStatus"`
+
+	// Daily 14 entries, oldest first, ending today; zero-filled.
+	Daily []struct {
+		Date     string  `json:"date"`
+		GrossPln float32 `json:"grossPln"`
+		Orders   int     `json:"orders"`
+	} `json:"daily"`
+
+	// Date Today in Europe/Warsaw, YYYY-MM-DD.
+	Date string `json:"date"`
+
+	// Overdue Open orders (paid/in_production) whose ship-by is past.
+	Overdue           int     `json:"overdue"`
+	StepNew           int     `json:"stepNew"`
+	TodayGrossPln     float32 `json:"todayGrossPln"`
+	TodayOrders       int     `json:"todayOrders"`
+	YesterdayGrossPln float32 `json:"yesterdayGrossPln"`
+	YesterdayOrders   int     `json:"yesterdayOrders"`
+}
+
+// AdminOpsToday defines model for AdminOpsToday.
+type AdminOpsToday struct {
+	// Date Today in Europe/Warsaw, YYYY-MM-DD.
+	Date   string              `json:"date"`
+	Orders []AdminOrderSummary `json:"orders"`
+}
+
+// AdminOrder defines model for AdminOrder.
+type AdminOrder struct {
+	BillingAddress   *Address           `json:"billingAddress,omitempty"`
+	CompanyName      *string            `json:"companyName,omitempty"`
+	Country          string             `json:"country"`
+	CreatedAt        time.Time          `json:"createdAt"`
+	Email            string             `json:"email"`
+	GrossTotalPln    float64            `json:"grossTotalPln"`
+	InvoiceRequested bool               `json:"invoiceRequested"`
+	Locale           string             `json:"locale"`
+	Nip              *string            `json:"nip,omitempty"`
+	OrderId          string             `json:"orderId"`
+	PaidAt           *time.Time         `json:"paidAt,omitempty"`
+	PricingConfigId  openapi_types.UUID `json:"pricingConfigId"`
+	ShippingAddress  Address            `json:"shippingAddress"`
+
+	// Status Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+	Status OrderStatus `json:"status"`
+
+	// StatusToken Public status-page capability — exposed because this endpoint is admin-only (support may send the customer their tracking link).
+	StatusToken    string      `json:"statusToken"`
+	Totals         OrderTotals `json:"totals"`
+	TrackingNumber *string     `json:"trackingNumber,omitempty"`
+	VatPln         float64     `json:"vatPln"`
+}
+
+// AdminOrderDetail defines model for AdminOrderDetail.
+type AdminOrderDetail struct {
+	Invoices []AdminInvoice   `json:"invoices"`
+	Items    []AdminOrderItem `json:"items"`
+	Order    AdminOrder       `json:"order"`
+	Payments []AdminPayment   `json:"payments"`
+}
+
+// AdminOrderItem defines model for AdminOrderItem.
+type AdminOrderItem struct {
+	FileId       *openapi_types.UUID `json:"fileId,omitempty"`
+	FileName     string              `json:"fileName"`
+	LeadTime     LeadTimeId          `json:"leadTime"`
+	LineTotalPln float64             `json:"lineTotalPln"`
+
+	// PartQuoteSnapshot The part's frozen PartQuote (breakdown, dfmFlags, plates) copied at order time; shape pinned by the pricing engine, not the spec.
+	PartQuoteSnapshot *map[string]interface{} `json:"partQuoteSnapshot,omitempty"`
+	Process           ProcessId               `json:"process"`
+	Quantity          int                     `json:"quantity"`
+	UnitPricePln      float64                 `json:"unitPricePln"`
+}
+
+// AdminOrderSummary defines model for AdminOrderSummary.
+type AdminOrderSummary struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	// DfmCodes Distinct flag codes behind dfmFlagged.
+	DfmCodes *[]string `json:"dfmCodes,omitempty"`
+
+	// DfmFlagged Any item carries a warn/block/manual_verify DFM flag.
+	DfmFlagged    bool    `json:"dfmFlagged"`
+	Email         string  `json:"email"`
+	GrossTotalPln float64 `json:"grossTotalPln"`
+	OrderId       string  `json:"orderId"`
+
+	// Overdue Present and true when shipBy is before today (Warsaw).
+	Overdue   *bool      `json:"overdue,omitempty"`
+	PaidAt    *time.Time `json:"paidAt,omitempty"`
+	PartCount int        `json:"partCount"`
+
+	// ShipBy Ship-by date (YYYY-MM-DD, Warsaw business calendar) derived from the lead-time engine; present only once the order is paid.
+	ShipBy *string `json:"shipBy,omitempty"`
+
+	// Status Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+	Status         OrderStatus `json:"status"`
+	TrackingNumber *string     `json:"trackingNumber,omitempty"`
+}
+
+// AdminPayment defines model for AdminPayment.
+type AdminPayment struct {
+	AmountPln       float64          `json:"amountPln"`
+	CreatedAt       time.Time        `json:"createdAt"`
+	PaymentRef      *string          `json:"paymentRef,omitempty"`
+	Provider        string           `json:"provider"`
+	ProviderEventId string           `json:"providerEventId"`
+	Status          string           `json:"status"`
+	Type            AdminPaymentType `json:"type"`
+}
+
+// AdminPaymentType defines model for AdminPayment.Type.
+type AdminPaymentType string
+
+// AdminPricingConfigResponse defines model for AdminPricingConfigResponse.
+type AdminPricingConfigResponse struct {
+	Active  PricingConfigSnapshot       `json:"active"`
+	History []PricingConfigSnapshotMeta `json:"history"`
+}
+
+// AdminQuoteSummary defines model for AdminQuoteSummary.
+type AdminQuoteSummary struct {
+	CreatedAt     time.Time `json:"createdAt"`
+	FileName      *string   `json:"fileName,omitempty"`
+	GrossTotalPln float64   `json:"grossTotalPln"`
+	PartCount     int       `json:"partCount"`
+	QuoteId       string    `json:"quoteId"`
+	Status        string    `json:"status"`
+}
+
+// AdminStepRequestList defines model for AdminStepRequestList.
+type AdminStepRequestList struct {
+	Requests []AdminStepRequestSummary `json:"requests"`
+}
+
+// AdminStepRequestSummary defines model for AdminStepRequestSummary.
+type AdminStepRequestSummary struct {
+	CreatedAt     time.Time                     `json:"createdAt"`
+	Email         string                        `json:"email"`
+	FileId        *openapi_types.UUID           `json:"fileId,omitempty"`
+	FileName      string                        `json:"fileName"`
+	FileSizeBytes int64                         `json:"fileSizeBytes"`
+	RequestId     string                        `json:"requestId"`
+	Status        AdminStepRequestSummaryStatus `json:"status"`
+}
+
+// AdminStepRequestSummaryStatus defines model for AdminStepRequestSummary.Status.
+type AdminStepRequestSummaryStatus string
+
+// AdminUserSummary defines model for AdminUserSummary.
+type AdminUserSummary struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Email     string             `json:"email"`
+	Id        openapi_types.UUID `json:"id"`
+	Role      string             `json:"role"`
 }
 
 // ApiError defines model for ApiError.
@@ -304,6 +592,11 @@ type CreateOrderResponse struct {
 	StatusToken string `json:"statusToken"`
 }
 
+// CustomerEmailRequest defines model for CustomerEmailRequest.
+type CustomerEmailRequest struct {
+	Email openapi_types.Email `json:"email"`
+}
+
 // DfmFlag defines model for DfmFlag.
 type DfmFlag struct {
 	Code DfmFlagCode `json:"code"`
@@ -327,6 +620,13 @@ type DfmFlagSeverity string
 type DiscountTier struct {
 	Fraction float64 `json:"fraction"`
 	Quantity int     `json:"quantity"`
+}
+
+// EraseCustomerRequest defines model for EraseCustomerRequest.
+type EraseCustomerRequest struct {
+	// DryRun Must be true — there is no destructive path (plan 09).
+	DryRun bool                `json:"dryRun"`
+	Email  openapi_types.Email `json:"email"`
 }
 
 // EuCountry Supported EU shipping destinations
@@ -365,7 +665,11 @@ type MakerworldFetchRequest struct {
 // MeResponse defines model for MeResponse.
 type MeResponse struct {
 	Email openapi_types.Email `json:"email"`
+	Role  MeResponseRole      `json:"role"`
 }
+
+// MeResponseRole defines model for MeResponse.Role.
+type MeResponseRole string
 
 // MeshMetrics Pricing-relevant subset of client-side mesh analysis
 type MeshMetrics struct {
@@ -473,8 +777,93 @@ type PriceResponse struct {
 	Totals OrderTotals `json:"totals"`
 }
 
+// PricingConfig Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge.
+type PricingConfig struct {
+	DiscountTiers            []PricingDiscountTier `json:"DiscountTiers"`
+	ExtraPlateFeePln         float64               `json:"ExtraPlateFeePln"`
+	Fdm                      PricingFdmModel       `json:"Fdm"`
+	FreeShippingThresholdPln float64               `json:"FreeShippingThresholdPln"`
+	LeadTimes                []PricingLeadTimeDef  `json:"LeadTimes"`
+	MinBillableVolumeCm3     float64               `json:"MinBillableVolumeCm3"`
+	MinFeatureMm             float64               `json:"MinFeatureMm"`
+	MinOrderPln              float64               `json:"MinOrderPln"`
+	MinPartPricePln          float64               `json:"MinPartPricePln"`
+	OrderFeePln              float64               `json:"OrderFeePln"`
+	PlateGutterMm            float64               `json:"PlateGutterMm"`
+	Processes                []PricingProcessDef   `json:"Processes"`
+	SameDayCutoffHour        int                   `json:"SameDayCutoffHour"`
+	ShippingFlatPln          float64               `json:"ShippingFlatPln"`
+	VatRate                  float64               `json:"VatRate"`
+}
+
+// PricingConfigSnapshot defines model for PricingConfigSnapshot.
+type PricingConfigSnapshot struct {
+	// Config Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge.
+	Config    PricingConfig      `json:"config"`
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+	IsActive  bool               `json:"isActive"`
+	Label     string             `json:"label"`
+}
+
+// PricingConfigSnapshotMeta defines model for PricingConfigSnapshotMeta.
+type PricingConfigSnapshotMeta struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+	IsActive  bool               `json:"isActive"`
+	Label     string             `json:"label"`
+}
+
+// PricingDiscountTier defines model for PricingDiscountTier.
+type PricingDiscountTier struct {
+	Fraction float64 `json:"Fraction"`
+	Quantity float64 `json:"Quantity"`
+}
+
+// PricingFdmModel defines model for PricingFdmModel.
+type PricingFdmModel struct {
+	InfillFraction          float64 `json:"InfillFraction"`
+	InfillGramsPerPrintHour float64 `json:"InfillGramsPerPrintHour"`
+	ShellGramsPerPrintHour  float64 `json:"ShellGramsPerPrintHour"`
+	ShellThicknessMm        float64 `json:"ShellThicknessMm"`
+}
+
+// PricingLeadTimeDef defines model for PricingLeadTimeDef.
+type PricingLeadTimeDef struct {
+	BusinessDays int     `json:"BusinessDays"`
+	ID           string  `json:"ID"`
+	Mult         float64 `json:"Mult"`
+}
+
+// PricingProcessDef defines model for PricingProcessDef.
+type PricingProcessDef struct {
+	Build struct {
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+		Z float64 `json:"z"`
+	} `json:"Build"`
+	DensityGCm3 float64 `json:"DensityGCm3"`
+	Factor      float64 `json:"Factor"`
+	ID          string  `json:"ID"`
+	Label       string  `json:"Label"`
+	PlnPerHour  float64 `json:"PlnPerHour"`
+	PlnPerKg    float64 `json:"PlnPerKg"`
+}
+
 // ProcessId defines model for ProcessId.
 type ProcessId string
+
+// ReplacePricingConfigRequest defines model for ReplacePricingConfigRequest.
+type ReplacePricingConfigRequest struct {
+	// Config Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge.
+	Config PricingConfig `json:"config"`
+	Label  string        `json:"label"`
+}
+
+// ReplacePricingConfigResponse defines model for ReplacePricingConfigResponse.
+type ReplacePricingConfigResponse struct {
+	Id openapi_types.UUID `json:"id"`
+}
 
 // RequestCodeRequest defines model for RequestCodeRequest.
 type RequestCodeRequest struct {
@@ -569,6 +958,23 @@ type TrackedOrderItem struct {
 	UnitPricePln float64    `json:"unitPricePln"`
 }
 
+// TransitionOrderRequest defines model for TransitionOrderRequest.
+type TransitionOrderRequest struct {
+	// To Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+	To OrderStatus `json:"to"`
+
+	// TrackingNumber Required for to=shipped; stored on the order.
+	TrackingNumber *string `json:"trackingNumber,omitempty"`
+}
+
+// UpdateStepRequestStatusRequest defines model for UpdateStepRequestStatusRequest.
+type UpdateStepRequestStatusRequest struct {
+	Status UpdateStepRequestStatusRequestStatus `json:"status"`
+}
+
+// UpdateStepRequestStatusRequestStatus defines model for UpdateStepRequestStatusRequest.Status.
+type UpdateStepRequestStatusRequestStatus string
+
 // Vec3Mm defines model for Vec3Mm.
 type Vec3Mm struct {
 	X float64 `json:"x"`
@@ -597,6 +1003,41 @@ type NotFound = ApiError
 // UnauthorizedError defines model for UnauthorizedError.
 type UnauthorizedError = ApiError
 
+// AdminLookupCustomerParams defines parameters for AdminLookupCustomer.
+type AdminLookupCustomerParams struct {
+	Email openapi_types.Email `form:"email" json:"email"`
+}
+
+// AdminListOrdersParams defines parameters for AdminListOrders.
+type AdminListOrdersParams struct {
+	Status *OrderStatus `form:"status,omitempty" json:"status,omitempty"`
+	Limit  *int         `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int         `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// AdminListStepRequestsParams defines parameters for AdminListStepRequests.
+type AdminListStepRequestsParams struct {
+	Status *AdminListStepRequestsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// AdminListStepRequestsParamsStatus defines parameters for AdminListStepRequests.
+type AdminListStepRequestsParamsStatus string
+
+// AdminEraseCustomerJSONRequestBody defines body for AdminEraseCustomer for application/json ContentType.
+type AdminEraseCustomerJSONRequestBody = EraseCustomerRequest
+
+// AdminExportCustomerJSONRequestBody defines body for AdminExportCustomer for application/json ContentType.
+type AdminExportCustomerJSONRequestBody = CustomerEmailRequest
+
+// AdminTransitionOrderJSONRequestBody defines body for AdminTransitionOrder for application/json ContentType.
+type AdminTransitionOrderJSONRequestBody = TransitionOrderRequest
+
+// AdminReplacePricingConfigJSONRequestBody defines body for AdminReplacePricingConfig for application/json ContentType.
+type AdminReplacePricingConfigJSONRequestBody = ReplacePricingConfigRequest
+
+// AdminUpdateStepRequestStatusJSONRequestBody defines body for AdminUpdateStepRequestStatus for application/json ContentType.
+type AdminUpdateStepRequestStatusJSONRequestBody = UpdateStepRequestStatusRequest
+
 // RequestLoginCodeJSONRequestBody defines body for RequestLoginCode for application/json ContentType.
 type RequestLoginCodeJSONRequestBody = RequestCodeRequest
 
@@ -623,9 +1064,54 @@ type SubmitStepQuoteJSONRequestBody = StepQuoteRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Customer lookup by email (admin only): user account, orders, quotes, STEP requests, and linked files. Guests included — email is the join key. Unknown emails return empty arrays, not 404.
+	// (GET /api/v1/admin/customers)
+	AdminLookupCustomer(w http.ResponseWriter, r *http.Request, params AdminLookupCustomerParams)
+	// GDPR erasure — DRY-RUN ONLY (admin only). Reports what would be deleted vs retained (invoice-retention carve-out, plan 09). dryRun must be true; anything else is 400 erase_not_enabled. There is no destructive code path.
+	// (POST /api/v1/admin/customers/erase)
+	AdminEraseCustomer(w http.ResponseWriter, r *http.Request)
+	// GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob.
+	// (POST /api/v1/admin/customers/export)
+	AdminExportCustomer(w http.ResponseWriter, r *http.Request)
+	// Board KPI strip (admin only): today vs yesterday order counts and gross (Warsaw calendar), per-status counts, overdue open orders (engine-derived ship-by), new STEP requests, and a 14-day orders sparkline (oldest first, zero-filled, ending today).
+	// (GET /api/v1/admin/ops/stats)
+	AdminGetOpsStats(w http.ResponseWriter, r *http.Request)
+	// "What must ship today" (admin only): paid and in_production orders whose derived ship-by date is today or earlier (Warsaw business calendar), soonest first. Ship dates recompute from the lead-time engine with paid_at as the anchor — nothing is denormalized.
+	// (GET /api/v1/admin/ops/today)
+	AdminGetOpsToday(w http.ResponseWriter, r *http.Request)
+	// Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items.
+	// (GET /api/v1/admin/orders)
+	AdminListOrders(w http.ResponseWriter, r *http.Request, params AdminListOrdersParams)
+	// Full order detail for the operator (admin only): addresses, NIP, status capability token, totals, line items with their frozen pricing snapshots, and the payment/invoice ledgers. No email log (plan 06).
+	// (GET /api/v1/admin/orders/{orderId})
+	AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId string)
+	// Download a stored model file that is part of the order (admin only) — production needs the actual geometry. 404 file_not_found when the file is not attached to this order (or was deleted).
+	// (GET /api/v1/admin/orders/{orderId}/files/{fileId})
+	AdminDownloadOrderFile(w http.ResponseWriter, r *http.Request, orderId string, fileId openapi_types.UUID)
 	// Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment).
 	// (POST /api/v1/admin/orders/{orderId}/refund)
 	RefundOrder(w http.ResponseWriter, r *http.Request, orderId string)
+	// Move an order along the lifecycle (admin only). Only board transitions are accepted — paid/refunded flip exclusively through the payment pipeline, so draft/paid/refunded targets get 400 transition_not_allowed. Shipped requires a tracking number (400 tracking_required). Illegal edges get 409 order_wrong_state.
+	// (POST /api/v1/admin/orders/{orderId}/transition)
+	AdminTransitionOrder(w http.ResponseWriter, r *http.Request, orderId string)
+	// Active pricing config plus version history (admin only). The active snapshot is what prices new quotes right now — swaps are live, no deploy needed.
+	// (GET /api/v1/admin/pricing-config)
+	AdminGetPricingConfig(w http.ResponseWriter, r *http.Request)
+	// Publish a new pricing config snapshot (admin only): validated against the Go engine's structure (formula shape is not editable), persisted as the new active row, and swapped into the running process atomically. Existing quotes/orders keep their original snapshot.
+	// (POST /api/v1/admin/pricing-config)
+	AdminReplacePricingConfig(w http.ResponseWriter, r *http.Request)
+	// Read one historical pricing config snapshot (admin only)
+	// (GET /api/v1/admin/pricing-config/{id})
+	AdminGetPricingConfigSnapshot(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// STEP manual-quote queue (admin only), newest first
+	// (GET /api/v1/admin/step-requests)
+	AdminListStepRequests(w http.ResponseWriter, r *http.Request, params AdminListStepRequestsParams)
+	// Download the STEP file attached to the request (admin only). 404 file_not_found when no file is attached or its bytes are not stored.
+	// (GET /api/v1/admin/step-requests/{requestId}/file)
+	AdminDownloadStepRequestFile(w http.ResponseWriter, r *http.Request, requestId string)
+	// Advance a STEP request to quoted or closed (admin only). Closed is terminal — any further change is 409 step_request_wrong_state.
+	// (POST /api/v1/admin/step-requests/{requestId}/status)
+	AdminUpdateStepRequestStatus(w http.ResponseWriter, r *http.Request, requestId string)
 	// Delete the current session and clear the cookie
 	// (POST /api/v1/auth/logout)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -683,9 +1169,99 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
+// Customer lookup by email (admin only): user account, orders, quotes, STEP requests, and linked files. Guests included — email is the join key. Unknown emails return empty arrays, not 404.
+// (GET /api/v1/admin/customers)
+func (_ Unimplemented) AdminLookupCustomer(w http.ResponseWriter, r *http.Request, params AdminLookupCustomerParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GDPR erasure — DRY-RUN ONLY (admin only). Reports what would be deleted vs retained (invoice-retention carve-out, plan 09). dryRun must be true; anything else is 400 erase_not_enabled. There is no destructive code path.
+// (POST /api/v1/admin/customers/erase)
+func (_ Unimplemented) AdminEraseCustomer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob.
+// (POST /api/v1/admin/customers/export)
+func (_ Unimplemented) AdminExportCustomer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Board KPI strip (admin only): today vs yesterday order counts and gross (Warsaw calendar), per-status counts, overdue open orders (engine-derived ship-by), new STEP requests, and a 14-day orders sparkline (oldest first, zero-filled, ending today).
+// (GET /api/v1/admin/ops/stats)
+func (_ Unimplemented) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// "What must ship today" (admin only): paid and in_production orders whose derived ship-by date is today or earlier (Warsaw business calendar), soonest first. Ship dates recompute from the lead-time engine with paid_at as the anchor — nothing is denormalized.
+// (GET /api/v1/admin/ops/today)
+func (_ Unimplemented) AdminGetOpsToday(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items.
+// (GET /api/v1/admin/orders)
+func (_ Unimplemented) AdminListOrders(w http.ResponseWriter, r *http.Request, params AdminListOrdersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Full order detail for the operator (admin only): addresses, NIP, status capability token, totals, line items with their frozen pricing snapshots, and the payment/invoice ledgers. No email log (plan 06).
+// (GET /api/v1/admin/orders/{orderId})
+func (_ Unimplemented) AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download a stored model file that is part of the order (admin only) — production needs the actual geometry. 404 file_not_found when the file is not attached to this order (or was deleted).
+// (GET /api/v1/admin/orders/{orderId}/files/{fileId})
+func (_ Unimplemented) AdminDownloadOrderFile(w http.ResponseWriter, r *http.Request, orderId string, fileId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment).
 // (POST /api/v1/admin/orders/{orderId}/refund)
 func (_ Unimplemented) RefundOrder(w http.ResponseWriter, r *http.Request, orderId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Move an order along the lifecycle (admin only). Only board transitions are accepted — paid/refunded flip exclusively through the payment pipeline, so draft/paid/refunded targets get 400 transition_not_allowed. Shipped requires a tracking number (400 tracking_required). Illegal edges get 409 order_wrong_state.
+// (POST /api/v1/admin/orders/{orderId}/transition)
+func (_ Unimplemented) AdminTransitionOrder(w http.ResponseWriter, r *http.Request, orderId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Active pricing config plus version history (admin only). The active snapshot is what prices new quotes right now — swaps are live, no deploy needed.
+// (GET /api/v1/admin/pricing-config)
+func (_ Unimplemented) AdminGetPricingConfig(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Publish a new pricing config snapshot (admin only): validated against the Go engine's structure (formula shape is not editable), persisted as the new active row, and swapped into the running process atomically. Existing quotes/orders keep their original snapshot.
+// (POST /api/v1/admin/pricing-config)
+func (_ Unimplemented) AdminReplacePricingConfig(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one historical pricing config snapshot (admin only)
+// (GET /api/v1/admin/pricing-config/{id})
+func (_ Unimplemented) AdminGetPricingConfigSnapshot(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// STEP manual-quote queue (admin only), newest first
+// (GET /api/v1/admin/step-requests)
+func (_ Unimplemented) AdminListStepRequests(w http.ResponseWriter, r *http.Request, params AdminListStepRequestsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download the STEP file attached to the request (admin only). 404 file_not_found when no file is attached or its bytes are not stored.
+// (GET /api/v1/admin/step-requests/{requestId}/file)
+func (_ Unimplemented) AdminDownloadStepRequestFile(w http.ResponseWriter, r *http.Request, requestId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Advance a STEP request to quoted or closed (admin only). Closed is terminal — any further change is 409 step_request_wrong_state.
+// (POST /api/v1/admin/step-requests/{requestId}/status)
+func (_ Unimplemented) AdminUpdateStepRequestStatus(w http.ResponseWriter, r *http.Request, requestId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -800,6 +1376,198 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// AdminLookupCustomer operation middleware
+func (siw *ServerInterfaceWrapper) AdminLookupCustomer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AdminLookupCustomerParams
+
+	// ------------- Required query parameter "email" -------------
+
+	if paramValue := r.URL.Query().Get("email"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "email"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "email", r.URL.Query(), &params.Email)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "email", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminLookupCustomer(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminEraseCustomer operation middleware
+func (siw *ServerInterfaceWrapper) AdminEraseCustomer(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminEraseCustomer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminExportCustomer operation middleware
+func (siw *ServerInterfaceWrapper) AdminExportCustomer(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminExportCustomer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetOpsStats operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetOpsStats(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetOpsToday operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetOpsToday(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetOpsToday(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminListOrders operation middleware
+func (siw *ServerInterfaceWrapper) AdminListOrders(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AdminListOrdersParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminListOrders(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetOrder operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", chi.URLParam(r, "orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetOrder(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminDownloadOrderFile operation middleware
+func (siw *ServerInterfaceWrapper) AdminDownloadOrderFile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", chi.URLParam(r, "orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "fileId" -------------
+	var fileId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fileId", chi.URLParam(r, "fileId"), &fileId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fileId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminDownloadOrderFile(w, r, orderId, fileId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RefundOrder operation middleware
 func (siw *ServerInterfaceWrapper) RefundOrder(w http.ResponseWriter, r *http.Request) {
 
@@ -816,6 +1584,161 @@ func (siw *ServerInterfaceWrapper) RefundOrder(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RefundOrder(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminTransitionOrder operation middleware
+func (siw *ServerInterfaceWrapper) AdminTransitionOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", chi.URLParam(r, "orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminTransitionOrder(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetPricingConfig operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetPricingConfig(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetPricingConfig(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminReplacePricingConfig operation middleware
+func (siw *ServerInterfaceWrapper) AdminReplacePricingConfig(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminReplacePricingConfig(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetPricingConfigSnapshot operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetPricingConfigSnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetPricingConfigSnapshot(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminListStepRequests operation middleware
+func (siw *ServerInterfaceWrapper) AdminListStepRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AdminListStepRequestsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminListStepRequests(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminDownloadStepRequestFile operation middleware
+func (siw *ServerInterfaceWrapper) AdminDownloadStepRequestFile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminDownloadStepRequestFile(w, r, requestId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminUpdateStepRequestStatus operation middleware
+func (siw *ServerInterfaceWrapper) AdminUpdateStepRequestStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminUpdateStepRequestStatus(w, r, requestId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1221,7 +2144,52 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/customers", wrapper.AdminLookupCustomer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/customers/erase", wrapper.AdminEraseCustomer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/customers/export", wrapper.AdminExportCustomer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/ops/stats", wrapper.AdminGetOpsStats)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/ops/today", wrapper.AdminGetOpsToday)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/orders", wrapper.AdminListOrders)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/orders/{orderId}", wrapper.AdminGetOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/orders/{orderId}/files/{fileId}", wrapper.AdminDownloadOrderFile)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/admin/orders/{orderId}/refund", wrapper.RefundOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/orders/{orderId}/transition", wrapper.AdminTransitionOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/pricing-config", wrapper.AdminGetPricingConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/pricing-config", wrapper.AdminReplacePricingConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/pricing-config/{id}", wrapper.AdminGetPricingConfigSnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/step-requests", wrapper.AdminListStepRequests)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/step-requests/{requestId}/file", wrapper.AdminDownloadStepRequestFile)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/step-requests/{requestId}/status", wrapper.AdminUpdateStepRequestStatus)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)
