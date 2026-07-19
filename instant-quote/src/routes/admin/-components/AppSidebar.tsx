@@ -4,10 +4,12 @@
 
 import {
   ChevronsUpDown,
+  Factory,
   FileBox,
   LayoutDashboard,
   LogOut,
   SlidersHorizontal,
+  Store,
   Users,
 } from 'lucide-react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
@@ -34,6 +36,7 @@ import {
 } from '@/components/ui/sidebar'
 import { api } from '@/lib/api/client'
 import { useLogout, useSession } from '@/lib/useSession'
+import { cn } from '@/lib/utils'
 
 const REFETCH_MS = 60_000
 
@@ -68,7 +71,11 @@ type NavItem = {
   icon: typeof LayoutDashboard
   exact?: boolean
   badge?: number
+  badgeClass?: string
 }
+
+const CHIP_PRIMARY = 'bg-primary text-primary-foreground'
+const CHIP_HIGHLIGHT = 'bg-highlight text-highlight-foreground'
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -84,12 +91,14 @@ export function AppSidebar() {
           icon: LayoutDashboard,
           exact: true,
           badge: mustShip,
+          badgeClass: CHIP_PRIMARY,
         },
         {
           to: '/admin/step-requests',
           label: 'STEP queue',
           icon: FileBox,
           badge: stepNew,
+          badgeClass: CHIP_HIGHLIGHT,
         },
       ],
     },
@@ -110,13 +119,21 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="border-b">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/admin">
-                <span className="font-mono text-xs font-bold tracking-widest uppercase">
-                  MICRO_FACTORY
+                <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md">
+                  <Factory className="size-4" />
+                </span>
+                <span className="flex min-w-0 flex-col items-start">
+                  <span className="font-mono text-xs font-bold tracking-widest uppercase">
+                    MICRO_FACTORY
+                  </span>
+                  <span className="text-muted-foreground font-mono text-[0.55rem] tracking-[0.2em] uppercase">
+                    back office
+                  </span>
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -126,7 +143,9 @@ export function AppSidebar() {
       <SidebarContent>
         {groups.map((group) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="font-mono text-[0.6rem] tracking-[0.16em] uppercase">
+              {group.label}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
@@ -135,6 +154,7 @@ export function AppSidebar() {
                       asChild
                       isActive={isActive(item)}
                       tooltip={item.label}
+                      className="data-[active=true]:bg-primary-tint data-[active=true]:font-semibold data-[active=true]:shadow-[inset_2px_0_0_0_var(--primary)]"
                     >
                       <Link
                         to={item.to}
@@ -145,7 +165,14 @@ export function AppSidebar() {
                       </Link>
                     </SidebarMenuButton>
                     {item.badge !== undefined && item.badge > 0 && (
-                      <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                      <SidebarMenuBadge
+                        className={cn(
+                          'rounded-full px-1.5 font-mono text-[0.6rem] font-bold',
+                          item.badgeClass,
+                        )}
+                      >
+                        {item.badge}
+                      </SidebarMenuBadge>
                     )}
                   </SidebarMenuItem>
                 ))}
@@ -154,7 +181,7 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <NavUser />
       </SidebarFooter>
     </Sidebar>
@@ -165,6 +192,8 @@ function NavUser() {
   const session = useSession()
   const logout = useLogout()
   const navigate = useNavigate()
+  const email = session.data?.email
+  const initials = (email?.slice(0, 2) ?? '··').toUpperCase()
 
   return (
     <SidebarMenu>
@@ -172,18 +201,25 @@ function NavUser() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg">
+              <span className="bg-secondary text-secondary-foreground flex size-8 shrink-0 items-center justify-center rounded-md font-mono text-[0.65rem] font-bold">
+                {initials}
+              </span>
               <span className="flex min-w-0 flex-1 flex-col items-start text-left">
-                <span className="text-muted-foreground text-[0.6rem] tracking-widest uppercase">
+                <span className="text-muted-foreground font-mono text-[0.55rem] tracking-[0.2em] uppercase">
                   admin
                 </span>
-                <span className="w-full truncate text-xs">
-                  {session.data?.email ?? '…'}
-                </span>
+                <span className="w-full truncate text-xs">{email ?? '…'}</span>
               </span>
-              <ChevronsUpDown className="ml-auto" />
+              <ChevronsUpDown className="text-muted-foreground ml-auto size-4 shrink-0" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-56">
+            <DropdownMenuItem asChild>
+              <Link to="/$locale" params={{ locale: 'pl' }}>
+                <Store />
+                View shop
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               disabled={logout.isPending}
               onSelect={() => {
