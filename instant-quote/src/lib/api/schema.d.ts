@@ -380,6 +380,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/admin/ops/stats': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Board KPI strip (admin only): today vs yesterday order counts and gross (Warsaw calendar), per-status counts, overdue open orders (engine-derived ship-by), new STEP requests, and a 14-day orders sparkline (oldest first, zero-filled, ending today). */
+    get: operations['adminGetOpsStats']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/admin/step-requests': {
     parameters: {
       query?: never
@@ -1035,6 +1052,26 @@ export interface components {
       /** @description Today in Europe/Warsaw, YYYY-MM-DD. */
       date: string
       orders: components['schemas']['AdminOrderSummary'][]
+    }
+    AdminOpsStats: {
+      /** @description Today in Europe/Warsaw, YYYY-MM-DD. */
+      date: string
+      todayOrders: number
+      todayGrossPln: number
+      yesterdayOrders: number
+      yesterdayGrossPln: number
+      byStatus: {
+        status: string
+        count: number
+      }[]
+      /** @description Open orders (paid/in_production) whose ship-by is past. */
+      overdue: number
+      stepNew: number
+      /** @description 14 entries, oldest first, ending today; zero-filled. */
+      daily: {
+        date: string
+        orders: number
+      }[]
     }
     AdminStepRequestList: {
       requests: components['schemas']['AdminStepRequestSummary'][]
@@ -1918,6 +1955,28 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AdminOpsToday']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminGetOpsStats: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Aggregated board stats */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminOpsStats']
         }
       }
       401: components['responses']['UnauthorizedError']

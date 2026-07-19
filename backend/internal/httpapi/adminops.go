@@ -6,10 +6,12 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/leadtime"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
@@ -55,6 +57,92 @@ func (s *server) AdminGetOpsToday(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, AdminOpsToday{
 		Date:   today.ISO(),
 		Orders: orders,
+	})
+}
+
+// AdminGetOpsStats feeds the board's KPI strip + status pills. Counts and
+// gross aggregate on the Warsaw calendar; overdue reuses the engine-derived
+// ship-by (no denormalized dates). Guarded by adminPrefixGuard.
+func (s *server) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Store == nil {
+		internalError(w, "store not configured")
+		return
+	}
+	ctx := r.Context()
+
+	statusRows, err := s.cfg.Store.AdminStatsByStatus(ctx)
+	if err != nil {
+		s.cfg.Logger.Error("ops stats: by-status failed", "err", err)
+		internalError(w, "failed to load stats")
+		return
+	}
+	dailyRows, err := s.cfg.Store.AdminStatsDaily(ctx)
+	if err != nil {
+		s.cfg.Logger.Error("ops stats: daily failed", "err", err)
+		internalError(w, "failed to load stats")
+		return
+	}
+	stepNew, err := s.cfg.Store.AdminCountNewStepRequests(ctx)
+	if err != nil {
+		s.cfg.Logger.Error("ops stats: step count failed", "err", err)
+		internalError(w, "failed to load stats")
+		return
+	}
+	openRows, err := s.cfg.Store.AdminListOpenOrders(ctx)
+	if err != nil {
+		s.cfg.Logger.Error("ops stats: open orders failed", "err", err)
+		internalError(w, "failed to load stats")
+		return
+	}
+
+	today := leadtime.Today(s.now())
+
+	overdue := 0
+	for _, row := range openRows {
+		if ship := s.shipBy(row.Status, row.LeadTimes, row.PaidAt); ship != nil && ship.Before(today) {
+			overdue++
+		}
+	}
+
+	byDay := make(map[string]store.AdminStatsDailyRow, len(dailyRows))
+	for _, row := range dailyRows {
+		byDay[row.Day] = row
+	}
+	base := time.Date(today.Y, time.Month(today.M), today.D, 0, 0, 0, 0, time.UTC)
+	daily := make([]struct {
+		Date   string `json:"date"`
+		Orders int    `json:"orders"`
+	}, 0, 14)
+	for i := 13; i >= 0; i-- {
+		iso := base.AddDate(0, 0, -i).Format("2006-01-02")
+		daily = append(daily, struct {
+			Date   string `json:"date"`
+			Orders int    `json:"orders"`
+		}{Date: iso, Orders: int(byDay[iso].Orders)})
+	}
+	yesterdayISO := base.AddDate(0, 0, -1).Format("2006-01-02")
+
+	byStatus := make([]struct {
+		Count  int    `json:"count"`
+		Status string `json:"status"`
+	}, 0, len(statusRows))
+	for _, row := range statusRows {
+		byStatus = append(byStatus, struct {
+			Count  int    `json:"count"`
+			Status string `json:"status"`
+		}{Count: int(row.Count), Status: row.Status})
+	}
+
+	writeJSON(w, http.StatusOK, AdminOpsStats{
+		Date:              today.ISO(),
+		TodayOrders:       int(byDay[today.ISO()].Orders),
+		TodayGrossPln:     float32(money.FromGrosze(int32(byDay[today.ISO()].GrossGrosze))),
+		YesterdayOrders:   int(byDay[yesterdayISO].Orders),
+		YesterdayGrossPln: float32(money.FromGrosze(int32(byDay[yesterdayISO].GrossGrosze))),
+		ByStatus:          byStatus,
+		Overdue:           overdue,
+		StepNew:           int(stepNew),
+		Daily:             daily,
 	})
 }
 

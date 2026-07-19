@@ -37,39 +37,41 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <header className="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                {isBoard ? (
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Board</BreadcrumbPage>
-                  </BreadcrumbItem>
-                ) : (
-                  <>
+      <div className="dark bg-background text-foreground min-h-screen">
+        <SidebarProvider defaultOpen={false}>
+          <AppSidebar />
+          <SidebarInset>
+            <header className="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {isBoard ? (
                     <BreadcrumbItem>
-                      <BreadcrumbLink asChild>
-                        <Link to="/admin">Board</Link>
-                      </BreadcrumbLink>
+                      <BreadcrumbPage>Board</BreadcrumbPage>
                     </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>
-                        {shortId ? `Order ${shortId}` : match?.title}
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
-          </header>
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
-        </SidebarInset>
-      </SidebarProvider>
+                  ) : (
+                    <>
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                          <Link to="/admin">Board</Link>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        <BreadcrumbPage>
+                          {shortId ? `Order ${shortId}` : match?.title}
+                        </BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </>
+                  )}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </header>
+            <main className="flex-1 p-4 sm:p-6">{children}</main>
+          </SidebarInset>
+        </SidebarProvider>
+      </div>
     </TooltipProvider>
   )
 }

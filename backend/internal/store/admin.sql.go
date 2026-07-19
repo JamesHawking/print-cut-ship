@@ -47,6 +47,17 @@ func (q *Queries) AdminCountInvoicesByEmail(ctx context.Context, email string) (
 	return column_1, err
 }
 
+const adminCountNewStepRequests = `-- name: AdminCountNewStepRequests :one
+SELECT count(*)::int FROM step_requests WHERE status = 'new'
+`
+
+func (q *Queries) AdminCountNewStepRequests(ctx context.Context) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountNewStepRequests)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const adminCountOrderItemsByRetention = `-- name: AdminCountOrderItemsByRetention :one
 SELECT count(*)::int FROM order_items oi JOIN orders o ON o.id = oi.order_id
 WHERE o.email = $1
@@ -433,6 +444,76 @@ func (q *Queries) AdminListOrdersByEmail(ctx context.Context, email string) ([]A
 			&i.LeadTimes,
 			&i.DfmCodes,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const adminStatsByStatus = `-- name: AdminStatsByStatus :many
+SELECT o.status, count(*)::int AS count
+FROM orders o
+GROUP BY o.status
+`
+
+type AdminStatsByStatusRow struct {
+	Status string
+	Count  int32
+}
+
+// Board pills: every order status with its count.
+func (q *Queries) AdminStatsByStatus(ctx context.Context) ([]AdminStatsByStatusRow, error) {
+	rows, err := q.db.Query(ctx, adminStatsByStatus)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AdminStatsByStatusRow
+	for rows.Next() {
+		var i AdminStatsByStatusRow
+		if err := rows.Scan(&i.Status, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const adminStatsDaily = `-- name: AdminStatsDaily :many
+SELECT to_char(o.created_at AT TIME ZONE 'Europe/Warsaw', 'YYYY-MM-DD') AS day,
+       count(*)::int AS orders,
+       coalesce(sum(o.gross_total_grosze), 0)::bigint AS gross_grosze
+FROM orders o
+WHERE o.created_at >= ((now() AT TIME ZONE 'Europe/Warsaw')::date - 14)::timestamptz
+GROUP BY 1
+ORDER BY 1
+`
+
+type AdminStatsDailyRow struct {
+	Day         string
+	Orders      int32
+	GrossGrosze int64
+}
+
+// KPI strip input: per-day order counts + gross on the Warsaw calendar,
+// covering today and the 14 lookback days (the Go side zero-fills).
+func (q *Queries) AdminStatsDaily(ctx context.Context) ([]AdminStatsDailyRow, error) {
+	rows, err := q.db.Query(ctx, adminStatsDaily)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AdminStatsDailyRow
+	for rows.Next() {
+		var i AdminStatsDailyRow
+		if err := rows.Scan(&i.Day, &i.Orders, &i.GrossGrosze); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

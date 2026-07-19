@@ -43,6 +43,7 @@ var adminRoutes = []struct {
 	{http.MethodPost, "/api/v1/admin/customers/export"},
 	{http.MethodPost, "/api/v1/admin/customers/erase"},
 	{http.MethodGet, "/api/v1/admin/ops/today"},
+	{http.MethodGet, "/api/v1/admin/ops/stats"},
 	{http.MethodGet, "/api/v1/admin/step-requests"},
 	{http.MethodPost, "/api/v1/admin/step-requests/STEP-DEADBEEF/status"},
 	{http.MethodGet, "/api/v1/admin/step-requests/STEP-DEADBEEF/file"},
@@ -734,6 +735,69 @@ func TestAdminOpsToday(t *testing.T) {
 	}
 	if got[dueToday].ShipBy == nil || *got[dueToday].ShipBy != "2026-07-15" || got[dueToday].Overdue != nil {
 		t.Fatalf("due-today wrong: %+v", got[dueToday])
+	}
+}
+
+func TestAdminOpsStats(t *testing.T) {
+	// Fixture clock: Wednesday 2026-07-15 10:00 Warsaw (matches ops/today).
+	fixed := time.Date(2026, 7, 15, 8, 0, 0, 0, time.UTC)
+	h, st, pool, mailer := setupOpsTest(t, fixed)
+	admin := makeAdmin(t, pool, requestCodeAndVerify(t, h, mailer, "stats@example.com"), "stats@example.com")
+	ctx := context.Background()
+
+	paidOrder := func(email, lead string, paidAt time.Time) string {
+		t.Helper()
+		q := submitTestQuoteLead(t, h, st, email, lead)
+		o := createTestOrder(t, h, q, email, "")
+		payTestOrder(t, h, o.OrderId)
+		if _, err := pool.Exec(ctx, `UPDATE orders SET paid_at = $1, created_at = $1 WHERE short_id = $2`, paidAt, o.OrderId); err != nil {
+			t.Fatal(err)
+		}
+		return o.OrderId
+	}
+
+	// Two orders today, one overdue open order (standard = 5bd:
+	// paid 07-07 → ship 07-14 < today). created_at pinned alongside
+	// paid_at because the daily aggregation groups by it.
+	paidOrder("s1@example.com", "standard", fixed)
+	paidOrder("s2@example.com", "standard", fixed)
+	paidOrder("s3@example.com", "standard", time.Date(2026, 7, 7, 9, 0, 0, 0, time.UTC))
+
+	rec := doJSONCookies(t, h, http.MethodGet, "/api/v1/admin/ops/stats", "", admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("stats status %d: %s", rec.Code, rec.Body)
+	}
+	var res AdminOpsStats
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if res.Date != "2026-07-15" {
+		t.Fatalf("date %q, want 2026-07-15", res.Date)
+	}
+	if res.TodayOrders != 2 {
+		t.Fatalf("todayOrders %d, want 2", res.TodayOrders)
+	}
+	if res.TodayGrossPln <= 0 {
+		t.Fatalf("todayGrossPln %v, want positive", res.TodayGrossPln)
+	}
+	if res.YesterdayOrders != 0 {
+		t.Fatalf("yesterdayOrders %d, want 0", res.YesterdayOrders)
+	}
+	if res.Overdue != 1 {
+		t.Fatalf("overdue %d, want 1", res.Overdue)
+	}
+	counts := map[string]int{}
+	for _, sc := range res.ByStatus {
+		counts[sc.Status] = sc.Count
+	}
+	if counts["paid"] != 3 {
+		t.Fatalf("byStatus %+v, want paid=3", res.ByStatus)
+	}
+	if len(res.Daily) != 14 || res.Daily[13].Date != "2026-07-15" || res.Daily[0].Date != "2026-07-02" {
+		t.Fatalf("daily sparkline wrong: %+v", res.Daily)
+	}
+	if res.Daily[13].Orders != 2 || res.Daily[5].Orders != 1 {
+		t.Fatalf("sparkline wrong: %+v", res.Daily)
 	}
 }
 

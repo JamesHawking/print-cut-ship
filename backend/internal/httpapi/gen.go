@@ -291,6 +291,31 @@ type AdminListOrdersResponse struct {
 	Total  int                 `json:"total"`
 }
 
+// AdminOpsStats defines model for AdminOpsStats.
+type AdminOpsStats struct {
+	ByStatus []struct {
+		Count  int    `json:"count"`
+		Status string `json:"status"`
+	} `json:"byStatus"`
+
+	// Daily 14 entries, oldest first, ending today; zero-filled.
+	Daily []struct {
+		Date   string `json:"date"`
+		Orders int    `json:"orders"`
+	} `json:"daily"`
+
+	// Date Today in Europe/Warsaw, YYYY-MM-DD.
+	Date string `json:"date"`
+
+	// Overdue Open orders (paid/in_production) whose ship-by is past.
+	Overdue           int     `json:"overdue"`
+	StepNew           int     `json:"stepNew"`
+	TodayGrossPln     float32 `json:"todayGrossPln"`
+	TodayOrders       int     `json:"todayOrders"`
+	YesterdayGrossPln float32 `json:"yesterdayGrossPln"`
+	YesterdayOrders   int     `json:"yesterdayOrders"`
+}
+
 // AdminOpsToday defines model for AdminOpsToday.
 type AdminOpsToday struct {
 	// Date Today in Europe/Warsaw, YYYY-MM-DD.
@@ -1047,6 +1072,9 @@ type ServerInterface interface {
 	// GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob.
 	// (POST /api/v1/admin/customers/export)
 	AdminExportCustomer(w http.ResponseWriter, r *http.Request)
+	// Board KPI strip (admin only): today vs yesterday order counts and gross (Warsaw calendar), per-status counts, overdue open orders (engine-derived ship-by), new STEP requests, and a 14-day orders sparkline (oldest first, zero-filled, ending today).
+	// (GET /api/v1/admin/ops/stats)
+	AdminGetOpsStats(w http.ResponseWriter, r *http.Request)
 	// "What must ship today" (admin only): paid and in_production orders whose derived ship-by date is today or earlier (Warsaw business calendar), soonest first. Ship dates recompute from the lead-time engine with paid_at as the anchor — nothing is denormalized.
 	// (GET /api/v1/admin/ops/today)
 	AdminGetOpsToday(w http.ResponseWriter, r *http.Request)
@@ -1155,6 +1183,12 @@ func (_ Unimplemented) AdminEraseCustomer(w http.ResponseWriter, r *http.Request
 // GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob.
 // (POST /api/v1/admin/customers/export)
 func (_ Unimplemented) AdminExportCustomer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Board KPI strip (admin only): today vs yesterday order counts and gross (Warsaw calendar), per-status counts, overdue open orders (engine-derived ship-by), new STEP requests, and a 14-day orders sparkline (oldest first, zero-filled, ending today).
+// (GET /api/v1/admin/ops/stats)
+func (_ Unimplemented) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1394,6 +1428,20 @@ func (siw *ServerInterfaceWrapper) AdminExportCustomer(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AdminExportCustomer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetOpsStats operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetOpsStats(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2102,6 +2150,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/admin/customers/export", wrapper.AdminExportCustomer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/ops/stats", wrapper.AdminGetOpsStats)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/ops/today", wrapper.AdminGetOpsToday)

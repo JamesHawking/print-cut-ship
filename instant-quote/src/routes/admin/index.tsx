@@ -8,22 +8,19 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import {
   AlertTriangle,
   CheckCircle2,
+  FileBox,
   Inbox,
   Package,
+  TrendingDown,
+  TrendingUp,
   Truck,
+  Wallet,
 } from 'lucide-react'
 
 import { STATUS_VARIANT, errorCode, formatShipBy } from './-components/util'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -51,18 +48,9 @@ export const Route = createFileRoute('/admin/')({
 type AdminOrderSummary = components['schemas']['AdminOrderSummary']
 type OrderStatus = components['schemas']['OrderStatus']
 type OpsToday = components['schemas']['AdminOpsToday']
+type OpsStats = components['schemas']['AdminOpsStats']
 
 const PAGE_SIZE = 50
-const STATUS_OPTIONS: Array<OrderStatus | 'all'> = [
-  'all',
-  'draft',
-  'paid',
-  'in_production',
-  'shipped',
-  'delivered',
-  'cancelled',
-  'refunded',
-]
 
 function Board() {
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
@@ -72,6 +60,15 @@ function Board() {
     queryKey: ['admin', 'ops', 'today'],
     queryFn: async () => {
       const res = await api.GET('/api/v1/admin/ops/today')
+      if (!res.data) throw new ApiRequestError(res.error)
+      return res.data
+    },
+  })
+
+  const stats = useQuery({
+    queryKey: ['admin', 'ops', 'stats'],
+    queryFn: async () => {
+      const res = await api.GET('/api/v1/admin/ops/stats')
       if (!res.data) throw new ApiRequestError(res.error)
       return res.data
     },
@@ -96,27 +93,18 @@ function Board() {
 
   return (
     <div className="flex flex-col gap-5">
+      <KpiStrip stats={stats} />
       <OpsCard ops={ops} />
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-xl font-extrabold tracking-tight">Orders</h1>
-        <Select
-          value={status}
-          onValueChange={(v) => {
-            setStatus(v as OrderStatus | 'all')
+        <StatusPills
+          stats={stats.data}
+          active={status}
+          onChange={(s) => {
+            setStatus(s)
             setOffset(0)
           }}
-        >
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt === 'all' ? 'All statuses' : opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </div>
 
       {isPending ? (
@@ -292,6 +280,234 @@ function EmptyState({ label }: { label: string }) {
     <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-12">
       <Inbox className="text-muted-foreground size-6" />
       <p className="text-muted-foreground text-sm">{label}</p>
+    </div>
+  )
+}
+
+// KPI strip (ops-console pattern): today vs yesterday deltas, overdue
+// attention card, STEP queue link, 14-day sparkline on the orders card.
+function KpiStrip({ stats }: { stats: UseQueryResult<OpsStats, Error> }) {
+  if (stats.isPending) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-28 w-full" />
+        ))}
+      </div>
+    )
+  }
+  if (stats.error || !stats.data) {
+    return (
+      <p className="text-destructive font-mono text-xs">
+        {errorCode(stats.error)}
+      </p>
+    )
+  }
+  const s = stats.data
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiCard
+        icon={<Package className="text-muted-foreground size-4" />}
+        label="Orders today"
+        value={String(s.todayOrders)}
+        delta={<Delta now={s.todayOrders} prev={s.yesterdayOrders} />}
+        spark={<Sparkline values={s.daily.map((d) => d.orders)} />}
+      />
+      <KpiCard
+        icon={<Wallet className="text-muted-foreground size-4" />}
+        label="Gross today"
+        value={formatPln(s.todayGrossPln, 'en')}
+        delta={<Delta now={s.todayGrossPln} prev={s.yesterdayGrossPln} />}
+      />
+      <KpiCard
+        icon={
+          <AlertTriangle
+            className={cn(
+              'size-4',
+              s.overdue > 0 ? 'text-destructive' : 'text-muted-foreground',
+            )}
+          />
+        }
+        label="Overdue"
+        value={String(s.overdue)}
+        tone={s.overdue > 0 ? 'destructive' : undefined}
+        footer={
+          s.overdue === 0 ? (
+            <span className="text-signal font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+              on schedule
+            </span>
+          ) : (
+            <span className="text-destructive font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+              ship-by passed
+            </span>
+          )
+        }
+      />
+      <Link to="/admin/step-requests" className="block">
+        <KpiCard
+          icon={<FileBox className="text-muted-foreground size-4" />}
+          label="New STEP requests"
+          value={String(s.stepNew)}
+          footer={
+            <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+              open queue →
+            </span>
+          }
+        />
+      </Link>
+    </div>
+  )
+}
+
+function KpiCard({
+  icon,
+  label,
+  value,
+  delta,
+  spark,
+  footer,
+  tone,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  delta?: React.ReactNode
+  spark?: React.ReactNode
+  footer?: React.ReactNode
+  tone?: 'destructive'
+}) {
+  return (
+    <Card
+      className={cn(
+        'h-full gap-0 py-4',
+        tone === 'destructive' && 'border-destructive/40 bg-destructive/5',
+      )}
+    >
+      <CardHeader className="px-4">
+        <CardTitle className="flex items-center gap-2 font-mono text-[0.6rem] font-normal tracking-[0.16em] uppercase">
+          {icon}
+          {label}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2 px-4">
+        <div className="flex items-end justify-between gap-2">
+          <span className="text-2xl font-extrabold tracking-tight tabular-nums">
+            {value}
+          </span>
+          {spark}
+        </div>
+        {(delta ?? footer) && (
+          <div className="flex items-center gap-2">{delta ?? footer}</div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function Delta({ now, prev }: { now: number; prev: number }) {
+  if (prev === 0) {
+    return now === 0 ? (
+      <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+        flat vs yesterday
+      </span>
+    ) : (
+      <span className="text-signal inline-flex items-center gap-1 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+        <TrendingUp className="size-3" /> new vs yesterday
+      </span>
+    )
+  }
+  const pct = Math.round(((now - prev) / prev) * 100)
+  if (pct === 0) {
+    return (
+      <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+        flat vs yesterday
+      </span>
+    )
+  }
+  const up = pct > 0
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 font-mono text-[0.65rem] tracking-[0.14em] uppercase',
+        up ? 'text-signal' : 'text-destructive',
+      )}
+    >
+      {up ? (
+        <TrendingUp className="size-3" />
+      ) : (
+        <TrendingDown className="size-3" />
+      )}
+      {up ? '+' : ''}
+      {pct}% vs yesterday
+    </span>
+  )
+}
+
+function Sparkline({ values }: { values: Array<number> }) {
+  const max = Math.max(1, ...values)
+  return (
+    <span className="flex h-8 items-end gap-0.5" aria-hidden>
+      {values.map((v, i) => (
+        <span
+          key={i}
+          className={cn(
+            'w-1.5 rounded-sm',
+            i === values.length - 1 ? 'bg-primary' : 'bg-muted-foreground/30',
+          )}
+          style={{ height: `${Math.max(8, (v / max) * 100)}%` }}
+        />
+      ))}
+    </span>
+  )
+}
+
+// Count-pill status filter (ops-console pattern) fed by the stats endpoint —
+// zero-count statuses stay hidden unless they are the active filter.
+function StatusPills({
+  stats,
+  active,
+  onChange,
+}: {
+  stats: OpsStats | undefined
+  active: OrderStatus | 'all'
+  onChange: (s: OrderStatus | 'all') => void
+}) {
+  const counts = new Map(
+    (stats?.byStatus ?? []).map((s) => [s.status, s.count]),
+  )
+  const total = [...counts.values()].reduce((a, b) => a + b, 0)
+  const statuses = (stats?.byStatus ?? [])
+    .map((s) => s.status as OrderStatus)
+    .filter((s) => (counts.get(s) ?? 0) > 0 || s === active)
+
+  const pill = (key: OrderStatus | 'all', label: string, count: number) => (
+    <button
+      key={key}
+      type="button"
+      onClick={() => onChange(key)}
+      className={cn(
+        'inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[0.65rem] tracking-[0.1em] uppercase transition-colors',
+        active === key
+          ? 'bg-primary-tint border-primary/40 font-bold'
+          : 'text-muted-foreground hover:text-foreground hover:border-foreground/30',
+      )}
+    >
+      {label}
+      <span
+        className={cn(
+          'rounded-full px-1.5 tabular-nums',
+          active === key ? 'bg-primary text-primary-foreground' : 'bg-muted',
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  )
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {pill('all', 'All', total)}
+      {statuses.map((s) => pill(s, s, counts.get(s) ?? 0))}
     </div>
   )
 }

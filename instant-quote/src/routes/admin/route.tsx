@@ -27,6 +27,15 @@ function AdminLayout() {
     }
   }, [session.isError, session.data, navigate])
 
+  // Ops-console dark theme (plan 07 UI pass): scoped to /admin by toggling
+  // the root class so portal-mounted chrome (dialogs, dropdowns, tooltips)
+  // inherits it too; restored on unmount. Client-only — the gate above
+  // already keeps this tree off the SSR path.
+  useEffect(() => {
+    document.documentElement.classList.add('dark')
+    return () => document.documentElement.classList.remove('dark')
+  }, [])
+
   if (!session.data || session.data.role !== 'admin') return null
 
   return (

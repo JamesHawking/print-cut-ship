@@ -569,6 +569,27 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /api/v1/admin/ops/stats:
+    get:
+      operationId: adminGetOpsStats
+      tags: [admin]
+      summary: >-
+        Board KPI strip (admin only): today vs yesterday order counts and
+        gross (Warsaw calendar), per-status counts, overdue open orders
+        (engine-derived ship-by), new STEP requests, and a 14-day orders
+        sparkline (oldest first, zero-filled, ending today).
+      responses:
+        '200':
+          description: Aggregated board stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOpsStats'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /api/v1/admin/step-requests:
     get:
       operationId: adminListStepRequests
@@ -1627,6 +1648,57 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminOrderSummary'
+
+    AdminOpsStats:
+      type: object
+      required:
+        - date
+        - todayOrders
+        - todayGrossPln
+        - yesterdayOrders
+        - yesterdayGrossPln
+        - byStatus
+        - overdue
+        - stepNew
+        - daily
+      properties:
+        date:
+          type: string
+          description: Today in Europe/Warsaw, YYYY-MM-DD.
+        todayOrders:
+          type: integer
+        todayGrossPln:
+          type: number
+        yesterdayOrders:
+          type: integer
+        yesterdayGrossPln:
+          type: number
+        byStatus:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status:
+                type: string
+              count:
+                type: integer
+        overdue:
+          type: integer
+          description: Open orders (paid/in_production) whose ship-by is past.
+        stepNew:
+          type: integer
+        daily:
+          type: array
+          description: 14 entries, oldest first, ending today; zero-filled.
+          items:
+            type: object
+            required: [date, orders]
+            properties:
+              date:
+                type: string
+              orders:
+                type: integer
 
     AdminStepRequestList:
       type: object
