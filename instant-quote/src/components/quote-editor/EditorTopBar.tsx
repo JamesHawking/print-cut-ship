@@ -20,6 +20,8 @@ interface Props {
   onOrderClick: () => void
   /** ViewportToolbar, rendered centered; null when no part is on stage. */
   toolbar: ReactNode
+  /** ViewSwitch — editor vs simplified layout. */
+  viewSwitch: ReactNode
 }
 
 /**
@@ -36,6 +38,7 @@ export function EditorTopBar({
   orderableCount,
   onOrderClick,
   toolbar,
+  viewSwitch,
 }: Props) {
   const strings = useStrings()
   const locale = useLocale()
@@ -88,6 +91,7 @@ export function EditorTopBar({
       {toolbar && <div className="flex flex-1 justify-center">{toolbar}</div>}
 
       <div className="flex shrink-0 items-center gap-3">
+        {viewSwitch}
         {totals && orderableCount > 0 && (
           <>
             <span

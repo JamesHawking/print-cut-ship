@@ -12,6 +12,7 @@ import { PartsOutliner } from './PartsOutliner'
 import { StatusStrip } from './StatusStrip'
 import { ViewportCanvas, type CanvasStatus } from './ViewportCanvas'
 import { ViewportToolbar } from './ViewportToolbar'
+import { ViewSwitch, type QuoteView } from './ViewSwitch'
 
 interface Props {
   className?: string
@@ -43,6 +44,8 @@ interface Props {
   onUrl: (url: string) => void
   urlPending: boolean
   onOrderClick: () => void
+  view: QuoteView
+  onViewChange: (view: QuoteView) => void
 }
 
 /**
@@ -79,6 +82,8 @@ export function EditorShell({
   onUrl,
   urlPending,
   onOrderClick,
+  view,
+  onViewChange,
 }: Props) {
   const [gridVisible, setGridVisible] = useState(true)
   const [autoRotate, setAutoRotate] = useState(false)
@@ -127,6 +132,7 @@ export function EditorShell({
         recalculating={recalculating}
         orderableCount={orderableEntries.length}
         onOrderClick={onOrderClick}
+        viewSwitch={<ViewSwitch view={view} onChange={onViewChange} />}
         toolbar={
           status === 'ready' ? (
             <ViewportToolbar

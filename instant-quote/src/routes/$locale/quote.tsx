@@ -12,6 +12,10 @@ import { ViewerPane } from '@/components/ViewerPane'
 import { ViewerFallback } from '@/components/ViewerFallback'
 import { EditorShell } from '@/components/quote-editor/EditorShell'
 import { QuoteColumnContent } from '@/components/quote-editor/QuoteColumnContent'
+import {
+  ViewSwitch,
+  type QuoteView,
+} from '@/components/quote-editor/ViewSwitch'
 import { Button } from '@/components/ui/button'
 
 import { useParts, type Part } from '@/hooks/useParts'
@@ -37,6 +41,9 @@ import {
   useStrings,
 } from '@/lib/i18n'
 import { seoHead } from '@/lib/seo'
+
+/** localStorage key for the desktop editor/simplified view preference. */
+const VIEW_STORAGE_KEY = 'instant-quote:quote-view'
 
 export const Route = createFileRoute('/$locale/quote')({
   head: ({ params, match }) => {
@@ -72,6 +79,20 @@ function QuoteWorkspace() {
   // Desktop (≥lg) gets the editor shell; below lg the shipped mobile layout
   // renders. Gates which breakpoint owns the R3F canvas + shortcuts.
   const isDesktop = useMediaQuery('(min-width: 1024px)', true)
+  // Desktop users can fall back to the simplified two-column layout; the
+  // choice persists. Read post-hydration to keep SSR output stable.
+  const [view, setViewState] = useState<QuoteView>('editor')
+  useEffect(() => {
+    const saved = window.localStorage.getItem(VIEW_STORAGE_KEY)
+    if (saved === 'editor' || saved === 'simple') setViewState(saved)
+  }, [])
+  function setView(next: QuoteView) {
+    setViewState(next)
+    window.localStorage.setItem(VIEW_STORAGE_KEY, next)
+  }
+  // Which tree owns the live canvas/shortcuts right now.
+  const editorActive = isDesktop && view === 'editor'
+  const simplifiedActive = !isDesktop || view === 'simple'
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -239,13 +260,21 @@ function QuoteWorkspace() {
 
   return (
     <>
-      {/* Mobile/tablet (<lg): the shipped layout, untouched. */}
-      <div className="lg:hidden">
+      {/* Mobile/tablet always, desktop when the user picks the simplified
+          view: the shipped pre-editor layout, untouched. */}
+      <div className={view === 'simple' ? undefined : 'lg:hidden'}>
         {parts.length === 0 ? (
           // No parts — a refresh, a deep link, or the last part removed. Stay
           // here with a welcoming intake instead of bouncing to the landing.
           <>
-            <SiteHeader variant="quote" />
+            <SiteHeader
+              variant="quote"
+              viewSwitch={
+                <span className="hidden lg:block">
+                  <ViewSwitch view={view} onChange={setView} />
+                </span>
+              }
+            />
             <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 py-10 sm:px-6">
               <QuoteEmptyState
                 onFiles={handleMoreFiles}
@@ -263,7 +292,15 @@ function QuoteWorkspace() {
           </>
         ) : (
           <>
-            <SiteHeader variant="quote" summary={summary} />
+            <SiteHeader
+              variant="quote"
+              summary={summary}
+              viewSwitch={
+                <span className="hidden lg:block">
+                  <ViewSwitch view={view} onChange={setView} />
+                </span>
+              }
+            />
             <main
               className={`mx-auto min-h-screen w-full max-w-6xl px-4 py-10 sm:px-6${
                 totals && orderableEntries.length > 0 ? 'pb-24 lg:pb-10' : ''
@@ -287,7 +324,7 @@ function QuoteWorkspace() {
                       >
                         <ViewerPane
                           key={selectedPart.id}
-                          enabled={!isDesktop}
+                          enabled={simplifiedActive}
                           positions={selectedPart.positions}
                           bboxMm={selectedPart.metrics.bboxMm}
                         />
@@ -395,10 +432,11 @@ function QuoteWorkspace() {
         )}
       </div>
 
-      {/* Desktop (≥lg): the editor shell — full-bleed viewport, outliner,
-          inspector, top bar. Same state, different presentation. */}
+      {/* Desktop (≥lg) with the editor view active: the editor shell —
+          full-bleed viewport, outliner, inspector, top bar. Same state,
+          different presentation. */}
       <EditorShell
-        className="hidden lg:flex"
+        className={view === 'editor' ? 'hidden lg:flex' : 'hidden'}
         parts={parts}
         selectedPart={selectedPart}
         selectedQuote={selectedQuote}
@@ -417,7 +455,7 @@ function QuoteWorkspace() {
         priceQueryIsError={priceQuery.isError}
         priceQueryError={priceQuery.error}
         onRefetchPrice={() => void priceQuery.refetch()}
-        viewerEnabled={isDesktop}
+        viewerEnabled={editorActive}
         onSelectPart={setSelectedId}
         onRemovePart={remove}
         onRetryUpload={retryUpload}
@@ -426,6 +464,8 @@ function QuoteWorkspace() {
         onUrl={handleMakerworldUrl}
         urlPending={mwPending}
         onOrderClick={handleOrderClick}
+        view={view}
+        onViewChange={setView}
       />
 
       {totals && (

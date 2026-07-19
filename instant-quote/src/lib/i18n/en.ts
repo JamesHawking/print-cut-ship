@@ -520,6 +520,8 @@ export const en = {
     inspectorEmpty: 'Select a part to configure it.',
     inspectorLabel: 'Configuration & order',
     backHome: 'Main page',
+    viewEditor: 'Editor',
+    viewSimple: 'Simplified',
     viewFront: 'Front',
     viewTop: 'Top',
     viewRight: 'Right',

@@ -544,6 +544,8 @@ export const pl = {
     inspectorEmpty: 'Wybierz część, by ją skonfigurować.',
     inspectorLabel: 'Konfiguracja i zamówienie',
     backHome: 'Strona główna',
+    viewEditor: 'Edytor',
+    viewSimple: 'Uproszczony',
     viewFront: 'Przód',
     viewTop: 'Góra',
     viewRight: 'Prawo',

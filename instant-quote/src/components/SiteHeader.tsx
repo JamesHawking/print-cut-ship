@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useLocation, useParams } from '@tanstack/react-router'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { Menu, PackageSearch, X } from 'lucide-react'
@@ -45,9 +45,12 @@ export interface QuoteSummary {
 export function SiteHeader({
   variant,
   summary,
+  viewSwitch,
 }: {
   variant: 'landing' | 'quote'
   summary?: QuoteSummary
+  /** Desktop-only editor/simplified toggle for the quote workspace. */
+  viewSwitch?: ReactNode
 }) {
   const strings = useStrings()
   const locale = useLocale()
@@ -204,6 +207,7 @@ export function SiteHeader({
               <span className="text-muted-foreground hidden sm:inline">
                 {strings.hero.status}
               </span>
+              {viewSwitch}
               <LocaleSwitcher />
               <NewQuoteReset />
             </nav>
