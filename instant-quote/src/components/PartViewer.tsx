@@ -32,7 +32,7 @@ export default function PartViewer({
   const locale = useLocale()
   // Chrome-less: the surrounding ViewerFrame owns border and radius.
   return (
-    <div className="bg-muted/30 relative h-full min-h-64 overflow-hidden">
+    <div className="bg-muted/30 relative h-full overflow-hidden">
       <Canvas
         camera={{ position: [1.5, 1.2, 1.8], fov: 45 }}
         dpr={[1, 2]}
@@ -49,7 +49,9 @@ export default function PartViewer({
         </Bounds>
         <OrbitControls makeDefault enablePan enableZoom enableRotate />
       </Canvas>
-      <div className="bg-background/80 text-foreground pointer-events-none absolute bottom-2 left-2 rounded-md border px-2 py-1 text-xs font-medium tabular-nums backdrop-blur">
+      {/* In-canvas dims badge — desktop only; on mobile the metrics strip
+          directly below carries the same value. */}
+      <div className="bg-background/80 text-foreground pointer-events-none absolute bottom-2 left-2 rounded-md border px-2 py-1 text-xs font-medium tabular-nums backdrop-blur max-sm:hidden">
         {formatDims(bboxMm, locale)}
       </div>
     </div>

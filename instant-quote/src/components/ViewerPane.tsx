@@ -33,15 +33,13 @@ export function ViewerPane({
   }, [])
 
   if (!mounted) {
-    return <Skeleton className="h-full min-h-64 w-full rounded-xl" />
+    return <Skeleton className="h-full w-full rounded-xl" />
   }
   if (!webgl) {
     return <ViewerFallback bboxMm={bboxMm} />
   }
   return (
-    <Suspense
-      fallback={<Skeleton className="h-full min-h-64 w-full rounded-xl" />}
-    >
+    <Suspense fallback={<Skeleton className="h-full w-full rounded-xl" />}>
       <PartViewer positions={positions} bboxMm={bboxMm} />
     </Suspense>
   )

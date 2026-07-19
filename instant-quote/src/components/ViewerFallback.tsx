@@ -10,7 +10,7 @@ export function ViewerFallback({
   const strings = useStrings()
   const locale = useLocale()
   return (
-    <div className="bg-muted/40 text-muted-foreground flex h-full min-h-64 flex-col items-center justify-center gap-2 rounded-xl border p-6 text-center">
+    <div className="bg-muted/40 text-muted-foreground flex h-full flex-col items-center justify-center gap-2 rounded-xl border p-6 text-center">
       <Box className="size-8" />
       <p className="text-sm">{strings.errors.webglMissing}</p>
       {bboxMm && (
