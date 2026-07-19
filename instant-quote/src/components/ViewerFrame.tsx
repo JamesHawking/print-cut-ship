@@ -37,13 +37,13 @@ export function ViewerFrame({
           {ext}
         </span>
       </div>
-      <div className="relative h-[340px]">
+      <div className="relative h-[240px] sm:h-[340px]">
         {children}
         <CornerMarks />
       </div>
       {metrics && (
-        <dl className="bg-border grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-px border-t">
-          <div className="bg-card px-4 py-3">
+        <dl className="bg-border grid grid-cols-2 gap-px border-t sm:grid-cols-3">
+          <div className="bg-card col-span-2 px-3 py-2.5 sm:col-span-1 sm:px-4 sm:py-3">
             <dt className="font-mono text-xs leading-none font-bold whitespace-nowrap tabular-nums">
               {formatDims(metrics.bboxMm, locale)}
             </dt>
@@ -51,7 +51,7 @@ export function ViewerFrame({
               {strings.viewer.boundingBox}
             </dd>
           </div>
-          <div className="bg-card px-4 py-3">
+          <div className="bg-card px-3 py-2.5 sm:px-4 sm:py-3">
             <dt className="font-mono text-xs leading-none font-bold tabular-nums">
               {formatVolume(
                 quote?.billableVolumeCm3 ?? metrics.volumeCm3,
@@ -62,7 +62,7 @@ export function ViewerFrame({
               {strings.viewer.billableVolume}
             </dd>
           </div>
-          <div className="bg-card px-4 py-3">
+          <div className="bg-card px-3 py-2.5 sm:px-4 sm:py-3">
             <dt className="font-mono text-xs leading-none font-bold tabular-nums">
               {formatInt(metrics.triangleCount, locale)}
             </dt>

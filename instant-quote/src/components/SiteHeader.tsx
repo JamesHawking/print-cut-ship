@@ -290,8 +290,11 @@ export function SiteHeader({
             </span>
             <span className="text-muted-foreground truncate">
               {summary.materialLabel} · {summary.leadLabel}
-              {summary.shipLabel &&
-                ` · ${strings.process.ships} ${summary.shipLabel}`}
+              {summary.shipLabel && (
+                <span className="max-sm:hidden">
+                  {` · ${strings.process.ships} ${summary.shipLabel}`}
+                </span>
+              )}
             </span>
             <span className="text-foreground ml-auto font-bold tabular-nums">
               {formatPln(summary.grossTotalPln, locale)}

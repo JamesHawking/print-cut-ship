@@ -288,7 +288,7 @@ function QuoteWorkspace() {
               ) : selectedPart?.status === 'error' ? (
                 <ViewerFallback />
               ) : (
-                <div className="bg-muted/30 flex h-full min-h-[340px] items-center justify-center rounded-lg border">
+                <div className="bg-muted/30 flex h-full min-h-[240px] items-center justify-center rounded-lg border sm:min-h-[340px]">
                   <p className="text-muted-foreground text-sm">
                     {strings.dropzone.parsing}
                   </p>
