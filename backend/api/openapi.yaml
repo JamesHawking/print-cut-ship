@@ -548,6 +548,110 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /api/v1/admin/ops/today:
+    get:
+      operationId: adminGetOpsToday
+      tags: [admin]
+      summary: >-
+        "What must ship today" (admin only): paid and in_production orders
+        whose derived ship-by date is today or earlier (Warsaw business
+        calendar), soonest first. Ship dates recompute from the lead-time
+        engine with paid_at as the anchor — nothing is denormalized.
+      responses:
+        '200':
+          description: Warsaw today plus the due orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOpsToday'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/step-requests:
+    get:
+      operationId: adminListStepRequests
+      tags: [admin]
+      summary: STEP manual-quote queue (admin only), newest first
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [new, quoted, closed]
+      responses:
+        '200':
+          description: Queue entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStepRequestList'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/step-requests/{requestId}/status:
+    post:
+      operationId: adminUpdateStepRequestStatus
+      tags: [admin]
+      summary: >-
+        Advance a STEP request to quoted or closed (admin only). Closed is
+        terminal — any further change is 409 step_request_wrong_state.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: e.g. "STEP-1A2B3C4D"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStepRequestStatusRequest'
+      responses:
+        '204':
+          description: Status updated
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/admin/step-requests/{requestId}/file:
+    get:
+      operationId: adminDownloadStepRequestFile
+      tags: [admin]
+      summary: >-
+        Download the STEP file attached to the request (admin only). 404
+        file_not_found when no file is attached or its bytes are not stored.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Raw file bytes as an attachment
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/admin/orders/{orderId}/refund:
     post:
       operationId: refundOrder
@@ -1511,6 +1615,36 @@ components:
         id:
           type: string
           format: uuid
+
+    AdminOpsToday:
+      type: object
+      required: [date, orders]
+      properties:
+        date:
+          type: string
+          description: Today in Europe/Warsaw, YYYY-MM-DD.
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderSummary'
+
+    AdminStepRequestList:
+      type: object
+      required: [requests]
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminStepRequestSummary'
+
+    UpdateStepRequestStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [quoted, closed]
 
     AdminUserSummary:
       type: object

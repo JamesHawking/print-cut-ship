@@ -3,6 +3,8 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -17,6 +19,7 @@ import (
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/payments"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
@@ -39,6 +42,10 @@ var adminRoutes = []struct {
 	{http.MethodGet, "/api/v1/admin/customers?email=a@b.co"},
 	{http.MethodPost, "/api/v1/admin/customers/export"},
 	{http.MethodPost, "/api/v1/admin/customers/erase"},
+	{http.MethodGet, "/api/v1/admin/ops/today"},
+	{http.MethodGet, "/api/v1/admin/step-requests"},
+	{http.MethodPost, "/api/v1/admin/step-requests/STEP-DEADBEEF/status"},
+	{http.MethodGet, "/api/v1/admin/step-requests/STEP-DEADBEEF/file"},
 }
 
 // makeAdmin promotes the email's user row and returns the session cookie.
@@ -412,6 +419,10 @@ func TestAdminDownloadOrderFile(t *testing.T) {
 	}, nil)
 	admin := makeAdmin(t, pool, requestCodeAndVerify(t, h, mailer, "dl@example.com"), "dl@example.com")
 
+	// Hermeticity: submitTestQuote's fixed hash maps to a fixed object key —
+	// a stale object from an earlier run would fail the quote's hash check.
+	_ = strg.Remove(context.Background(), "test/abababab")
+
 	quoteID := submitTestQuote(t, h, st, "files@example.com")
 	order := createTestOrder(t, h, quoteID, "files@example.com", "")
 
@@ -629,5 +640,232 @@ func TestAdminCustomerEraseDryRun(t *testing.T) {
 	}
 	if retainedOrders == nil || retainedOrders.Count != 1 || retainedOrders.Reason == "" {
 		t.Fatalf("retained wrong: %+v", res.Retained)
+	}
+}
+
+// setupOpsTest is setupOrdersTest with a pinned clock (Config.Now) so
+// ship-by/overdue derivations are deterministic.
+func setupOpsTest(t *testing.T, now time.Time) (http.Handler, *store.Store, *pgxpool.Pool, *captureMailer) {
+	t.Helper()
+	st, cfgID := setupTestStore(t)
+	pool, err := pgxpool.New(context.Background(), os.Getenv("TEST_DATABASE_URL"))
+	if err != nil {
+		t.Fatalf("pool: %v", err)
+	}
+	t.Cleanup(pool.Close)
+	if _, err := pool.Exec(context.Background(),
+		`TRUNCATE login_codes, sessions, payments, order_items, invoices RESTART IDENTITY CASCADE`); err != nil {
+		t.Fatalf("truncate: %v", err)
+	}
+	mailer := &captureMailer{}
+	svc := auth.NewService(st, mailer, nil, 10*time.Minute, 30*24*time.Hour)
+	pipeline := &payments.Pipeline{Store: st, Logger: slog.New(slog.DiscardHandler)}
+	h := testHandler(t, Config{
+		Store: st, Pricing: testHolder(cfgID), Auth: svc,
+		Payments: payments.NewStub("http://test.local", pipeline),
+		Pipeline: pipeline, PublicBaseURL: "http://test.local",
+		Now: func() time.Time { return now },
+	}, nil)
+	return h, st, pool, mailer
+}
+
+func TestAdminOpsToday(t *testing.T) {
+	// Fixture clock: Wednesday 2026-07-15 10:00 Warsaw (before cutoff).
+	fixed := time.Date(2026, 7, 15, 8, 0, 0, 0, time.UTC)
+	h, st, pool, mailer := setupOpsTest(t, fixed)
+	admin := makeAdmin(t, pool, requestCodeAndVerify(t, h, mailer, "ops@example.com"), "ops@example.com")
+	ctx := context.Background()
+
+	paidOrder := func(email, lead string, paidAt time.Time) string {
+		t.Helper()
+		q := submitTestQuoteLead(t, h, st, email, lead)
+		o := createTestOrder(t, h, q, email, "")
+		payTestOrder(t, h, o.OrderId)
+		if _, err := pool.Exec(ctx, `UPDATE orders SET paid_at = $1 WHERE short_id = $2`, paidAt, o.OrderId); err != nil {
+			t.Fatal(err)
+		}
+		return o.OrderId
+	}
+
+	// standard = 5 business days: paid 07-08 → ships 07-15 (due TODAY);
+	// paid 07-07 → ships 07-14 (OVERDUE); paid 07-09 → ships 07-16 (future).
+	dueToday := paidOrder("due@example.com", "standard", time.Date(2026, 7, 8, 9, 0, 0, 0, time.UTC))
+	overdue := paidOrder("late@example.com", "standard", time.Date(2026, 7, 7, 9, 0, 0, 0, time.UTC))
+	future := paidOrder("future@example.com", "standard", time.Date(2026, 7, 9, 9, 0, 0, 0, time.UTC))
+
+	// Shipped orders are excluded even when their ship-by is past.
+	shipped := paidOrder("gone@example.com", "standard", time.Date(2026, 7, 7, 9, 0, 0, 0, time.UTC))
+	rec := doJSONCookies(t, h, http.MethodPost,
+		"/api/v1/admin/orders/"+shipped+"/transition", `{"to": "in_production"}`, admin)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("to in_production: %d", rec.Code)
+	}
+	rec = doJSONCookies(t, h, http.MethodPost,
+		"/api/v1/admin/orders/"+shipped+"/transition",
+		`{"to": "shipped", "trackingNumber": "X1"}`, admin)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("to shipped: %d", rec.Code)
+	}
+
+	rec = doJSONCookies(t, h, http.MethodGet, "/api/v1/admin/ops/today", "", admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("ops status %d: %s", rec.Code, rec.Body)
+	}
+	var res AdminOpsToday
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if res.Date != "2026-07-15" {
+		t.Fatalf("date %q, want 2026-07-15", res.Date)
+	}
+	got := map[string]AdminOrderSummary{}
+	for _, o := range res.Orders {
+		got[o.OrderId] = o
+	}
+	if len(got) != 2 || got[future].OrderId != "" || got[shipped].OrderId != "" {
+		t.Fatalf("ops orders wrong: %+v", res.Orders)
+	}
+	// Overdue first (ascending ship-by), flagged; due-today not overdue.
+	if res.Orders[0].OrderId != overdue {
+		t.Fatalf("first %q, want overdue %q", res.Orders[0].OrderId, overdue)
+	}
+	if got[overdue].Overdue == nil || !*got[overdue].Overdue {
+		t.Fatalf("overdue flag missing: %+v", got[overdue])
+	}
+	if got[dueToday].ShipBy == nil || *got[dueToday].ShipBy != "2026-07-15" || got[dueToday].Overdue != nil {
+		t.Fatalf("due-today wrong: %+v", got[dueToday])
+	}
+}
+
+func TestAdminStepRequestQueue(t *testing.T) {
+	h, st, pool, mailer := setupOrdersTest(t)
+	admin := makeAdmin(t, pool, requestCodeAndVerify(t, h, mailer, "queue@example.com"), "queue@example.com")
+
+	rec := doJSON(t, h, http.MethodPost, "/api/v1/step-quotes",
+		`{"email": "step@example.com", "fileName": "bracket.step", "fileSize": 12345}`)
+	var created StepQuoteResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	id := created.RequestId
+	statusPath := "/api/v1/admin/step-requests/" + id + "/status"
+
+	// Queue lists it as new; filter works.
+	rec = doJSONCookies(t, h, http.MethodGet, "/api/v1/admin/step-requests", "", admin)
+	var list AdminStepRequestList
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil {
+		t.Fatal(err)
+	}
+	if len(list.Requests) != 1 || list.Requests[0].RequestId != id || list.Requests[0].Status != "new" {
+		t.Fatalf("queue wrong: %+v", list)
+	}
+	rec = doJSONCookies(t, h, http.MethodGet, "/api/v1/admin/step-requests?status=closed", "", admin)
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil {
+		t.Fatal(err)
+	}
+	if len(list.Requests) != 0 {
+		t.Fatalf("closed filter: %+v", list)
+	}
+
+	// new → quoted → closed.
+	for _, to := range []string{"quoted", "closed"} {
+		rec = doJSONCookies(t, h, http.MethodPost, statusPath, fmt.Sprintf(`{"status": %q}`, to), admin)
+		if rec.Code != http.StatusNoContent {
+			t.Fatalf("to %s: %d: %s", to, rec.Code, rec.Body)
+		}
+	}
+	sr, err := st.GetStepRequestByShortID(context.Background(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sr.Status != "closed" {
+		t.Fatalf("status %q, want closed", sr.Status)
+	}
+
+	// closed → quoted: 409 step_request_wrong_state (closed is terminal).
+	rec = doJSONCookies(t, h, http.MethodPost, statusPath, `{"status": "quoted"}`, admin)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("closed→quoted: %d, want 409", rec.Code)
+	}
+	var e ApiError
+	_ = json.Unmarshal(rec.Body.Bytes(), &e)
+	if e.Code != StepRequestWrongState {
+		t.Fatalf("code %q, want step_request_wrong_state", e.Code)
+	}
+
+	// Unknown id → 404 step_request_not_found.
+	rec = doJSONCookies(t, h, http.MethodPost,
+		"/api/v1/admin/step-requests/STEP-DEADBEEF/status", `{"status": "quoted"}`, admin)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("unknown: %d, want 404", rec.Code)
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &e)
+	if e.Code != StepRequestNotFound {
+		t.Fatalf("code %q, want step_request_not_found", e.Code)
+	}
+
+	// File download: no file attached → 404 file_not_found.
+	rec = doJSONCookies(t, h, http.MethodGet, "/api/v1/admin/step-requests/"+id+"/file", "", admin)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("no file: %d, want 404", rec.Code)
+	}
+}
+
+func TestAdminStepRequestFileDownload(t *testing.T) {
+	st, cfgID := setupTestStore(t)
+	strg := setupTestStorage(t)
+	pool, err := pgxpool.New(context.Background(), os.Getenv("TEST_DATABASE_URL"))
+	if err != nil {
+		t.Fatalf("pool: %v", err)
+	}
+	t.Cleanup(pool.Close)
+	if _, err := pool.Exec(context.Background(),
+		`TRUNCATE login_codes, sessions RESTART IDENTITY CASCADE`); err != nil {
+		t.Fatalf("truncate: %v", err)
+	}
+	mailer := &captureMailer{}
+	svc := auth.NewService(st, mailer, nil, 10*time.Minute, 30*24*time.Hour)
+	h := testHandler(t, Config{
+		Store: st, Storage: strg, Auth: svc, Pricing: testHolder(cfgID),
+	}, nil)
+	admin := makeAdmin(t, pool, requestCodeAndVerify(t, h, mailer, "stepfile@example.com"), "stepfile@example.com")
+
+	// A stored STEP file attached to the request.
+	ctx := context.Background()
+	body := []byte("ISO-10303-21;\nEND-ISO-10303-21;")
+	sum := sha256.Sum256(body)
+	sha := hex.EncodeToString(sum[:])
+	key := storage.Key(sha, "step")
+	if err := strg.Put(ctx, key, bytes.NewReader(body), int64(len(body)), "application/step"); err != nil {
+		t.Fatalf("put: %v", err)
+	}
+	fileID, err := st.InsertFile(ctx, store.InsertFileParams{
+		FileName: "bracket.step", FileSizeBytes: int64(len(body)), Kind: "step",
+		Hash: &sha, Source: "upload", StorageKey: &key,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec := doJSON(t, h, http.MethodPost, "/api/v1/step-quotes",
+		`{"email": "attach@example.com", "fileName": "bracket.step", "fileSize": 12345}`)
+	var created StepQuoteResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx,
+		`UPDATE step_requests SET file_id = $1 WHERE short_id = $2`, fileID, created.RequestId); err != nil {
+		t.Fatal(err)
+	}
+
+	rec = doJSONCookies(t, h, http.MethodGet,
+		"/api/v1/admin/step-requests/"+created.RequestId+"/file", "", admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("download: %d: %s", rec.Code, rec.Body)
+	}
+	if !bytes.Equal(rec.Body.Bytes(), body) {
+		t.Fatalf("bytes mismatch: %q", rec.Body.Bytes())
+	}
+	if cd := rec.Header().Get("Content-Disposition"); !strings.Contains(cd, "bracket.step") {
+		t.Fatalf("disposition %q", cd)
 	}
 }

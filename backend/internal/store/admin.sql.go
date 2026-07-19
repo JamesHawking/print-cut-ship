@@ -243,6 +243,69 @@ func (q *Queries) AdminListFilesByEmail(ctx context.Context, email *string) ([]A
 	return items, nil
 }
 
+const adminListOpenOrders = `-- name: AdminListOpenOrders :many
+SELECT o.short_id, o.email, o.status, o.gross_total_grosze, o.created_at,
+       o.paid_at, o.tracking_number,
+       (SELECT count(*) FROM order_items i WHERE i.order_id = o.id)::int AS part_count,
+       (SELECT coalesce(array_agg(DISTINCT i.lead_time), '{}'::text[])
+          FROM order_items i WHERE i.order_id = o.id)::text[] AS lead_times,
+       (SELECT coalesce(array_agg(DISTINCT f ->> 'code'), '{}'::text[])
+          FROM order_items i,
+               jsonb_array_elements(i.part_quote_snapshot -> 'dfmFlags') f
+          WHERE i.order_id = o.id
+            AND ((f ->> 'severity') IN ('warn', 'block')
+                 OR (f ->> 'code') = 'manual_verify'))::text[] AS dfm_codes
+FROM orders o
+WHERE o.status IN ('paid', 'in_production')
+ORDER BY o.created_at DESC
+`
+
+type AdminListOpenOrdersRow struct {
+	ShortID          string
+	Email            string
+	Status           string
+	GrossTotalGrosze int32
+	CreatedAt        pgtype.Timestamptz
+	PaidAt           pgtype.Timestamptz
+	TrackingNumber   *string
+	PartCount        int32
+	LeadTimes        []string
+	DfmCodes         []string
+}
+
+// Ops view input: orders being actively fulfilled (paid + in_production),
+// the enriched board shape. The Go side derives ship-by and filters due ones.
+func (q *Queries) AdminListOpenOrders(ctx context.Context) ([]AdminListOpenOrdersRow, error) {
+	rows, err := q.db.Query(ctx, adminListOpenOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AdminListOpenOrdersRow
+	for rows.Next() {
+		var i AdminListOpenOrdersRow
+		if err := rows.Scan(
+			&i.ShortID,
+			&i.Email,
+			&i.Status,
+			&i.GrossTotalGrosze,
+			&i.CreatedAt,
+			&i.PaidAt,
+			&i.TrackingNumber,
+			&i.PartCount,
+			&i.LeadTimes,
+			&i.DfmCodes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const adminListOrders = `-- name: AdminListOrders :many
 SELECT o.short_id, o.email, o.status, o.gross_total_grosze, o.created_at,
        o.paid_at, o.tracking_number,

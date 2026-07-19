@@ -48,6 +48,13 @@ func setupOrdersTest(t *testing.T) (http.Handler, *store.Store, *pgxpool.Pool, *
 // order creation has a server-priced quote with a stored file to gate on.
 func submitTestQuote(t *testing.T, h http.Handler, st *store.Store, email string) string {
 	t.Helper()
+	return submitTestQuoteLead(t, h, st, email, "standard")
+}
+
+// submitTestQuoteLead is submitTestQuote with a chosen lead time (plan 07's
+// ops tests need orders with different ship-by budgets).
+func submitTestQuoteLead(t *testing.T, h http.Handler, st *store.Store, email, lead string) string {
+	t.Helper()
 	ctx := context.Background()
 	hash := strings.Repeat("ab", 32)
 	key := "test/" + hash[:8]
@@ -66,7 +73,7 @@ func submitTestQuote(t *testing.T, h http.Handler, st *store.Store, email string
 	part := fmt.Sprintf(`{"fileName": "widget.stl", "hash": %q, "fileId": %q,
 		"metrics": {"volumeCm3": 100, "surfaceAreaCm2": 130,
 		"bboxMm": {"x": 60, "y": 50, "z": 40}, "usedHullFallback": false},
-		"process": "pla", "quantity": 2, "leadTime": "standard"}`, hash, fileID)
+		"process": "pla", "quantity": 2, "leadTime": %q}`, hash, fileID, lead)
 	rec := doJSON(t, h, http.MethodPost, "/api/v1/quotes",
 		fmt.Sprintf(`{"email": %q, "country": "PL", "parts": [%s], "locale": "pl"}`, email, part))
 	if rec.Code != http.StatusOK {

@@ -28,9 +28,9 @@ const (
 
 // Defines values for AdminStepRequestSummaryStatus.
 const (
-	Closed AdminStepRequestSummaryStatus = "closed"
-	New    AdminStepRequestSummaryStatus = "new"
-	Quoted AdminStepRequestSummaryStatus = "quoted"
+	AdminStepRequestSummaryStatusClosed AdminStepRequestSummaryStatus = "closed"
+	AdminStepRequestSummaryStatusNew    AdminStepRequestSummaryStatus = "new"
+	AdminStepRequestSummaryStatusQuoted AdminStepRequestSummaryStatus = "quoted"
 )
 
 // Defines values for ApiErrorCode.
@@ -187,6 +187,19 @@ const (
 	Pl SubmitQuoteRequestLocale = "pl"
 )
 
+// Defines values for UpdateStepRequestStatusRequestStatus.
+const (
+	UpdateStepRequestStatusRequestStatusClosed UpdateStepRequestStatusRequestStatus = "closed"
+	UpdateStepRequestStatusRequestStatusQuoted UpdateStepRequestStatusRequestStatus = "quoted"
+)
+
+// Defines values for AdminListStepRequestsParamsStatus.
+const (
+	Closed AdminListStepRequestsParamsStatus = "closed"
+	New    AdminListStepRequestsParamsStatus = "new"
+	Quoted AdminListStepRequestsParamsStatus = "quoted"
+)
+
 // Address defines model for Address.
 type Address struct {
 	City string `json:"city"`
@@ -276,6 +289,13 @@ type AdminListOrdersResponse struct {
 	Offset int                 `json:"offset"`
 	Orders []AdminOrderSummary `json:"orders"`
 	Total  int                 `json:"total"`
+}
+
+// AdminOpsToday defines model for AdminOpsToday.
+type AdminOpsToday struct {
+	// Date Today in Europe/Warsaw, YYYY-MM-DD.
+	Date   string              `json:"date"`
+	Orders []AdminOrderSummary `json:"orders"`
 }
 
 // AdminOrder defines model for AdminOrder.
@@ -380,6 +400,11 @@ type AdminQuoteSummary struct {
 	PartCount     int       `json:"partCount"`
 	QuoteId       string    `json:"quoteId"`
 	Status        string    `json:"status"`
+}
+
+// AdminStepRequestList defines model for AdminStepRequestList.
+type AdminStepRequestList struct {
+	Requests []AdminStepRequestSummary `json:"requests"`
 }
 
 // AdminStepRequestSummary defines model for AdminStepRequestSummary.
@@ -915,6 +940,14 @@ type TransitionOrderRequest struct {
 	TrackingNumber *string `json:"trackingNumber,omitempty"`
 }
 
+// UpdateStepRequestStatusRequest defines model for UpdateStepRequestStatusRequest.
+type UpdateStepRequestStatusRequest struct {
+	Status UpdateStepRequestStatusRequestStatus `json:"status"`
+}
+
+// UpdateStepRequestStatusRequestStatus defines model for UpdateStepRequestStatusRequest.Status.
+type UpdateStepRequestStatusRequestStatus string
+
 // Vec3Mm defines model for Vec3Mm.
 type Vec3Mm struct {
 	X float64 `json:"x"`
@@ -955,6 +988,14 @@ type AdminListOrdersParams struct {
 	Offset *int         `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// AdminListStepRequestsParams defines parameters for AdminListStepRequests.
+type AdminListStepRequestsParams struct {
+	Status *AdminListStepRequestsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// AdminListStepRequestsParamsStatus defines parameters for AdminListStepRequests.
+type AdminListStepRequestsParamsStatus string
+
 // AdminEraseCustomerJSONRequestBody defines body for AdminEraseCustomer for application/json ContentType.
 type AdminEraseCustomerJSONRequestBody = EraseCustomerRequest
 
@@ -966,6 +1007,9 @@ type AdminTransitionOrderJSONRequestBody = TransitionOrderRequest
 
 // AdminReplacePricingConfigJSONRequestBody defines body for AdminReplacePricingConfig for application/json ContentType.
 type AdminReplacePricingConfigJSONRequestBody = ReplacePricingConfigRequest
+
+// AdminUpdateStepRequestStatusJSONRequestBody defines body for AdminUpdateStepRequestStatus for application/json ContentType.
+type AdminUpdateStepRequestStatusJSONRequestBody = UpdateStepRequestStatusRequest
 
 // RequestLoginCodeJSONRequestBody defines body for RequestLoginCode for application/json ContentType.
 type RequestLoginCodeJSONRequestBody = RequestCodeRequest
@@ -1002,6 +1046,9 @@ type ServerInterface interface {
 	// GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob.
 	// (POST /api/v1/admin/customers/export)
 	AdminExportCustomer(w http.ResponseWriter, r *http.Request)
+	// "What must ship today" (admin only): paid and in_production orders whose derived ship-by date is today or earlier (Warsaw business calendar), soonest first. Ship dates recompute from the lead-time engine with paid_at as the anchor — nothing is denormalized.
+	// (GET /api/v1/admin/ops/today)
+	AdminGetOpsToday(w http.ResponseWriter, r *http.Request)
 	// Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items.
 	// (GET /api/v1/admin/orders)
 	AdminListOrders(w http.ResponseWriter, r *http.Request, params AdminListOrdersParams)
@@ -1026,6 +1073,15 @@ type ServerInterface interface {
 	// Read one historical pricing config snapshot (admin only)
 	// (GET /api/v1/admin/pricing-config/{id})
 	AdminGetPricingConfigSnapshot(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
+	// STEP manual-quote queue (admin only), newest first
+	// (GET /api/v1/admin/step-requests)
+	AdminListStepRequests(w http.ResponseWriter, r *http.Request, params AdminListStepRequestsParams)
+	// Download the STEP file attached to the request (admin only). 404 file_not_found when no file is attached or its bytes are not stored.
+	// (GET /api/v1/admin/step-requests/{requestId}/file)
+	AdminDownloadStepRequestFile(w http.ResponseWriter, r *http.Request, requestId string)
+	// Advance a STEP request to quoted or closed (admin only). Closed is terminal — any further change is 409 step_request_wrong_state.
+	// (POST /api/v1/admin/step-requests/{requestId}/status)
+	AdminUpdateStepRequestStatus(w http.ResponseWriter, r *http.Request, requestId string)
 	// Delete the current session and clear the cookie
 	// (POST /api/v1/auth/logout)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -1101,6 +1157,12 @@ func (_ Unimplemented) AdminExportCustomer(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// "What must ship today" (admin only): paid and in_production orders whose derived ship-by date is today or earlier (Warsaw business calendar), soonest first. Ship dates recompute from the lead-time engine with paid_at as the anchor — nothing is denormalized.
+// (GET /api/v1/admin/ops/today)
+func (_ Unimplemented) AdminGetOpsToday(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items.
 // (GET /api/v1/admin/orders)
 func (_ Unimplemented) AdminListOrders(w http.ResponseWriter, r *http.Request, params AdminListOrdersParams) {
@@ -1146,6 +1208,24 @@ func (_ Unimplemented) AdminReplacePricingConfig(w http.ResponseWriter, r *http.
 // Read one historical pricing config snapshot (admin only)
 // (GET /api/v1/admin/pricing-config/{id})
 func (_ Unimplemented) AdminGetPricingConfigSnapshot(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// STEP manual-quote queue (admin only), newest first
+// (GET /api/v1/admin/step-requests)
+func (_ Unimplemented) AdminListStepRequests(w http.ResponseWriter, r *http.Request, params AdminListStepRequestsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download the STEP file attached to the request (admin only). 404 file_not_found when no file is attached or its bytes are not stored.
+// (GET /api/v1/admin/step-requests/{requestId}/file)
+func (_ Unimplemented) AdminDownloadStepRequestFile(w http.ResponseWriter, r *http.Request, requestId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Advance a STEP request to quoted or closed (admin only). Closed is terminal — any further change is 409 step_request_wrong_state.
+// (POST /api/v1/admin/step-requests/{requestId}/status)
+func (_ Unimplemented) AdminUpdateStepRequestStatus(w http.ResponseWriter, r *http.Request, requestId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1313,6 +1393,20 @@ func (siw *ServerInterfaceWrapper) AdminExportCustomer(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AdminExportCustomer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetOpsToday operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetOpsToday(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetOpsToday(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1518,6 +1612,83 @@ func (siw *ServerInterfaceWrapper) AdminGetPricingConfigSnapshot(w http.Response
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AdminGetPricingConfigSnapshot(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminListStepRequests operation middleware
+func (siw *ServerInterfaceWrapper) AdminListStepRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AdminListStepRequestsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminListStepRequests(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminDownloadStepRequestFile operation middleware
+func (siw *ServerInterfaceWrapper) AdminDownloadStepRequestFile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminDownloadStepRequestFile(w, r, requestId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminUpdateStepRequestStatus operation middleware
+func (siw *ServerInterfaceWrapper) AdminUpdateStepRequestStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminUpdateStepRequestStatus(w, r, requestId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1932,6 +2103,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/v1/admin/customers/export", wrapper.AdminExportCustomer)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/ops/today", wrapper.AdminGetOpsToday)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/orders", wrapper.AdminListOrders)
 	})
 	r.Group(func(r chi.Router) {
@@ -1954,6 +2128,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/pricing-config/{id}", wrapper.AdminGetPricingConfigSnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/step-requests", wrapper.AdminListStepRequests)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/step-requests/{requestId}/file", wrapper.AdminDownloadStepRequestFile)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/step-requests/{requestId}/status", wrapper.AdminUpdateStepRequestStatus)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)

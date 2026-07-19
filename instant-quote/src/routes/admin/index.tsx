@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 
 import { STATUS_VARIANT, errorCode } from './-components/util'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +35,7 @@ export const Route = createFileRoute('/admin/')({
 
 type AdminOrderSummary = components['schemas']['AdminOrderSummary']
 type OrderStatus = components['schemas']['OrderStatus']
+type OpsToday = components['schemas']['AdminOpsToday']
 
 const PAGE_SIZE = 50
 const STATUS_OPTIONS: Array<OrderStatus | 'all'> = [
@@ -51,6 +52,15 @@ const STATUS_OPTIONS: Array<OrderStatus | 'all'> = [
 function Board() {
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
   const [offset, setOffset] = useState(0)
+
+  const ops = useQuery({
+    queryKey: ['admin', 'ops', 'today'],
+    queryFn: async () => {
+      const res = await api.GET('/api/v1/admin/ops/today')
+      if (!res.data) throw new ApiRequestError(res.error)
+      return res.data
+    },
+  })
 
   const { data, isPending, error } = useQuery({
     queryKey: ['admin', 'orders', { status, offset }],
@@ -71,6 +81,7 @@ function Board() {
 
   return (
     <div className="flex flex-col gap-5">
+      <OpsCard ops={ops} />
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-xl font-extrabold tracking-tight">Orders</h1>
         <Select
@@ -195,5 +206,72 @@ function BoardRow({ order: o }: { order: AdminOrderSummary }) {
         {o.trackingNumber ?? '—'}
       </TableCell>
     </TableRow>
+  )
+}
+
+// "What must ship today" (plan 07 Phase E): the ops card pins the board's
+// top. Overdue rows are destructive-accented; the empty state is the all-clear.
+function OpsCard({ ops }: { ops: UseQueryResult<OpsToday, Error> }) {
+  if (ops.isPending) return null
+  if (ops.error) {
+    return (
+      <p className="text-destructive font-mono text-xs">
+        {errorCode(ops.error)}
+      </p>
+    )
+  }
+  const data = ops.data
+  return (
+    <section className="rounded-lg border p-4">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="font-mono text-[0.65rem] font-bold tracking-[0.2em] uppercase">
+          Must ship — {data.date}
+        </h2>
+        {data.orders.length === 0 && (
+          <span className="text-signal flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+            <span className="bg-signal size-1.5 rounded-full" />
+            Nothing due — all clear
+          </span>
+        )}
+      </div>
+      {data.orders.length > 0 && (
+        <Table className="mt-3">
+          <TableBody>
+            {data.orders.map((o) => (
+              <TableRow key={o.orderId}>
+                <TableCell className="font-mono text-xs font-bold">
+                  <Link
+                    to="/admin/orders/$shortId"
+                    params={{ shortId: o.orderId }}
+                    className="underline underline-offset-4"
+                  >
+                    {o.orderId}
+                  </Link>
+                </TableCell>
+                <TableCell className="max-w-52 truncate text-[13px]">
+                  {o.email}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
+                    {o.status}
+                  </Badge>
+                </TableCell>
+                <TableCell
+                  className={cn(
+                    'font-mono text-[0.65rem] uppercase',
+                    o.overdue
+                      ? 'text-destructive font-bold'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  ship by {o.shipBy}
+                  {o.overdue ? ' (overdue)' : ''}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </section>
   )
 }

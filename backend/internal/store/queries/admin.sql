@@ -160,3 +160,21 @@ WHERE (EXISTS (SELECT 1 FROM quote_parts qp JOIN quotes q ON q.id = qp.quote_id
        WHERE oi.file_id = f.id AND o.email = $1
          AND (o.retention_until IS NOT NULL
               OR EXISTS (SELECT 1 FROM invoices i WHERE i.order_id = o.id)));
+
+-- name: AdminListOpenOrders :many
+-- Ops view input: orders being actively fulfilled (paid + in_production),
+-- the enriched board shape. The Go side derives ship-by and filters due ones.
+SELECT o.short_id, o.email, o.status, o.gross_total_grosze, o.created_at,
+       o.paid_at, o.tracking_number,
+       (SELECT count(*) FROM order_items i WHERE i.order_id = o.id)::int AS part_count,
+       (SELECT coalesce(array_agg(DISTINCT i.lead_time), '{}'::text[])
+          FROM order_items i WHERE i.order_id = o.id)::text[] AS lead_times,
+       (SELECT coalesce(array_agg(DISTINCT f ->> 'code'), '{}'::text[])
+          FROM order_items i,
+               jsonb_array_elements(i.part_quote_snapshot -> 'dfmFlags') f
+          WHERE i.order_id = o.id
+            AND ((f ->> 'severity') IN ('warn', 'block')
+                 OR (f ->> 'code') = 'manual_verify'))::text[] AS dfm_codes
+FROM orders o
+WHERE o.status IN ('paid', 'in_production')
+ORDER BY o.created_at DESC;
