@@ -1071,6 +1071,7 @@ export interface components {
       daily: {
         date: string
         orders: number
+        grossPln: number
       }[]
     }
     AdminStepRequestList: {

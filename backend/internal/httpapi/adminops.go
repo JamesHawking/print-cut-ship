@@ -110,15 +110,21 @@ func (s *server) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
 	}
 	base := time.Date(today.Y, time.Month(today.M), today.D, 0, 0, 0, 0, time.UTC)
 	daily := make([]struct {
-		Date   string `json:"date"`
-		Orders int    `json:"orders"`
+		Date     string  `json:"date"`
+		GrossPln float32 `json:"grossPln"`
+		Orders   int     `json:"orders"`
 	}, 0, 14)
 	for i := 13; i >= 0; i-- {
 		iso := base.AddDate(0, 0, -i).Format("2006-01-02")
 		daily = append(daily, struct {
-			Date   string `json:"date"`
-			Orders int    `json:"orders"`
-		}{Date: iso, Orders: int(byDay[iso].Orders)})
+			Date     string  `json:"date"`
+			GrossPln float32 `json:"grossPln"`
+			Orders   int     `json:"orders"`
+		}{
+			Date:     iso,
+			GrossPln: float32(money.FromGrosze(int32(byDay[iso].GrossGrosze))),
+			Orders:   int(byDay[iso].Orders),
+		})
 	}
 	yesterdayISO := base.AddDate(0, 0, -1).Format("2006-01-02")
 

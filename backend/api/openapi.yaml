@@ -1693,12 +1693,14 @@ components:
           description: 14 entries, oldest first, ending today; zero-filled.
           items:
             type: object
-            required: [date, orders]
+            required: [date, orders, grossPln]
             properties:
               date:
                 type: string
               orders:
                 type: integer
+              grossPln:
+                type: number
 
     AdminStepRequestList:
       type: object

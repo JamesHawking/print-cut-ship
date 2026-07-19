@@ -300,8 +300,9 @@ type AdminOpsStats struct {
 
 	// Daily 14 entries, oldest first, ending today; zero-filled.
 	Daily []struct {
-		Date   string `json:"date"`
-		Orders int    `json:"orders"`
+		Date     string  `json:"date"`
+		GrossPln float32 `json:"grossPln"`
+		Orders   int     `json:"orders"`
 	} `json:"daily"`
 
 	// Date Today in Europe/Warsaw, YYYY-MM-DD.
