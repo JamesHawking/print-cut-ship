@@ -1,6 +1,21 @@
 # 05 — Orders, checkout & payments
 
-> **Status: ⬜ Not started** (as of 2026-07-16).
+> **Status: 🟨 In progress** (started 2026-07-19, branch `backend/orders-checkout`).
+
+> **Amendment (2026-07-19, user-approved): Stripe + Fakturownia-client split to plan 18.**
+> This plan now ships the full order flow on a **payment-provider port** shaped
+> exactly like Stripe Checkout (create session → redirect → payment event →
+> `paid`), with a **stub provider + fake-checkout page** as the interim
+> implementation. The idempotent event pipeline (`payments` ledger) is the only
+> path that flips `paid`/`refunded`; plan 18's real webhook feeds the same
+> pipeline. Invoicing ships as **seam only** (`invoices` table, policy gate,
+> retry subcommand, `retention_until` marker) — the Fakturownia API client
+> lands in plan 18 alongside stripe-go, when both accounts exist.
+> **Address fields added**: checkout now collects shipping address (+ billing
+> for B2B) — the original sketch below omitted them, but you cannot ship a part
+> or issue a B2B faktura without an address. Where this brief below says
+> "Stripe", read "the Provider port"; `stripe_*` columns become provider-agnostic
+> (`checkout_session_*`, `payment_ref`, `payments.provider_event_id`).
 
 > The quote a customer sees becomes a paid order with a legal Polish invoice.
 > Scope contract: ROADMAP.md "### 5. Orders, checkout & payments".
