@@ -4,6 +4,7 @@ import { PriceBreakTable } from './PriceBreakTable'
 import { DfmBadges } from './DfmBadges'
 import { formatInt, formatPln, formatPercent, formatVolume } from '@/lib/format'
 import { useLocale, useStrings } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import type { Part } from '@/hooks/useParts'
 import type { PartConfig, PartQuote } from '@/lib/api/client'
 
@@ -11,9 +12,19 @@ interface Props {
   part: Part
   quote: PartQuote
   onConfigChange: (patch: Partial<PartConfig>) => void
+  /** priceQuery.dataUpdatedAt — keyed remount fires the flash only on fresh data. */
+  priceEpoch: number
+  /** A reprice is in flight (keepPreviousData holds the old values). */
+  recalculating?: boolean
 }
 
-export function QuoteCard({ part, quote, onConfigChange }: Props) {
+export function QuoteCard({
+  part,
+  quote,
+  onConfigChange,
+  priceEpoch,
+  recalculating = false,
+}: Props) {
   const strings = useStrings()
   const locale = useLocale()
   const discount = quote.discountFraction
@@ -48,20 +59,38 @@ export function QuoteCard({ part, quote, onConfigChange }: Props) {
               </p>
             )}
           </div>
-          <div className="shrink-0 text-right" aria-live="polite">
+          <div
+            className={cn(
+              'shrink-0 text-right transition-opacity duration-200',
+              recalculating && 'opacity-60',
+            )}
+            aria-live="polite"
+          >
             {quote.blocked ? (
               <p className="text-destructive text-sm font-bold">
                 {strings.quote.notPrintable}
               </p>
             ) : (
               <>
-                <div className="text-primary-text font-mono text-[clamp(1.375rem,3.5vw,1.75rem)] font-bold tracking-tight whitespace-nowrap tabular-nums">
+                <div
+                  key={priceEpoch}
+                  className="text-primary-text motion-safe:animate-price-flash-accent font-mono text-[clamp(1.375rem,3.5vw,1.75rem)] font-bold tracking-tight whitespace-nowrap tabular-nums"
+                >
                   {formatPln(quote.unitPricePln, locale)}
                 </div>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-muted-foreground flex items-center justify-end gap-1.5 text-xs">
                   {strings.quote.unitPrice}
                   {discount > 0 && (
                     <> · {strings.quote.discountOff(formatPercent(discount))}</>
+                  )}
+                  {recalculating && (
+                    <span className="text-muted-foreground ml-1 inline-flex items-center gap-1 font-mono text-[0.59375rem] tracking-wider uppercase">
+                      <span
+                        className="bg-signal motion-safe:animate-led inline-block size-[5px] rounded-full"
+                        aria-hidden
+                      />
+                      {strings.quote.recalculating}
+                    </span>
                   )}
                 </p>
                 {part.config.quantity > 1 && (

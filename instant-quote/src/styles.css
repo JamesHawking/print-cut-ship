@@ -267,6 +267,9 @@
   /* One-shot emphasis when the engine's PRICE answer lands: text-orange
      settling to plain ink. Applied to strong log lines when revealed. */
   --animate-price-flash: price-flash 900ms ease-out 250ms both;
+  /* Same beat for elements whose resting color IS the accent (the /quote
+     unit price): bright primary settling to AA-safe primary-text. */
+  --animate-price-flash-accent: price-flash-accent 900ms ease-out 250ms both;
 
   @keyframes conveyor {
     from {
@@ -301,6 +304,14 @@
     }
     to {
       color: var(--foreground);
+    }
+  }
+  @keyframes price-flash-accent {
+    from {
+      color: var(--primary);
+    }
+    to {
+      color: var(--primary-text);
     }
   }
   @keyframes ship-pulse {

@@ -506,6 +506,7 @@ export const pl = {
   quote: {
     parsingTitle: 'Mierzymy twoją część…',
     unitPrice: 'za sztukę',
+    recalculating: 'Przeliczanie…',
     orderButton: (price: string) => `Zamów za ${price}`,
     minOrderHint: (min: string) =>
       `Minimalne zamówienie ${min} — doliczono wyrównanie`,

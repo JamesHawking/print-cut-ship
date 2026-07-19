@@ -482,6 +482,7 @@ export const en = {
   quote: {
     parsingTitle: 'Measuring your part…',
     unitPrice: 'per part',
+    recalculating: 'Recalculating…',
     orderButton: (price: string) => `Order for ${price}`,
     minOrderHint: (min: string) => `Minimum order ${min} — top-up applied`,
     exVat: 'Prices ex VAT',

@@ -137,6 +137,12 @@ function QuoteWorkspace() {
 
   const totals = priceQuery.data?.totals ?? null
 
+  // Price-change feedback: dataUpdatedAt only moves when fresh data lands
+  // (keepPreviousData holds stale values without bumping it), and isFetching
+  // tells the cards a reprice is in flight behind those held values.
+  const priceEpoch = priceQuery.dataUpdatedAt
+  const recalculating = priceQuery.isFetching && !priceQuery.isPending
+
   // Blocked parts are quoted but excluded from the order — say so.
   const blockedCount = readyParts.filter(
     (p) => quotesById.get(p.id)?.blocked,
@@ -225,7 +231,8 @@ function QuoteWorkspace() {
             </div>
 
             <div className="space-y-6">
-              {selectedPart?.status === 'parsing' ? (
+              {selectedPart?.status === 'parsing' ||
+              (selectedPart && !selectedQuote && priceQuery.isPending) ? (
                 <QuoteSkeleton />
               ) : selectedPart?.status === 'error' ? (
                 // STEP files that OCCT can't read fall back to a manual quote.
@@ -267,6 +274,8 @@ function QuoteWorkspace() {
                   onConfigChange={(patch) =>
                     handleConfigChange(selectedPart.id, patch)
                   }
+                  priceEpoch={priceEpoch}
+                  recalculating={recalculating}
                 />
               ) : null}
 
@@ -287,6 +296,8 @@ function QuoteWorkspace() {
                       ? orderableEntries[0].part.fileName
                       : undefined
                   }
+                  priceEpoch={priceEpoch}
+                  recalculating={recalculating}
                   onOrderClick={handleOrderClick}
                 />
               )}
