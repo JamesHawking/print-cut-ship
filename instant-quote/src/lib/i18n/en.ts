@@ -517,6 +517,8 @@ export const en = {
     manualQuote: 'Manual quote',
     failed: 'Failed',
     remove: (fileName: string) => `Remove ${fileName}`,
+    uploadFailed: 'File save failed — quote still works',
+    retryUpload: 'Retry save',
   },
   dfm: {
     labels: {

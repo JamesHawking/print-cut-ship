@@ -12,6 +12,8 @@ interface Props {
   part: Part
   quote: PartQuote
   onConfigChange: (patch: Partial<PartConfig>) => void
+  /** Bound to this part — shown only when the background upload failed. */
+  onRetryUpload?: () => void
   /** priceQuery.dataUpdatedAt — keyed remount fires the flash only on fresh data. */
   priceEpoch: number
   /** A reprice is in flight (keepPreviousData holds the old values). */
@@ -22,6 +24,7 @@ export function QuoteCard({
   part,
   quote,
   onConfigChange,
+  onRetryUpload,
   priceEpoch,
   recalculating = false,
 }: Props) {
@@ -57,6 +60,16 @@ export function QuoteCard({
                   </>
                 )}
               </p>
+            )}
+            {part.uploadStatus === 'failed' && onRetryUpload && (
+              <button
+                type="button"
+                className="text-destructive mt-1.5 font-mono text-[0.59375rem] tracking-wider uppercase underline underline-offset-2"
+                onClick={onRetryUpload}
+              >
+                {strings.partsList.uploadFailed} ·{' '}
+                {strings.partsList.retryUpload}
+              </button>
             )}
           </div>
           <div

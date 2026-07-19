@@ -542,6 +542,8 @@ export const pl = {
     manualQuote: 'Wycena ręczna',
     failed: 'Błąd',
     remove: (fileName: string) => `Usuń ${fileName}`,
+    uploadFailed: 'Zapis pliku nieudany — wycena działa',
+    retryUpload: 'Ponów zapis',
   },
   dfm: {
     labels: {

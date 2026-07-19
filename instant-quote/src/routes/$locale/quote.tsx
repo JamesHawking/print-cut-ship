@@ -63,6 +63,7 @@ function QuoteWorkspace() {
     mwPending,
     updateConfig,
     remove,
+    retryUpload,
   } = useParts()
   const navigate = useNavigate()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -274,6 +275,7 @@ function QuoteWorkspace() {
                   onConfigChange={(patch) =>
                     handleConfigChange(selectedPart.id, patch)
                   }
+                  onRetryUpload={() => retryUpload(selectedPart.id)}
                   priceEpoch={priceEpoch}
                   recalculating={recalculating}
                 />
@@ -311,6 +313,7 @@ function QuoteWorkspace() {
               selectedId={selectedPart?.id ?? null}
               onSelect={setSelectedId}
               onRemove={remove}
+              onRetryUpload={retryUpload}
             />
           )}
 
