@@ -8,8 +8,8 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Download, Eraser, Search } from 'lucide-react'
 
-import { STATUS_VARIANT, errorCode } from './-components/util'
-import { Badge } from '@/components/ui/badge'
+import { StatusPill } from './-components/StatusPill'
+import { errorCode } from './-components/util'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -194,9 +194,7 @@ function Trail({ lookup }: { lookup: Lookup }) {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
-                        {o.status}
-                      </Badge>
+                      <StatusPill status={o.status} />
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs tabular-nums">
                       {formatPln(o.grossTotalPln, 'en')}

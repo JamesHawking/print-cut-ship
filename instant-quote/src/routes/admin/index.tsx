@@ -1,35 +1,23 @@
-// Orders board (plan 07 Phase B, UI pass): status filter, paginated table,
-// row-click navigation, relative ship-by urgency, DFM flags, tracking.
-// EN-only (i18n-exempt directory).
+// Dashboard (admin overhaul): KPI cards with sparklines and vs-yesterday
+// deltas, 14-day trend chart, "must ship" list, recent orders. The full
+// filterable board lives on /admin/orders. EN-only (i18n-exempt directory).
 
-import { useState } from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import {
   AlertTriangle,
   CheckCircle2,
   FileBox,
-  Inbox,
   Package,
-  TrendingDown,
-  TrendingUp,
-  Truck,
   Wallet,
 } from 'lucide-react'
 
-import { STATUS_VARIANT, errorCode, formatShipBy } from './-components/util'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { PageHeader } from './-components/PageHeader'
+import { StatusPill } from './-components/StatusPill'
+import { EmptyState, OrdersTable, ShipByCell } from './-components/orders-table'
+import { errorCode } from './-components/util'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   Tooltip,
   TooltipContent,
@@ -37,24 +25,30 @@ import {
 } from '@/components/ui/tooltip'
 import { api } from '@/lib/api/client'
 import { ApiRequestError } from '@/lib/api/errors'
-import { formatPlacedDate, formatPln } from '@/lib/format'
+import { formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { components } from '@/lib/api/schema'
 
 export const Route = createFileRoute('/admin/')({
-  component: Board,
+  component: Dashboard,
 })
 
-type AdminOrderSummary = components['schemas']['AdminOrderSummary']
-type OrderStatus = components['schemas']['OrderStatus']
 type OpsToday = components['schemas']['AdminOpsToday']
 type OpsStats = components['schemas']['AdminOpsStats']
 
-const PAGE_SIZE = 50
+const MUST_SHIP_VISIBLE = 6
+const RECENT_COUNT = 8
 
-function Board() {
-  const [status, setStatus] = useState<OrderStatus | 'all'>('all')
-  const [offset, setOffset] = useState(0)
+function Dashboard() {
+  const stats = useQuery({
+    queryKey: ['admin', 'ops', 'stats'],
+    queryFn: async () => {
+      const res = await api.GET('/api/v1/admin/ops/stats')
+      if (!res.data) throw new ApiRequestError(res.error)
+      return res.data
+    },
+    refetchInterval: 60_000,
+  })
 
   const ops = useQuery({
     queryKey: ['admin', 'ops', 'today'],
@@ -65,26 +59,11 @@ function Board() {
     },
   })
 
-  const stats = useQuery({
-    queryKey: ['admin', 'ops', 'stats'],
-    queryFn: async () => {
-      const res = await api.GET('/api/v1/admin/ops/stats')
-      if (!res.data) throw new ApiRequestError(res.error)
-      return res.data
-    },
-  })
-
-  const { data, isPending, error } = useQuery({
-    queryKey: ['admin', 'orders', { status, offset }],
+  const recent = useQuery({
+    queryKey: ['admin', 'orders', 'recent'],
     queryFn: async () => {
       const res = await api.GET('/api/v1/admin/orders', {
-        params: {
-          query: {
-            ...(status !== 'all' && { status }),
-            limit: PAGE_SIZE,
-            offset,
-          },
-        },
+        params: { query: { limit: RECENT_COUNT, offset: 0 } },
       })
       if (!res.data) throw new ApiRequestError(res.error)
       return res.data
@@ -92,206 +71,28 @@ function Board() {
   })
 
   return (
-    <div className="flex flex-col gap-5">
-      <KpiStrip stats={stats} />
-      <OpsCard ops={ops} />
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-xl font-extrabold tracking-tight">Orders</h1>
-        <StatusPills
-          stats={stats.data}
-          active={status}
-          onChange={(s) => {
-            setStatus(s)
-            setOffset(0)
-          }}
-        />
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        kicker="Operations / Overview"
+        title="Dashboard"
+        meta={stats.data?.date}
+      />
+      <KpiGrid stats={stats} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <TrendCard stats={stats} className="lg:col-span-2" />
+        <MustShipCard ops={ops} />
       </div>
-
-      {isPending ? (
-        <BoardSkeleton />
-      ) : error ? (
-        <p className="text-destructive font-mono text-xs">{errorCode(error)}</p>
-      ) : data.orders.length === 0 ? (
-        <EmptyState
-          label={status === 'all' ? 'No orders yet.' : `No ${status} orders.`}
-        />
-      ) : (
-        <>
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Gross</TableHead>
-                  <TableHead>Placed</TableHead>
-                  <TableHead>Ship by</TableHead>
-                  <TableHead>DFM</TableHead>
-                  <TableHead>Tracking</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.orders.map((o) => (
-                  <BoardRow key={o.orderId} order={o} />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-              {data.total} orders
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={offset === 0}
-                onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={offset + PAGE_SIZE >= data.total}
-                onClick={() => setOffset(offset + PAGE_SIZE)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+      <RecentOrdersCard recent={recent} />
     </div>
   )
 }
 
-function BoardRow({ order: o }: { order: AdminOrderSummary }) {
-  const navigate = useNavigate()
-  const open = () =>
-    void navigate({
-      to: '/admin/orders/$shortId',
-      params: { shortId: o.orderId },
-    })
-
-  return (
-    <TableRow
-      className="cursor-pointer"
-      onClick={open}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') open()
-      }}
-    >
-      <TableCell className="font-mono text-xs font-bold tabular-nums">
-        <Link
-          to="/admin/orders/$shortId"
-          params={{ shortId: o.orderId }}
-          className="underline underline-offset-4"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {o.orderId}
-        </Link>
-      </TableCell>
-      <TableCell className="max-w-52 truncate text-[13px]">{o.email}</TableCell>
-      <TableCell>
-        <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
-          {o.status}
-        </Badge>
-      </TableCell>
-      <TableCell className="text-right font-mono text-xs tabular-nums">
-        {formatPln(o.grossTotalPln, 'en')}
-      </TableCell>
-      <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
-        {formatPlacedDate(o.createdAt, 'en')}
-      </TableCell>
-      <TableCell>
-        <ShipByCell shipBy={o.shipBy} overdue={o.overdue} />
-      </TableCell>
-      <TableCell>
-        {o.dfmFlagged && o.dfmCodes ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant="outline">
-                <AlertTriangle className="text-highlight" />
-                {o.dfmCodes.length} {o.dfmCodes.length === 1 ? 'flag' : 'flags'}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>{o.dfmCodes.join(', ')}</TooltipContent>
-          </Tooltip>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-      <TableCell className="font-mono text-xs">
-        {o.trackingNumber ? (
-          <span className="inline-flex items-center gap-1.5">
-            <Truck className="text-muted-foreground size-3.5" />
-            {o.trackingNumber}
-          </span>
-        ) : (
-          '—'
-        )}
-      </TableCell>
-    </TableRow>
-  )
-}
-
-function ShipByCell({
-  shipBy,
-  overdue,
-}: {
-  shipBy: string | null | undefined
-  overdue: boolean | undefined
-}) {
-  const label = formatShipBy(shipBy, overdue)
-  if (!shipBy) return <span className="text-muted-foreground">—</span>
-  const text = (
-    <span
-      className={cn(
-        'font-mono text-[0.65rem] uppercase',
-        overdue ? 'text-destructive font-bold' : 'text-muted-foreground',
-      )}
-    >
-      {overdue && <AlertTriangle className="mr-1 inline size-3" />}
-      {label}
-    </span>
-  )
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{text}</TooltipTrigger>
-      <TooltipContent>Ship by {shipBy}</TooltipContent>
-    </Tooltip>
-  )
-}
-
-function BoardSkeleton() {
-  return (
-    <div className="flex flex-col gap-2">
-      {Array.from({ length: 8 }, (_, i) => (
-        <Skeleton key={i} className="h-10 w-full" />
-      ))}
-    </div>
-  )
-}
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-12">
-      <Inbox className="text-muted-foreground size-6" />
-      <p className="text-muted-foreground text-sm">{label}</p>
-    </div>
-  )
-}
-
-// KPI strip (ops-console pattern): today vs yesterday deltas, overdue
-// attention card, STEP queue link, 14-day sparkline on the orders card.
-function KpiStrip({ stats }: { stats: UseQueryResult<OpsStats, Error> }) {
+function KpiGrid({ stats }: { stats: UseQueryResult<OpsStats, Error> }) {
   if (stats.isPending) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-28 w-full" />
+          <Skeleton key={i} className="h-32 w-full" />
         ))}
       </div>
     )
@@ -305,44 +106,47 @@ function KpiStrip({ stats }: { stats: UseQueryResult<OpsStats, Error> }) {
   }
   const s = stats.data
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
         icon={<Package className="text-muted-foreground size-4" />}
         label="Orders today"
         value={String(s.todayOrders)}
-        delta={<Delta now={s.todayOrders} prev={s.yesterdayOrders} />}
         spark={<Sparkline values={s.daily.map((d) => d.orders)} />}
+        footer={<Delta now={s.todayOrders} prev={s.yesterdayOrders} />}
       />
       <KpiCard
         icon={<Wallet className="text-muted-foreground size-4" />}
         label="Gross today"
         value={formatPln(s.todayGrossPln, 'en')}
-        delta={<Delta now={s.todayGrossPln} prev={s.yesterdayGrossPln} />}
+        spark={<Sparkline values={s.daily.map((d) => d.grossPln ?? 0)} />}
+        footer={<Delta now={s.todayGrossPln} prev={s.yesterdayGrossPln} />}
       />
-      <KpiCard
-        icon={
-          <AlertTriangle
-            className={cn(
-              'size-4',
-              s.overdue > 0 ? 'text-destructive' : 'text-muted-foreground',
-            )}
-          />
-        }
-        label="Overdue"
-        value={String(s.overdue)}
-        tone={s.overdue > 0 ? 'destructive' : undefined}
-        footer={
-          s.overdue === 0 ? (
-            <span className="text-signal font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-              on schedule
-            </span>
-          ) : (
-            <span className="text-destructive font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-              ship-by passed
-            </span>
-          )
-        }
-      />
+      <Link to="/admin/orders" className="block">
+        <KpiCard
+          icon={
+            <AlertTriangle
+              className={cn(
+                'size-4',
+                s.overdue > 0 ? 'text-destructive' : 'text-muted-foreground',
+              )}
+            />
+          }
+          label="Overdue"
+          value={String(s.overdue)}
+          tone={s.overdue > 0 ? 'destructive' : undefined}
+          footer={
+            s.overdue === 0 ? (
+              <span className="text-signal font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+                on schedule
+              </span>
+            ) : (
+              <span className="text-destructive font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+                ship-by passed
+              </span>
+            )
+          }
+        />
+      </Link>
       <Link to="/admin/step-requests" className="block">
         <KpiCard
           icon={<FileBox className="text-muted-foreground size-4" />}
@@ -363,7 +167,6 @@ function KpiCard({
   icon,
   label,
   value,
-  delta,
   spark,
   footer,
   tone,
@@ -371,9 +174,8 @@ function KpiCard({
   icon: React.ReactNode
   label: string
   value: string
-  delta?: React.ReactNode
   spark?: React.ReactNode
-  footer?: React.ReactNode
+  footer: React.ReactNode
   tone?: 'destructive'
 }) {
   return (
@@ -389,55 +191,47 @@ function KpiCard({
           {label}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2 px-4">
-        <div className="flex items-end justify-between gap-2">
-          <span className="text-2xl font-extrabold tracking-tight tabular-nums">
+      <CardContent className="flex flex-1 flex-col px-4">
+        <div className="flex flex-1 items-end justify-between gap-2">
+          <span className="font-mono text-3xl font-bold tracking-tight tabular-nums">
             {value}
           </span>
           {spark}
         </div>
-        {(delta ?? footer) && (
-          <div className="flex items-center gap-2">{delta ?? footer}</div>
-        )}
+        <div className="mt-3 flex items-center gap-2 border-t pt-2">
+          {footer}
+        </div>
       </CardContent>
     </Card>
   )
 }
 
 function Delta({ now, prev }: { now: number; prev: number }) {
+  const flat = (
+    <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+      — flat vs yesterday
+    </span>
+  )
   if (prev === 0) {
     return now === 0 ? (
-      <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-        flat vs yesterday
-      </span>
+      flat
     ) : (
-      <span className="text-signal inline-flex items-center gap-1 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-        <TrendingUp className="size-3" /> new vs yesterday
+      <span className="text-signal font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+        ▲ new vs yesterday
       </span>
     )
   }
   const pct = Math.round(((now - prev) / prev) * 100)
-  if (pct === 0) {
-    return (
-      <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-        flat vs yesterday
-      </span>
-    )
-  }
+  if (pct === 0) return flat
   const up = pct > 0
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 font-mono text-[0.65rem] tracking-[0.14em] uppercase',
+        'font-mono text-[0.65rem] tracking-[0.14em] uppercase',
         up ? 'text-signal' : 'text-destructive',
       )}
     >
-      {up ? (
-        <TrendingUp className="size-3" />
-      ) : (
-        <TrendingDown className="size-3" />
-      )}
-      {up ? '+' : ''}
+      {up ? '▲ +' : '▼ '}
       {pct}% vs yesterday
     </span>
   )
@@ -461,61 +255,86 @@ function Sparkline({ values }: { values: Array<number> }) {
   )
 }
 
-// Count-pill status filter (ops-console pattern) fed by the stats endpoint —
-// zero-count statuses stay hidden unless they are the active filter.
-function StatusPills({
+function TrendCard({
   stats,
-  active,
-  onChange,
+  className,
 }: {
-  stats: OpsStats | undefined
-  active: OrderStatus | 'all'
-  onChange: (s: OrderStatus | 'all') => void
+  stats: UseQueryResult<OpsStats, Error>
+  className?: string
 }) {
-  const counts = new Map(
-    (stats?.byStatus ?? []).map((s) => [s.status, s.count]),
-  )
-  const total = [...counts.values()].reduce((a, b) => a + b, 0)
-  const statuses = (stats?.byStatus ?? [])
-    .map((s) => s.status as OrderStatus)
-    .filter((s) => (counts.get(s) ?? 0) > 0 || s === active)
-
-  const pill = (key: OrderStatus | 'all', label: string, count: number) => (
-    <button
-      key={key}
-      type="button"
-      onClick={() => onChange(key)}
-      className={cn(
-        'inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[0.65rem] tracking-[0.1em] uppercase transition-colors',
-        active === key
-          ? 'bg-primary-tint border-primary/40 font-bold'
-          : 'text-muted-foreground hover:text-foreground hover:border-foreground/30',
-      )}
-    >
-      {label}
-      <span
-        className={cn(
-          'rounded-full px-1.5 tabular-nums',
-          active === key ? 'bg-primary text-primary-foreground' : 'bg-muted',
-        )}
-      >
-        {count}
-      </span>
-    </button>
-  )
+  if (stats.isPending) return <Skeleton className={cn('h-56', className)} />
+  if (stats.error || !stats.data) {
+    return (
+      <p className={cn('text-destructive font-mono text-xs', className)}>
+        {errorCode(stats.error)}
+      </p>
+    )
+  }
+  const daily = stats.data.daily
+  const maxOrders = Math.max(...daily.map((d) => d.orders))
+  const totalOrders = daily.reduce((a, d) => a + d.orders, 0)
+  const totalGross = daily.reduce((a, d) => a + (d.grossPln ?? 0), 0)
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {pill('all', 'All', total)}
-      {statuses.map((s) => pill(s, s, counts.get(s) ?? 0))}
-    </div>
+    <Card className={cn('gap-0 py-4', className)}>
+      <CardHeader className="flex flex-wrap items-center justify-between gap-2 px-4">
+        <CardTitle className="font-mono text-[0.65rem] font-bold tracking-[0.2em] uppercase">
+          Orders — last 14 days
+        </CardTitle>
+        <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+          Σ {totalOrders} orders · {formatPln(totalGross, 'en')}
+        </span>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2 px-4 pt-4">
+        {totalOrders === 0 ? (
+          <div className="flex h-40 items-center justify-center">
+            <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+              No orders in 14 days
+            </p>
+          </div>
+        ) : (
+          <div className="flex h-40 items-end gap-1.5">
+            {daily.map((d, i) => (
+              <Tooltip key={d.date}>
+                <TooltipTrigger asChild>
+                  <div className="flex h-full flex-1 items-end">
+                    {d.orders === 0 ? (
+                      <div className="bg-muted-foreground/15 h-0.5 w-full rounded-sm" />
+                    ) : (
+                      <div
+                        className={cn(
+                          'w-full rounded-sm transition-colors',
+                          i === daily.length - 1
+                            ? 'bg-primary'
+                            : 'bg-muted-foreground/25 hover:bg-muted-foreground/50',
+                        )}
+                        style={{
+                          height: `${Math.max(4, (d.orders / maxOrders) * 100)}%`,
+                        }}
+                      />
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {d.date} · {d.orders} {d.orders === 1 ? 'order' : 'orders'} ·{' '}
+                  {formatPln(d.grossPln ?? 0, 'en')}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        )}
+        <div className="text-muted-foreground flex justify-between font-mono text-[0.55rem] uppercase">
+          <span>{daily[0]?.date}</span>
+          <span>{daily[daily.length - 1]?.date}</span>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
-// "What must ship today" (plan 07 Phase E): the ops card pins the board's
-// top. Overdue rows are destructive-accented; the empty state is the all-clear.
-function OpsCard({ ops }: { ops: UseQueryResult<OpsToday, Error> }) {
-  if (ops.isPending) return null
+// "What must ship today" (plan 07 Phase E), compressed for the 1/3 column.
+function MustShipCard({ ops }: { ops: UseQueryResult<OpsToday, Error> }) {
+  if (ops.isPending) return <Skeleton className="h-56" />
   if (ops.error) {
     return (
       <p className="text-destructive font-mono text-xs">
@@ -525,6 +344,9 @@ function OpsCard({ ops }: { ops: UseQueryResult<OpsToday, Error> }) {
   }
   const data = ops.data
   const allClear = data.orders.length === 0
+  const visible = data.orders.slice(0, MUST_SHIP_VISIBLE)
+  const more = data.orders.length - visible.length
+
   return (
     <Card
       className={cn(
@@ -534,7 +356,7 @@ function OpsCard({ ops }: { ops: UseQueryResult<OpsToday, Error> }) {
           : 'border-destructive/40 bg-destructive/5',
       )}
     >
-      <CardHeader>
+      <CardHeader className="px-4">
         <CardTitle className="flex items-center gap-2 font-mono text-[0.65rem] font-bold tracking-[0.2em] uppercase">
           {allClear ? (
             <CheckCircle2 className="text-signal size-4" />
@@ -543,44 +365,88 @@ function OpsCard({ ops }: { ops: UseQueryResult<OpsToday, Error> }) {
           )}
           Must ship — {data.date}
         </CardTitle>
-        {allClear && (
+      </CardHeader>
+      <CardContent className="flex flex-col px-4 pt-3">
+        {allClear ? (
           <p className="text-signal font-mono text-[0.65rem] tracking-[0.14em] uppercase">
             Nothing due — all clear
           </p>
-        )}
-      </CardHeader>
-      {!allClear && (
-        <CardContent>
-          <Table>
-            <TableBody>
-              {data.orders.map((o) => (
-                <TableRow key={o.orderId}>
-                  <TableCell className="font-mono text-xs font-bold">
+        ) : (
+          <>
+            <ul className="divide-y">
+              {visible.map((o) => (
+                <li
+                  key={o.orderId}
+                  className="flex items-center justify-between gap-2 py-2"
+                >
+                  <div className="flex min-w-0 flex-col">
                     <Link
                       to="/admin/orders/$shortId"
                       params={{ shortId: o.orderId }}
-                      className="underline underline-offset-4"
+                      className="font-mono text-xs font-bold underline underline-offset-4"
                     >
                       {o.orderId}
                     </Link>
-                  </TableCell>
-                  <TableCell className="max-w-52 truncate text-[13px]">
-                    {o.email}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
-                      {o.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
+                    <span className="text-muted-foreground truncate text-[11px]">
+                      {o.email}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
                     <ShipByCell shipBy={o.shipBy} overdue={o.overdue} />
-                  </TableCell>
-                </TableRow>
+                    <StatusPill status={o.status} />
+                  </div>
+                </li>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      )}
+            </ul>
+            {more > 0 && (
+              <Link
+                to="/admin/orders"
+                className="text-muted-foreground hover:text-foreground pt-2 font-mono text-[0.65rem] tracking-[0.14em] uppercase underline underline-offset-4"
+              >
+                +{more} more →
+              </Link>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function RecentOrdersCard({
+  recent,
+}: {
+  recent: UseQueryResult<
+    components['schemas']['AdminListOrdersResponse'],
+    Error
+  >
+}) {
+  return (
+    <Card className="gap-0 py-4">
+      <CardHeader className="flex flex-wrap items-center justify-between gap-2 px-4">
+        <CardTitle className="font-mono text-[0.65rem] font-bold tracking-[0.2em] uppercase">
+          Recent orders
+        </CardTitle>
+        <Link
+          to="/admin/orders"
+          className="text-muted-foreground hover:text-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase underline underline-offset-4"
+        >
+          View all →
+        </Link>
+      </CardHeader>
+      <CardContent className="px-4 pt-3">
+        {recent.isPending ? (
+          <Skeleton className="h-64 w-full" />
+        ) : recent.error || !recent.data ? (
+          <p className="text-destructive font-mono text-xs">
+            {errorCode(recent.error)}
+          </p>
+        ) : recent.data.orders.length === 0 ? (
+          <EmptyState label="No orders yet." />
+        ) : (
+          <OrdersTable orders={recent.data.orders} compact />
+        )}
+      </CardContent>
     </Card>
   )
 }

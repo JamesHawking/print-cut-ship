@@ -8,6 +8,7 @@ import {
   FileBox,
   LayoutDashboard,
   LogOut,
+  Package,
   SlidersHorizontal,
   Store,
   Users,
@@ -40,28 +41,21 @@ import { cn } from '@/lib/utils'
 
 const REFETCH_MS = 60_000
 
+// One flight for both chips: shares the ['admin','ops','stats'] cache entry
+// with the dashboard/board, so the sidebar's refetchInterval keeps their KPIs
+// live for free.
 function useAttentionCounts() {
-  const ops = useQuery({
-    queryKey: ['admin', 'ops', 'today'],
+  const stats = useQuery({
+    queryKey: ['admin', 'ops', 'stats'],
     queryFn: async () => {
-      const res = await api.GET('/api/v1/admin/ops/today')
-      return res.data ?? null
-    },
-    refetchInterval: REFETCH_MS,
-  })
-  const stepNew = useQuery({
-    queryKey: ['admin', 'step-requests', 'new-count'],
-    queryFn: async () => {
-      const res = await api.GET('/api/v1/admin/step-requests', {
-        params: { query: { status: 'new' } },
-      })
+      const res = await api.GET('/api/v1/admin/ops/stats')
       return res.data ?? null
     },
     refetchInterval: REFETCH_MS,
   })
   return {
-    mustShip: ops.data?.orders.length ?? 0,
-    stepNew: stepNew.data?.requests.length ?? 0,
+    overdue: stats.data?.overdue ?? 0,
+    stepNew: stats.data?.stepNew ?? 0,
   }
 }
 
@@ -74,24 +68,36 @@ type NavItem = {
   badgeClass?: string
 }
 
-const CHIP_PRIMARY = 'bg-primary text-primary-foreground'
 const CHIP_HIGHLIGHT = 'bg-highlight text-highlight-foreground'
+const CHIP_DESTRUCTIVE = 'bg-destructive text-destructive-foreground'
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const { mustShip, stepNew } = useAttentionCounts()
+  const { overdue, stepNew } = useAttentionCounts()
 
+  // Orders chip counts overdue (strictly past ship-by) — an alarm, not the
+  // wider "due today" set the dashboard's must-ship card shows.
   const groups: Array<{ label: string; items: Array<NavItem> }> = [
     {
-      label: 'Operations',
+      label: 'Overview',
       items: [
         {
           to: '/admin',
-          label: 'Board',
+          label: 'Dashboard',
           icon: LayoutDashboard,
           exact: true,
-          badge: mustShip,
-          badgeClass: CHIP_PRIMARY,
+        },
+      ],
+    },
+    {
+      label: 'Commerce',
+      items: [
+        {
+          to: '/admin/orders',
+          label: 'Orders',
+          icon: Package,
+          badge: overdue,
+          badgeClass: CHIP_DESTRUCTIVE,
         },
         {
           to: '/admin/step-requests',
@@ -100,6 +106,7 @@ export function AppSidebar() {
           badge: stepNew,
           badgeClass: CHIP_HIGHLIGHT,
         },
+        { to: '/admin/customers', label: 'Customers', icon: Users },
       ],
     },
     {
@@ -107,10 +114,6 @@ export function AppSidebar() {
       items: [
         { to: '/admin/pricing', label: 'Pricing', icon: SlidersHorizontal },
       ],
-    },
-    {
-      label: 'Support',
-      items: [{ to: '/admin/customers', label: 'Customers', icon: Users }],
     },
   ]
 

@@ -21,8 +21,20 @@ import {
 } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
-const TITLES: Array<{ prefix: string; title: string }> = [
-  { prefix: '/admin/orders/', title: 'Order' },
+// Crumb derivation: longest prefix wins (order matters — '/admin/orders/'
+// before '/admin/orders'). A parent renders as a linked crumb; sibling pages
+// stand alone (the sidebar is their nav, Dashboard is not their parent).
+const CRUMBS: Array<{
+  prefix: string
+  title: string | ((pathname: string) => string)
+  parent?: { label: string; to: string }
+}> = [
+  {
+    prefix: '/admin/orders/',
+    title: (p) => p.split('/').pop() ?? '',
+    parent: { label: 'Orders', to: '/admin/orders' },
+  },
+  { prefix: '/admin/orders', title: 'Orders' },
   { prefix: '/admin/pricing', title: 'Pricing' },
   { prefix: '/admin/customers', title: 'Customers' },
   { prefix: '/admin/step-requests', title: 'STEP queue' },
@@ -30,15 +42,17 @@ const TITLES: Array<{ prefix: string; title: string }> = [
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const match = TITLES.find((t) => pathname.startsWith(t.prefix))
-  const isBoard = pathname === '/admin'
-  const shortId =
-    match?.prefix === '/admin/orders/' ? pathname.split('/').pop() : undefined
+  const match = CRUMBS.find((c) => pathname.startsWith(c.prefix))
+  const title = match
+    ? typeof match.title === 'function'
+      ? match.title(pathname)
+      : match.title
+    : 'Dashboard'
 
   return (
     <TooltipProvider>
       <div className="dark bg-background text-foreground min-h-screen">
-        <SidebarProvider defaultOpen={false}>
+        <SidebarProvider>
           <AppSidebar />
           <SidebarInset>
             <header className="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4">
@@ -46,25 +60,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <Separator orientation="vertical" className="mr-2 h-4" />
               <Breadcrumb>
                 <BreadcrumbList>
-                  {isBoard ? (
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>Board</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  ) : (
+                  {match?.parent && (
                     <>
                       <BreadcrumbItem>
                         <BreadcrumbLink asChild>
-                          <Link to="/admin">Board</Link>
+                          <Link to={match.parent.to}>{match.parent.label}</Link>
                         </BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
-                      <BreadcrumbItem>
-                        <BreadcrumbPage>
-                          {shortId ? `Order ${shortId}` : match?.title}
-                        </BreadcrumbPage>
-                      </BreadcrumbItem>
                     </>
                   )}
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{title}</BreadcrumbPage>
+                  </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
             </header>

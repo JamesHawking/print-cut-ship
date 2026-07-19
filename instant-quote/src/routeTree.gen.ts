@@ -21,6 +21,7 @@ import { Route as LocaleQuoteRouteImport } from './routes/$locale/quote'
 import { Route as LocaleOrdersRouteImport } from './routes/$locale/orders'
 import { Route as LocaleLoginRouteImport } from './routes/$locale/login'
 import { Route as LocaleSectionRouteRouteImport } from './routes/$locale/$section/route'
+import { Route as AdminOrdersIndexRouteImport } from './routes/admin/orders.index'
 import { Route as LocaleSectionIndexRouteImport } from './routes/$locale/$section/index'
 import { Route as PlBazaWiedzyRssDotxmlRouteImport } from './routes/pl/baza-wiedzy/rss[.]xml'
 import { Route as EnBlogRssDotxmlRouteImport } from './routes/en/blog/rss[.]xml'
@@ -89,6 +90,11 @@ const LocaleSectionRouteRoute = LocaleSectionRouteRouteImport.update({
   path: '/$section',
   getParentRoute: () => LocaleRouteRoute,
 } as any)
+const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const LocaleSectionIndexRoute = LocaleSectionIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
+  '/admin/orders/': typeof AdminOrdersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section': typeof LocaleSectionIndexRoute
+  '/admin/orders': typeof AdminOrdersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
+  '/admin/orders/': typeof AdminOrdersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section/'
+    | '/admin/orders/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section'
+    | '/admin/orders'
   id:
     | '__root__'
     | '/'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section/'
+    | '/admin/orders/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -343,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleSectionRouteRouteImport
       parentRoute: typeof LocaleRouteRoute
     }
+    '/admin/orders/': {
+      id: '/admin/orders/'
+      path: '/orders'
+      fullPath: '/admin/orders/'
+      preLoaderRoute: typeof AdminOrdersIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/$locale/$section/': {
       id: '/$locale/$section/'
       path: '/'
@@ -438,6 +457,7 @@ interface AdminRouteRouteChildren {
   AdminStepRequestsRoute: typeof AdminStepRequestsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminOrdersShortIdRoute: typeof AdminOrdersShortIdRoute
+  AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
@@ -446,6 +466,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminStepRequestsRoute: AdminStepRequestsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminOrdersShortIdRoute: AdminOrdersShortIdRoute,
+  AdminOrdersIndexRoute: AdminOrdersIndexRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(

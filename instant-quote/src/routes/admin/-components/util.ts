@@ -15,19 +15,6 @@ export function errorCode(err: unknown): string {
   return 'internal'
 }
 
-export const STATUS_VARIANT: Record<
-  string,
-  'default' | 'secondary' | 'destructive' | 'outline'
-> = {
-  draft: 'outline',
-  paid: 'default',
-  in_production: 'default',
-  shipped: 'secondary',
-  delivered: 'secondary',
-  cancelled: 'destructive',
-  refunded: 'destructive',
-}
-
 // Relative ship-by urgency, computed on the shop's Warsaw business calendar
 // (mirrors formatPlacedDate's timezone pin). The raw ISO date stays available
 // via tooltip at call sites.

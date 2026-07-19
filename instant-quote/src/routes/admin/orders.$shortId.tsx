@@ -14,7 +14,8 @@ import {
   Truck,
 } from 'lucide-react'
 
-import { STATUS_VARIANT, errorCode } from './-components/util'
+import { StatusPill } from './-components/StatusPill'
+import { errorCode } from './-components/util'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -159,9 +160,7 @@ function OrderDetail() {
               {o.paidAt ? ` · paid ${formatPlacedDate(o.paidAt, 'en')}` : ''}
             </p>
           </div>
-          <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
-            {o.status}
-          </Badge>
+          <StatusPill status={o.status} />
         </div>
 
         <TransitionBar
