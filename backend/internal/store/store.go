@@ -2,11 +2,19 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// ErrTransitionRefused is returned (wrapped) when a payment-event ledger row
+// was committed but the order's status transition was refused by the SQL
+// guard — e.g. a stale checkout session completing after a newer one already
+// flipped the order to paid. The money event IS recorded (the caller must
+// ack the event, not retry it); the state needs human reconciliation.
+var ErrTransitionRefused = errors.New("store: status transition refused")
 
 // Store is the data-access layer over the pgx pool. It embeds the sqlc-generated
 // *Queries so all single-statement queries are available directly, and adds
@@ -108,9 +116,11 @@ func (s *Store) CreateOrder(ctx context.Context, order InsertOrderParams, items 
 // ApplyPaymentSucceeded records a payment ledger row and flips the order to
 // 'paid' in one transaction. Idempotent: applied=false when the provider
 // event id was already recorded (redelivery) — the transition then provably
-// happened in the earlier delivery's transaction. A redelivery can therefore
-// never double-record or double-apply, and a crash mid-transaction rolls both
-// writes back so the next delivery retries cleanly.
+// happened in the earlier delivery's transaction. If the SQL guard refuses
+// the transition (order not in draft — e.g. a stale session paying after a
+// newer one already did), the ledger row is STILL committed and the error is
+// ErrTransitionRefused: with a real PSP that money moved, so losing the
+// ledger trace would be a silent double-charge.
 func (s *Store) ApplyPaymentSucceeded(ctx context.Context, payment InsertPaymentEventParams) (bool, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -132,20 +142,18 @@ func (s *Store) ApplyPaymentSucceeded(ctx context.Context, payment InsertPayment
 	if err != nil {
 		return false, fmt.Errorf("store: mark order paid: %w", err)
 	}
-	if marked == 0 {
-		// The order was not in draft (e.g. cancelled meanwhile). The ledger
-		// row still records the money; support reconciles the state.
-		return false, fmt.Errorf("store: order %s not in draft for payment event %s", payment.OrderID, payment.ProviderEventID)
-	}
 	if err := tx.Commit(ctx); err != nil {
 		return false, fmt.Errorf("store: commit tx: %w", err)
+	}
+	if marked == 0 {
+		return false, fmt.Errorf("%w: order %s -> paid (event %s)", ErrTransitionRefused, payment.OrderID, payment.ProviderEventID)
 	}
 	return true, nil
 }
 
 // ApplyRefundSucceeded records a refund ledger row and flips the order to
-// 'refunded' in one transaction. Same idempotency contract as
-// ApplyPaymentSucceeded.
+// 'refunded' in one transaction. Same idempotency and commit-on-refusal
+// contract as ApplyPaymentSucceeded.
 func (s *Store) ApplyRefundSucceeded(ctx context.Context, payment InsertPaymentEventParams) (bool, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -165,11 +173,11 @@ func (s *Store) ApplyRefundSucceeded(ctx context.Context, payment InsertPaymentE
 	if err != nil {
 		return false, fmt.Errorf("store: mark order refunded: %w", err)
 	}
-	if marked == 0 {
-		return false, fmt.Errorf("store: order %s not in paid for refund event %s", payment.OrderID, payment.ProviderEventID)
-	}
 	if err := tx.Commit(ctx); err != nil {
 		return false, fmt.Errorf("store: commit tx: %w", err)
+	}
+	if marked == 0 {
+		return false, fmt.Errorf("%w: order %s -> refunded (event %s)", ErrTransitionRefused, payment.OrderID, payment.ProviderEventID)
 	}
 	return true, nil
 }

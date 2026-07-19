@@ -59,6 +59,15 @@ func (p *Pipeline) ProcessEvent(ctx context.Context, ev Event) error {
 	case EventCheckoutCompleted:
 		applied, err := p.Store.ApplyPaymentSucceeded(ctx, payment)
 		if err != nil {
+			if errors.Is(err, store.ErrTransitionRefused) {
+				// The money moved but the state didn't (e.g. a stale session
+				// paying an already-paid order). The ledger row is committed;
+				// ack the event — a retry can't change the state — and page a
+				// human via the error log.
+				p.Logger.Error("payment recorded but transition refused; reconciliation needed",
+					"orderId", ev.OrderShortID, "eventId", ev.ID, "err", err)
+				return nil
+			}
 			return fmt.Errorf("payments: apply %s: %w", ev.ID, err)
 		}
 		if applied {
@@ -68,6 +77,11 @@ func (p *Pipeline) ProcessEvent(ctx context.Context, ev Event) error {
 	case EventChargeRefunded:
 		applied, err := p.Store.ApplyRefundSucceeded(ctx, payment)
 		if err != nil {
+			if errors.Is(err, store.ErrTransitionRefused) {
+				p.Logger.Error("refund recorded but transition refused; reconciliation needed",
+					"orderId", ev.OrderShortID, "eventId", ev.ID, "err", err)
+				return nil
+			}
 			return fmt.Errorf("payments: apply %s: %w", ev.ID, err)
 		}
 		if applied {

@@ -329,6 +329,69 @@ func TestPipelineIdempotency(t *testing.T) {
 	}
 }
 
+// A stale checkout session completing after a newer one already paid the
+// order is a double-charge with a real PSP — the second event's ledger row
+// must be committed even though the transition is refused (review fix).
+func TestPipelineStalePaymentStillLedgered(t *testing.T) {
+	h, st, pool, _ := setupOrdersTest(t)
+	quoteID := submitTestQuote(t, h, st, "stale@example.com")
+	order := createTestOrder(t, h, quoteID, "stale@example.com", "")
+	ctx := context.Background()
+	o, _ := st.GetOrderByShortID(ctx, order.OrderId)
+
+	pipeline := &payments.Pipeline{Store: st, Logger: slog.New(slog.DiscardHandler)}
+	first := payments.Event{
+		ID: "evt_stale_1", Provider: "stub", Type: payments.EventCheckoutCompleted,
+		OrderShortID: order.OrderId, PaymentRef: "pi_new", AmountGrosze: o.GrossTotalGrosze,
+	}
+	if err := pipeline.ProcessEvent(ctx, first); err != nil {
+		t.Fatalf("first payment: %v", err)
+	}
+	stale := payments.Event{
+		ID: "evt_stale_2", Provider: "stub", Type: payments.EventCheckoutCompleted,
+		OrderShortID: order.OrderId, PaymentRef: "pi_stale", AmountGrosze: o.GrossTotalGrosze,
+	}
+	if err := pipeline.ProcessEvent(ctx, stale); err != nil {
+		t.Fatalf("stale payment must be acked, got: %v", err)
+	}
+	var count int
+	if err := pool.QueryRow(ctx,
+		`SELECT count(*) FROM payments WHERE order_id = $1`, o.ID).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 2 {
+		t.Fatalf("payments rows %d, want 2 (stale event ledgered)", count)
+	}
+	o2, _ := st.GetOrderByShortID(ctx, order.OrderId)
+	if o2.Status != "paid" || o2.PaymentRef == nil || *o2.PaymentRef != "pi_new" {
+		t.Fatalf("status %q ref %v — first payment must win", o2.Status, o2.PaymentRef)
+	}
+	// Refund against a non-paid order: ledgered too, state unchanged.
+	h2, st2, pool2, _ := setupOrdersTest(t)
+	quoteID2 := submitTestQuote(t, h2, st2, "refund@example.com")
+	order2 := createTestOrder(t, h2, quoteID2, "refund@example.com", "")
+	o3, _ := st2.GetOrderByShortID(ctx, order2.OrderId)
+	pipeline2 := &payments.Pipeline{Store: st2, Logger: slog.New(slog.DiscardHandler)}
+	if err := pipeline2.ProcessEvent(ctx, payments.Event{
+		ID: "evt_refund_draft", Provider: "stub", Type: payments.EventChargeRefunded,
+		OrderShortID: order2.OrderId, PaymentRef: "re_x", AmountGrosze: o3.GrossTotalGrosze,
+	}); err != nil {
+		t.Fatalf("refused refund must be acked, got: %v", err)
+	}
+	var refundRows int
+	if err := pool2.QueryRow(ctx,
+		`SELECT count(*) FROM payments WHERE order_id = $1 AND type = 'refund'`, o3.ID).Scan(&refundRows); err != nil {
+		t.Fatal(err)
+	}
+	if refundRows != 1 {
+		t.Fatalf("refund rows %d, want 1 (refused refund ledgered)", refundRows)
+	}
+	o4, _ := st2.GetOrderByShortID(ctx, order2.OrderId)
+	if o4.Status != "draft" {
+		t.Fatalf("status %q, want draft (refund refused)", o4.Status)
+	}
+}
+
 func TestTrackOrder(t *testing.T) {
 	h, st, _, _ := setupOrdersTest(t)
 	quoteID := submitTestQuote(t, h, st, "ela@example.com")

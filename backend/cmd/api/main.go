@@ -107,7 +107,7 @@ func serve(logger *slog.Logger) {
 	pipeline := &payments.Pipeline{Store: st, Logger: logger}
 	publicBaseURL := os.Getenv("PUBLIC_BASE_URL")
 	if publicBaseURL == "" {
-		publicBaseURL = "http://localhost:3001"
+		publicBaseURL = "http://localhost:3000"
 	}
 	var provider payments.Provider
 	switch name := os.Getenv("PAYMENTS_PROVIDER"); name {
