@@ -534,6 +534,10 @@ export const pl = {
     metaPlates: (count: number) =>
       `${count} ${plPlural(count, 'płyta', 'płyty', 'płyt')}`,
   },
+  quoteEmpty: {
+    kicker: 'NOWA_WYCENA',
+    hint: 'Upuść model 3D — cena i termin wysyłki w kilka sekund.',
+  },
   priceBreak: {
     qty: 'Szt.',
     unitPrice: 'Cena jedn.',

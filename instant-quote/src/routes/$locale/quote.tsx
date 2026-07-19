@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import { DropZone } from '@/components/DropZone'
 import { SiteHeader } from '@/components/SiteHeader'
 import { QuoteCard } from '@/components/QuoteCard'
+import { QuoteEmptyState } from '@/components/QuoteEmptyState'
 import { QuoteSkeleton } from '@/components/QuoteSkeleton'
 import { OrderPanel } from '@/components/OrderPanel'
 import { OrderDialog } from '@/components/OrderDialog'
@@ -65,18 +66,10 @@ function QuoteWorkspace() {
     remove,
     retryUpload,
   } = useParts()
-  const navigate = useNavigate()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [pricesExVat, setPricesExVat] = useState(false)
   const [orderOpen, setOrderOpen] = useState(false)
   const clock = useWarsawClock()
-
-  // Parts live in memory only — a refresh or deep link lands here empty, and
-  // an upload whose every file was rejected does too. Bounce to the landing.
-  useEffect(() => {
-    if (parts.length === 0)
-      void navigate({ to: '/$locale', params: { locale }, replace: true })
-  }, [parts.length, navigate, locale])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -197,6 +190,26 @@ function QuoteWorkspace() {
       parts: orderableEntries.length,
     })
     setOrderOpen(true)
+  }
+
+  // No parts — a refresh, a deep link, or the last part removed. Stay here
+  // with a welcoming intake instead of bouncing to the landing page.
+  if (parts.length === 0) {
+    return (
+      <>
+        <SiteHeader variant="quote" />
+        <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 py-10 sm:px-6">
+          <QuoteEmptyState
+            onFiles={handleMoreFiles}
+            onUrl={handleMakerworldUrl}
+            urlPending={mwPending}
+          />
+          <p className="text-muted-foreground text-center font-mono text-[0.625rem] tracking-[0.16em] uppercase tabular-nums">
+            {strings.config.warsawTz} {clock} · {strings.config.warsawCutoff}
+          </p>
+        </main>
+      </>
+    )
   }
 
   return (

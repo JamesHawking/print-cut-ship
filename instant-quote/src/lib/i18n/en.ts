@@ -510,6 +510,10 @@ export const en = {
     metaPlates: (count: number) =>
       `${count} ${enPlural(count, 'plate', 'plates')}`,
   },
+  quoteEmpty: {
+    kicker: 'NEW_QUOTE',
+    hint: 'Drop a 3D model — price and ship date in seconds.',
+  },
   priceBreak: {
     qty: 'Qty',
     unitPrice: 'Unit price',
