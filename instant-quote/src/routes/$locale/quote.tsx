@@ -270,7 +270,12 @@ function QuoteWorkspace() {
       >
         <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="lg:sticky lg:top-20 lg:self-start">
+            {/* min-w-0 on both columns: the R3F canvas carries an inline
+                pixel size, and without this the grid item's min-width:auto
+                propagates it — the track can't shrink on desktop→mobile
+                resize, the ResizeObserver never sees the new size, and the
+                canvas stays stuck at desktop width (overflow + blank view). */}
+            <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
               {selectedPart?.status === 'ready' &&
               selectedPart.positions &&
               selectedPart.metrics ? (
@@ -296,7 +301,7 @@ function QuoteWorkspace() {
               )}
             </div>
 
-            <div className="space-y-6">
+            <div className="min-w-0 space-y-6">
               {selectedPart?.status === 'parsing' ||
               (selectedPart && !selectedQuote && priceQuery.isPending) ? (
                 <QuoteSkeleton />
