@@ -206,7 +206,11 @@ function QuoteWorkspace() {
             urlPending={mwPending}
           />
           <p className="text-muted-foreground text-center font-mono text-[0.625rem] tracking-[0.16em] uppercase tabular-nums">
-            {strings.config.warsawTz} {clock} · {strings.config.warsawCutoff}
+            {strings.config.warsawTz}{' '}
+            <span className={clock ? undefined : 'opacity-40'}>
+              {clock ?? '--:--'}
+            </span>{' '}
+            · {strings.config.warsawCutoff}
           </p>
         </main>
       </>
@@ -277,13 +281,13 @@ function QuoteWorkspace() {
                         strings.errors.priceFailed,
                       )}
                     </p>
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2"
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => void priceQuery.refetch()}
                     >
                       {strings.orders.retry}
-                    </button>
+                    </Button>
                   </CardContent>
                 </Card>
               ) : selectedPart && selectedQuote ? (
@@ -345,7 +349,11 @@ function QuoteWorkspace() {
           )}
 
           <p className="text-muted-foreground text-center font-mono text-[0.625rem] tracking-[0.16em] uppercase tabular-nums">
-            {strings.config.warsawTz} {clock} · {strings.config.warsawCutoff}
+            {strings.config.warsawTz}{' '}
+            <span className={clock ? undefined : 'opacity-40'}>
+              {clock ?? '--:--'}
+            </span>{' '}
+            · {strings.config.warsawCutoff}
           </p>
         </div>
 

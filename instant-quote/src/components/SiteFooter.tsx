@@ -79,7 +79,11 @@ export function SiteFooter({
         <div className="text-muted-foreground flex flex-col gap-3 border-t py-6 pb-8 font-mono text-[0.65rem] tracking-wider uppercase sm:flex-row sm:items-center sm:justify-between">
           <p className="text-muted-foreground/70">{note}</p>
           <span className="shrink-0 tabular-nums">
-            {strings.config.warsawTz} {clock} · {cutoff}
+            {strings.config.warsawTz}{' '}
+            <span className={clock ? undefined : 'opacity-40'}>
+              {clock ?? '--:--'}
+            </span>{' '}
+            · {cutoff}
           </span>
         </div>
       </div>

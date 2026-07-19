@@ -19,7 +19,7 @@ export function OrderAccessShell({ children }: { children: ReactNode }) {
   const facts = [
     { label: s.factRetention, value: s.factRetentionValue },
     { label: s.factValidity, value: s.factValidityValue },
-    { label: s.factClock, value: clock },
+    { label: s.factClock, value: clock ?? '--:--' },
   ]
 
   return (

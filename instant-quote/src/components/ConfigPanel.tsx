@@ -9,6 +9,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import type {
   LeadTimeId,
@@ -70,9 +71,10 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
   const shipByLead = new Map(shipDates?.map((s) => [s.leadTime, s]))
   const discountAt = (q: number) =>
     catalog?.discountTiers.find((t) => t.quantity === q)?.fraction ?? 0
+  const loading = !catalog
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" aria-busy={loading}>
       <div className="space-y-2">
         <Label className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
           {strings.config.process}
@@ -81,7 +83,7 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
           value={config.process}
           onValueChange={(v) => onChange({ process: v as ProcessId })}
         >
-          <SelectTrigger className="w-full font-semibold">
+          <SelectTrigger className="w-full font-semibold" disabled={loading}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -150,6 +152,7 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
             min={1}
             value={qtyText}
             onChange={(e) => handleQtyInput(e.target.value)}
+            disabled={loading}
             className="h-auto min-h-11 w-24 self-stretch font-mono text-[0.8125rem]"
           />
         </div>
@@ -159,54 +162,62 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
         <Label className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
           {strings.config.leadTime}
         </Label>
-        <RadioGroup
-          value={config.leadTime}
-          onValueChange={(v) => onChange({ leadTime: v as LeadTimeId })}
-          className="gap-2"
-        >
-          {(catalog?.leadTimes ?? []).map((lt) => {
-            const active = config.leadTime === lt.id
-            const ship = shipByLead.get(lt.id)
-            const delta = Math.round((lt.mult - 1) * 100)
-            return (
-              <label
-                key={lt.id}
-                htmlFor={`lead-${lt.id}`}
-                className={cn(
-                  'flex cursor-pointer items-center justify-between gap-3 rounded-md border px-3.5 py-3 transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
-                  active
-                    ? 'border-foreground bg-secondary/50'
-                    : 'border-border bg-card hover:bg-muted/50',
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value={lt.id} id={`lead-${lt.id}`} />
-                  <div>
-                    <div className="text-[0.8125rem] font-semibold">
-                      {LEAD_LABEL[lt.id]}
-                    </div>
-                    {ship && (
-                      <div className="text-muted-foreground mt-0.5 text-[0.6875rem]">
-                        {/* The API's `label` is the engine's canonical EN
-                            form — display formats the structured date. */}
-                        {strings.config.ships(
-                          formatShipDate(ship.date, locale),
-                        )}
+        {loading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-full rounded-md" />
+            <Skeleton className="h-12 w-full rounded-md" />
+            <Skeleton className="h-12 w-full rounded-md" />
+          </div>
+        ) : (
+          <RadioGroup
+            value={config.leadTime}
+            onValueChange={(v) => onChange({ leadTime: v as LeadTimeId })}
+            className="gap-2"
+          >
+            {(catalog?.leadTimes ?? []).map((lt) => {
+              const active = config.leadTime === lt.id
+              const ship = shipByLead.get(lt.id)
+              const delta = Math.round((lt.mult - 1) * 100)
+              return (
+                <label
+                  key={lt.id}
+                  htmlFor={`lead-${lt.id}`}
+                  className={cn(
+                    'flex cursor-pointer items-center justify-between gap-3 rounded-md border px-3.5 py-3 transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
+                    active
+                      ? 'border-foreground bg-secondary/50'
+                      : 'border-border bg-card hover:bg-muted/50',
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <RadioGroupItem value={lt.id} id={`lead-${lt.id}`} />
+                    <div>
+                      <div className="text-[0.8125rem] font-semibold">
+                        {LEAD_LABEL[lt.id]}
                       </div>
-                    )}
+                      {ship && (
+                        <div className="text-muted-foreground mt-0.5 text-[0.6875rem]">
+                          {/* The API's `label` is the engine's canonical EN
+                            form — display formats the structured date. */}
+                          {strings.config.ships(
+                            formatShipDate(ship.date, locale),
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="text-muted-foreground font-mono text-[0.6875rem] tabular-nums">
-                  {delta === 0
-                    ? strings.config.base
-                    : delta > 0
-                      ? `+${delta}%`
-                      : `${delta}%`}
-                </div>
-              </label>
-            )
-          })}
-        </RadioGroup>
+                  <div className="text-muted-foreground font-mono text-[0.6875rem] tabular-nums">
+                    {delta === 0
+                      ? strings.config.base
+                      : delta > 0
+                        ? `+${delta}%`
+                        : `${delta}%`}
+                  </div>
+                </label>
+              )
+            })}
+          </RadioGroup>
+        )}
         <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase">
           {strings.config.warsawCutoff}
         </p>
