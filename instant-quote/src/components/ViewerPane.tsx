@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { CameraPreset } from '@/lib/camera-presets'
 import { ViewerFallback } from './ViewerFallback'
 
 const PartViewer = lazy(() => import('./PartViewer'))
@@ -20,19 +21,31 @@ function hasWebGL(): boolean {
 export function ViewerPane({
   positions,
   bboxMm,
+  enabled = true,
+  showGrid,
+  autoRotate,
+  viewRequest,
+  resetNonce,
 }: {
   positions: Float32Array
   bboxMm: { x: number; y: number; z: number }
+  /** When false, never mounts the canvas — the other breakpoint owns it. */
+  enabled?: boolean
+  showGrid?: boolean
+  autoRotate?: boolean
+  viewRequest?: { preset: CameraPreset; nonce: number } | null
+  resetNonce?: number
 }) {
   const [mounted, setMounted] = useState(false)
   const [webgl, setWebgl] = useState(true)
 
   useEffect(() => {
+    if (!enabled) return
     setMounted(true)
     setWebgl(hasWebGL())
-  }, [])
+  }, [enabled])
 
-  if (!mounted) {
+  if (!enabled || !mounted) {
     return <Skeleton className="h-full w-full rounded-xl" />
   }
   if (!webgl) {
@@ -40,7 +53,14 @@ export function ViewerPane({
   }
   return (
     <Suspense fallback={<Skeleton className="h-full w-full rounded-xl" />}>
-      <PartViewer positions={positions} bboxMm={bboxMm} />
+      <PartViewer
+        positions={positions}
+        bboxMm={bboxMm}
+        showGrid={showGrid}
+        autoRotate={autoRotate}
+        viewRequest={viewRequest}
+        resetNonce={resetNonce}
+      />
     </Suspense>
   )
 }

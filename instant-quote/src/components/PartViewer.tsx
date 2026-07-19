@@ -1,7 +1,15 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Bounds, Center, OrbitControls } from '@react-three/drei'
+import {
+  Bounds,
+  Center,
+  Grid,
+  OrbitControls,
+  useBounds,
+} from '@react-three/drei'
 import * as THREE from 'three'
+import type { CameraPreset } from '@/lib/camera-presets'
+import { presetGoal } from '@/lib/camera-presets'
 import { formatDims } from '@/lib/format'
 import { useLocale } from '@/lib/i18n'
 
@@ -22,12 +30,50 @@ function PartMesh({ positions }: { positions: Float32Array }) {
   )
 }
 
+/**
+ * Applies viewport toolbar requests from inside the Canvas. Must stay a
+ * descendant of <Bounds> — useBounds() reads its context. Flights animate
+ * over Bounds' default maxDuration (1s); scene units are mm and the fit
+ * distance already includes the Bounds margin.
+ */
+function CameraRig({
+  viewRequest,
+  resetNonce,
+}: {
+  viewRequest?: { preset: CameraPreset; nonce: number } | null
+  resetNonce?: number
+}) {
+  const bounds = useBounds()
+
+  useEffect(() => {
+    if (!viewRequest) return
+    const { center, distance } = bounds.refresh().getSize()
+    const goal = presetGoal(viewRequest.preset, center.toArray(), distance)
+    bounds.moveTo(goal.position).lookAt({ target: goal.target })
+  }, [bounds, viewRequest])
+
+  useEffect(() => {
+    if (!resetNonce) return
+    bounds.refresh().reset()
+  }, [bounds, resetNonce])
+
+  return null
+}
+
 export default function PartViewer({
   positions,
   bboxMm,
+  showGrid = false,
+  autoRotate = false,
+  viewRequest = null,
+  resetNonce = 0,
 }: {
   positions: Float32Array
   bboxMm: { x: number; y: number; z: number }
+  showGrid?: boolean
+  autoRotate?: boolean
+  viewRequest?: { preset: CameraPreset; nonce: number } | null
+  resetNonce?: number
 }) {
   const locale = useLocale()
   // Chrome-less: the surrounding ViewerFrame owns border and radius.
@@ -46,8 +92,32 @@ export default function PartViewer({
           <Center>
             <PartMesh positions={positions} />
           </Center>
+          <CameraRig viewRequest={viewRequest} resetNonce={resetNonce} />
         </Bounds>
-        <OrbitControls makeDefault enablePan enableZoom enableRotate />
+        {showGrid && (
+          <Grid
+            rotation={[-Math.PI / 2, 0, 0]}
+            position={[0, -bboxMm.y / 2 - 0.5, 0]}
+            args={[2000, 2000]}
+            cellSize={10}
+            sectionSize={50}
+            cellColor="#e4e4e7"
+            sectionColor="#d4d4d8"
+            cellThickness={0.6}
+            sectionThickness={1}
+            fadeDistance={1200}
+            fadeStrength={1}
+            side={THREE.DoubleSide}
+          />
+        )}
+        <OrbitControls
+          makeDefault
+          enablePan
+          enableZoom
+          enableRotate
+          autoRotate={autoRotate}
+          autoRotateSpeed={0.8}
+        />
       </Canvas>
       {/* In-canvas dims badge — desktop only; on mobile the metrics strip
           directly below carries the same value. */}
