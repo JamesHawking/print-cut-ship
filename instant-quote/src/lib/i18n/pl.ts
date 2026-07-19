@@ -543,6 +543,7 @@ export const pl = {
     outlinerEmpty: 'Brak części — upuść plik na scenę.',
     inspectorEmpty: 'Wybierz część, by ją skonfigurować.',
     inspectorLabel: 'Konfiguracja i zamówienie',
+    backHome: 'Strona główna',
     viewFront: 'Przód',
     viewTop: 'Góra',
     viewRight: 'Prawo',

@@ -519,6 +519,7 @@ export const en = {
     outlinerEmpty: 'No parts — drop a file on the stage.',
     inspectorEmpty: 'Select a part to configure it.',
     inspectorLabel: 'Configuration & order',
+    backHome: 'Main page',
     viewFront: 'Front',
     viewTop: 'Top',
     viewRight: 'Right',

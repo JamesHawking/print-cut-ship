@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { NewQuoteReset } from '@/components/NewQuoteReset'
@@ -42,6 +43,17 @@ export function EditorTopBar({
   return (
     <header className="bg-background/90 relative flex h-11 shrink-0 items-center justify-between gap-4 border-b px-4 font-mono text-[0.65rem] tracking-widest uppercase backdrop-blur">
       <div className="flex min-w-0 items-center gap-3.5">
+        {/* Explicit way home — the wordmark links there too, but doesn't
+          read as a "back" action. Non-destructive: parts persist. */}
+        <Link
+          to="/$locale"
+          params={{ locale }}
+          className="text-muted-foreground hover:text-foreground flex shrink-0 items-center gap-1.5 transition-colors"
+        >
+          <ArrowLeft aria-hidden className="size-3.5" />
+          {strings.editor.backHome}
+        </Link>
+        <span aria-hidden className="bg-border h-4 w-px shrink-0" />
         {/* exact: fuzzy matching would mark the home link current on every
           page under /$locale (Link force-sets aria-current when active). */}
         <Link
