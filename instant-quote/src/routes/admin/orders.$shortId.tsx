@@ -6,6 +6,13 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import {
+  AlertTriangle,
+  Download,
+  PackageCheck,
+  Play,
+  Truck,
+} from 'lucide-react'
 
 import { STATUS_VARIANT, errorCode } from './-components/util'
 import {
@@ -21,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -32,6 +40,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -40,6 +49,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { api } from '@/lib/api/client'
 import { ApiRequestError } from '@/lib/api/errors'
 import { formatPlacedDate, formatPln } from '@/lib/format'
@@ -112,9 +126,15 @@ function OrderDetail() {
 
   if (isPending) {
     return (
-      <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-        Loading…
-      </p>
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-16 w-full" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-48 w-full" />
+      </div>
     )
   }
   if (error || !data) {
@@ -128,29 +148,31 @@ function OrderDetail() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-mono text-xl font-extrabold tracking-tight tabular-nums">
-            {o.orderId}
-          </h1>
-          <p className="text-muted-foreground mt-1 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-            {o.email} · placed {formatPlacedDate(o.createdAt, 'en')}
-            {o.paidAt ? ` · paid ${formatPlacedDate(o.paidAt, 'en')}` : ''}
-          </p>
+      <div className="bg-background sticky top-14 z-10 -mx-1 flex flex-col gap-3 px-1 pt-1 pb-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-mono text-xl font-extrabold tracking-tight tabular-nums">
+              {o.orderId}
+            </h1>
+            <p className="text-muted-foreground mt-1 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+              {o.email} · placed {formatPlacedDate(o.createdAt, 'en')}
+              {o.paidAt ? ` · paid ${formatPlacedDate(o.paidAt, 'en')}` : ''}
+            </p>
+          </div>
+          <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
+            {o.status}
+          </Badge>
         </div>
-        <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
-          {o.status}
-        </Badge>
-      </div>
 
-      <TransitionBar
-        status={o.status}
-        busy={busy}
-        onTransition={(to, trackingNumber) =>
-          transition.mutate({ to, trackingNumber })
-        }
-        onRefund={() => refund.mutate()}
-      />
+        <TransitionBar
+          status={o.status}
+          busy={busy}
+          onTransition={(to, trackingNumber) =>
+            transition.mutate({ to, trackingNumber })
+          }
+          onRefund={() => refund.mutate()}
+        />
+      </div>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <FactCard
@@ -190,25 +212,27 @@ function OrderDetail() {
 
       <section>
         <h2 className="mb-2 text-sm font-bold tracking-tight">Items</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>File</TableHead>
-              <TableHead>Process</TableHead>
-              <TableHead className="text-right">Qty</TableHead>
-              <TableHead>Lead time</TableHead>
-              <TableHead className="text-right">Unit</TableHead>
-              <TableHead className="text-right">Line total</TableHead>
-              <TableHead>DFM</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.items.map((it, i) => (
-              <ItemRow key={i} item={it} orderId={o.orderId} />
-            ))}
-          </TableBody>
-        </Table>
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>File</TableHead>
+                <TableHead>Process</TableHead>
+                <TableHead className="text-right">Qty</TableHead>
+                <TableHead>Lead time</TableHead>
+                <TableHead className="text-right">Unit</TableHead>
+                <TableHead className="text-right">Line total</TableHead>
+                <TableHead>DFM</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.items.map((it, i) => (
+                <ItemRow key={i} item={it} orderId={o.orderId} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
         <p className="text-muted-foreground mt-2 font-mono text-[0.65rem] tracking-[0.1em] uppercase">
           Gross total {formatPln(o.totals.grossTotalPln, 'en')} · shipping{' '}
           {formatPln(o.totals.shippingPln, 'en')} · order fee{' '}
@@ -222,31 +246,33 @@ function OrderDetail() {
           {data.payments.length === 0 ? (
             <p className="text-muted-foreground text-sm">None yet.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.payments.map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{p.type}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {p.provider}
-                      {p.paymentRef ? ` · ${p.paymentRef}` : ''}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs tabular-nums">
-                      {formatPln(p.amountPln, 'en')}
-                    </TableCell>
-                    <TableCell>{p.status}</TableCell>
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Provider</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data.payments.map((p, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{p.type}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {p.provider}
+                        {p.paymentRef ? ` · ${p.paymentRef}` : ''}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">
+                        {formatPln(p.amountPln, 'en')}
+                      </TableCell>
+                      <TableCell>{p.status}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
         <div>
@@ -256,30 +282,32 @@ function OrderDetail() {
               None (seam until plan 18).
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kind</TableHead>
-                  <TableHead>Number</TableHead>
-                  <TableHead>Issued</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.invoices.map((inv, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{inv.kind}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {inv.number ?? '—'}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {inv.issuedAt
-                        ? formatPlacedDate(inv.issuedAt, 'en')
-                        : '—'}
-                    </TableCell>
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Kind</TableHead>
+                    <TableHead>Number</TableHead>
+                    <TableHead>Issued</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data.invoices.map((inv, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{inv.kind}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {inv.number ?? '—'}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {inv.issuedAt
+                          ? formatPlacedDate(inv.issuedAt, 'en')
+                          : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
       </section>
@@ -309,21 +337,25 @@ function FactCard({
   facts: Array<[string, string]>
 }) {
   return (
-    <div className="rounded-lg border p-4">
-      <h3 className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.16em] uppercase">
-        {title}
-      </h3>
-      <dl className="mt-3 flex flex-col gap-1.5">
-        {facts.map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-4 text-[13px]">
-            <dt className="text-muted-foreground">{k}</dt>
-            <dd className="m-0 max-w-64 truncate text-right font-mono text-xs">
-              {v}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
+    <Card className="gap-0 py-4">
+      <CardHeader className="px-4">
+        <CardTitle className="text-muted-foreground font-mono text-[0.6rem] font-normal tracking-[0.16em] uppercase">
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-4">
+        <dl className="flex flex-col gap-1.5">
+          {facts.map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-4 text-[13px]">
+              <dt className="text-muted-foreground">{k}</dt>
+              <dd className="m-0 max-w-64 truncate text-right font-mono text-xs">
+                {v}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -366,20 +398,30 @@ function ItemRow({
       </TableCell>
       <TableCell>
         {codes.length > 0 ? (
-          <Badge variant="outline">{codes.join(', ')}</Badge>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline">
+                <AlertTriangle className="text-highlight" />
+                {codes.length} {codes.length === 1 ? 'flag' : 'flags'}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>{codes.join(', ')}</TooltipContent>
+          </Tooltip>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
       <TableCell className="text-right">
         {it.fileId && (
-          <a
-            href={`/api/v1/admin/orders/${orderId}/files/${it.fileId}`}
-            download
-            className="font-mono text-[0.65rem] tracking-[0.14em] uppercase underline underline-offset-4"
-          >
-            Download
-          </a>
+          <Button variant="outline" size="icon-sm" asChild>
+            <a
+              href={`/api/v1/admin/orders/${orderId}/files/${it.fileId}`}
+              download
+              title={`Download ${it.fileName}`}
+            >
+              <Download />
+            </a>
+          </Button>
         )}
       </TableCell>
     </TableRow>
@@ -412,6 +454,7 @@ function TransitionBar({
           disabled={busy}
           onClick={() => onTransition('in_production')}
         >
+          <Play />
           Start production
         </Button>
       )}
@@ -419,6 +462,7 @@ function TransitionBar({
         <Dialog open={shipOpen} onOpenChange={setShipOpen}>
           <DialogTrigger asChild>
             <Button size="sm" disabled={busy}>
+              <Truck />
               Ship…
             </Button>
           </DialogTrigger>
@@ -460,6 +504,7 @@ function TransitionBar({
           disabled={busy}
           onClick={() => onTransition('delivered')}
         >
+          <PackageCheck />
           Mark delivered
         </Button>
       )}

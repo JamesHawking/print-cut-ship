@@ -6,12 +6,26 @@ import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { History, Rocket } from 'lucide-react'
 
 import { errorCode } from './-components/util'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -138,9 +152,11 @@ function PricingEditor() {
 
   if (isPending || !draft || !active) {
     return (
-      <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-        Loading…
-      </p>
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-14 w-full" />
+        <Skeleton className="h-56 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
     )
   }
   if (error) {
@@ -162,7 +178,7 @@ function PricingEditor() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="bg-background sticky top-14 z-10 -mx-1 flex flex-wrap items-end justify-between gap-4 px-1 pt-1 pb-3">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight">
             Pricing config
@@ -181,184 +197,224 @@ function PricingEditor() {
               onChange={(e) => setLabel(e.target.value)}
             />
           </div>
-          <Button
-            disabled={
-              diffs.length === 0 || label.trim() === '' || publish.isPending
-            }
-            onClick={() =>
-              publish.mutate({ label: label.trim(), config: draft })
-            }
-          >
-            Publish ({diffs.length} {diffs.length === 1 ? 'change' : 'changes'})
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                disabled={
+                  diffs.length === 0 || label.trim() === '' || publish.isPending
+                }
+              >
+                <Rocket />
+                Publish ({diffs.length}{' '}
+                {diffs.length === 1 ? 'change' : 'changes'})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Publish pricing config?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Publishing swaps the pricing engine live — every new quote and
+                  reprice uses "{label.trim()}" immediately. Active carts keep
+                  their frozen snapshots.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Back</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() =>
+                    publish.mutate({ label: label.trim(), config: draft })
+                  }
+                >
+                  Publish now
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
       {diffs.length > 0 && (
-        <section className="rounded-lg border p-4">
-          <h2 className="text-sm font-bold tracking-tight">Diff vs active</h2>
-          <ul className="mt-2 flex flex-col gap-1 font-mono text-xs">
-            {diffs.map((d) => (
-              <li key={d.path}>
-                <span className="text-muted-foreground">{d.path}:</span>{' '}
-                <span className="text-destructive line-through">
-                  {String(d.from)}
-                </span>{' '}
-                →{' '}
-                <span className="text-foreground font-bold">
-                  {String(d.to)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <Card className="border-highlight/60 gap-0 py-4">
+          <CardHeader className="px-4">
+            <CardTitle className="text-sm font-bold tracking-tight">
+              Diff vs active
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4">
+            <ul className="flex flex-col gap-1 font-mono text-xs">
+              {diffs.map((d) => (
+                <li key={d.path}>
+                  <span className="text-muted-foreground">{d.path}:</span>{' '}
+                  <span className="text-destructive line-through">
+                    {String(d.from)}
+                  </span>{' '}
+                  →{' '}
+                  <span className="text-foreground font-bold">
+                    {String(d.to)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       )}
 
       <section>
         <h2 className="mb-2 text-sm font-bold tracking-tight">Processes</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Label</TableHead>
-              <TableHead>Density g/cm³</TableHead>
-              <TableHead>PLN/kg</TableHead>
-              <TableHead>Factor</TableHead>
-              <TableHead>PLN/h</TableHead>
-              <TableHead>Build X×Y×Z</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {draft.Processes.map((p, i) => (
-              <TableRow key={p.ID}>
-                <TableCell className="font-mono text-xs font-bold">
-                  {p.ID}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-xs">
-                  {p.Label}
-                </TableCell>
-                <TableCell>
-                  <Num
-                    value={p.DensityGCm3}
-                    onCommit={(n) =>
-                      update((c) => (c.Processes[i].DensityGCm3 = n))
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <Num
-                    value={p.PlnPerKg}
-                    onCommit={(n) =>
-                      update((c) => (c.Processes[i].PlnPerKg = n))
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <Num
-                    value={p.Factor}
-                    onCommit={(n) => update((c) => (c.Processes[i].Factor = n))}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Num
-                    value={p.PlnPerHour}
-                    onCommit={(n) =>
-                      update((c) => (c.Processes[i].PlnPerHour = n))
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <span className="flex items-center gap-1">
-                    {(['x', 'y', 'z'] as const).map((axis) => (
-                      <Num
-                        key={axis}
-                        className="h-8 w-16 font-mono text-xs"
-                        value={p.Build[axis]}
-                        onCommit={(n) =>
-                          update((c) => (c.Processes[i].Build[axis] = n))
-                        }
-                      />
-                    ))}
-                  </span>
-                </TableCell>
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Label</TableHead>
+                <TableHead>Density g/cm³</TableHead>
+                <TableHead>PLN/kg</TableHead>
+                <TableHead>Factor</TableHead>
+                <TableHead>PLN/h</TableHead>
+                <TableHead>Build X×Y×Z</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {draft.Processes.map((p, i) => (
+                <TableRow key={p.ID}>
+                  <TableCell className="font-mono text-xs font-bold">
+                    {p.ID}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {p.Label}
+                  </TableCell>
+                  <TableCell>
+                    <Num
+                      value={p.DensityGCm3}
+                      onCommit={(n) =>
+                        update((c) => (c.Processes[i].DensityGCm3 = n))
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Num
+                      value={p.PlnPerKg}
+                      onCommit={(n) =>
+                        update((c) => (c.Processes[i].PlnPerKg = n))
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Num
+                      value={p.Factor}
+                      onCommit={(n) =>
+                        update((c) => (c.Processes[i].Factor = n))
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Num
+                      value={p.PlnPerHour}
+                      onCommit={(n) =>
+                        update((c) => (c.Processes[i].PlnPerHour = n))
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <span className="flex items-center gap-1">
+                      {(['x', 'y', 'z'] as const).map((axis) => (
+                        <Num
+                          key={axis}
+                          className="h-8 w-16 font-mono text-xs"
+                          value={p.Build[axis]}
+                          onCommit={(n) =>
+                            update((c) => (c.Processes[i].Build[axis] = n))
+                          }
+                        />
+                      ))}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div>
           <h2 className="mb-2 text-sm font-bold tracking-tight">Lead times</h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Multiplier</TableHead>
-                <TableHead>Business days</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {draft.LeadTimes.map((lt, i) => (
-                <TableRow key={lt.ID}>
-                  <TableCell className="font-mono text-xs font-bold">
-                    {lt.ID}
-                  </TableCell>
-                  <TableCell>
-                    <Num
-                      value={lt.Mult}
-                      onCommit={(n) => update((c) => (c.LeadTimes[i].Mult = n))}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Num
-                      value={lt.BusinessDays}
-                      onCommit={(n) =>
-                        update(
-                          (c) => (c.LeadTimes[i].BusinessDays = Math.round(n)),
-                        )
-                      }
-                    />
-                  </TableCell>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Multiplier</TableHead>
+                  <TableHead>Business days</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {draft.LeadTimes.map((lt, i) => (
+                  <TableRow key={lt.ID}>
+                    <TableCell className="font-mono text-xs font-bold">
+                      {lt.ID}
+                    </TableCell>
+                    <TableCell>
+                      <Num
+                        value={lt.Mult}
+                        onCommit={(n) =>
+                          update((c) => (c.LeadTimes[i].Mult = n))
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Num
+                        value={lt.BusinessDays}
+                        onCommit={(n) =>
+                          update(
+                            (c) =>
+                              (c.LeadTimes[i].BusinessDays = Math.round(n)),
+                          )
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
         <div>
           <h2 className="mb-2 text-sm font-bold tracking-tight">
             Discount tiers
           </h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>From quantity</TableHead>
-                <TableHead>Discount fraction</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {draft.DiscountTiers.map((t, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <Num
-                      value={t.Quantity}
-                      onCommit={(n) =>
-                        update((c) => (c.DiscountTiers[i].Quantity = n))
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Num
-                      value={t.Fraction}
-                      onCommit={(n) =>
-                        update((c) => (c.DiscountTiers[i].Fraction = n))
-                      }
-                    />
-                  </TableCell>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>From quantity</TableHead>
+                  <TableHead>Discount fraction</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {draft.DiscountTiers.map((t, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Num
+                        value={t.Quantity}
+                        onCommit={(n) =>
+                          update((c) => (c.DiscountTiers[i].Quantity = n))
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Num
+                        value={t.Fraction}
+                        onCommit={(n) =>
+                          update((c) => (c.DiscountTiers[i].Fraction = n))
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </section>
 
@@ -420,45 +476,48 @@ function PricingEditor() {
 
       <section>
         <h2 className="mb-2 text-sm font-bold tracking-tight">History</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Version</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(data?.history ?? []).map((h) => (
-              <TableRow key={h.id}>
-                <TableCell className="text-[13px] font-semibold">
-                  {h.label}
-                </TableCell>
-                <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
-                  {formatPlacedDate(h.createdAt, 'en')}
-                </TableCell>
-                <TableCell>
-                  {h.isActive ? (
-                    <Badge>active</Badge>
-                  ) : (
-                    <Badge variant="outline">superseded</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <button
-                    type="button"
-                    disabled={loadSnapshot.isPending}
-                    onClick={() => loadSnapshot.mutate(h.id)}
-                    className="cursor-pointer font-mono text-[0.65rem] tracking-[0.14em] uppercase underline underline-offset-4"
-                  >
-                    Load into form
-                  </button>
-                </TableCell>
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Version</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {(data?.history ?? []).map((h) => (
+                <TableRow key={h.id}>
+                  <TableCell className="text-[13px] font-semibold">
+                    {h.label}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
+                    {formatPlacedDate(h.createdAt, 'en')}
+                  </TableCell>
+                  <TableCell>
+                    {h.isActive ? (
+                      <Badge>active</Badge>
+                    ) : (
+                      <Badge variant="outline">superseded</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={loadSnapshot.isPending}
+                      onClick={() => loadSnapshot.mutate(h.id)}
+                    >
+                      <History />
+                      Load into form
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </section>
     </div>
   )

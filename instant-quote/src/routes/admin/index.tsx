@@ -1,13 +1,22 @@
-// Orders board (plan 07 Phase B): status filter, paginated table, ship-by
-// with overdue accent, DFM flags, tracking. EN-only (i18n-exempt directory).
+// Orders board (plan 07 Phase B, UI pass): status filter, paginated table,
+// row-click navigation, relative ship-by urgency, DFM flags, tracking.
+// EN-only (i18n-exempt directory).
 
 import { useState } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Inbox,
+  Package,
+  Truck,
+} from 'lucide-react'
 
-import { STATUS_VARIANT, errorCode } from './-components/util'
+import { STATUS_VARIANT, errorCode, formatShipBy } from './-components/util'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -15,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -23,6 +33,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { api } from '@/lib/api/client'
 import { ApiRequestError } from '@/lib/api/errors'
 import { formatPlacedDate, formatPln } from '@/lib/format'
@@ -105,34 +120,36 @@ function Board() {
       </div>
 
       {isPending ? (
-        <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-          Loading…
-        </p>
+        <BoardSkeleton />
       ) : error ? (
         <p className="text-destructive font-mono text-xs">{errorCode(error)}</p>
       ) : data.orders.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No orders.</p>
+        <EmptyState
+          label={status === 'all' ? 'No orders yet.' : `No ${status} orders.`}
+        />
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Gross</TableHead>
-                <TableHead>Placed</TableHead>
-                <TableHead>Ship by</TableHead>
-                <TableHead>DFM</TableHead>
-                <TableHead>Tracking</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.orders.map((o) => (
-                <BoardRow key={o.orderId} order={o} />
-              ))}
-            </TableBody>
-          </Table>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Gross</TableHead>
+                  <TableHead>Placed</TableHead>
+                  <TableHead>Ship by</TableHead>
+                  <TableHead>DFM</TableHead>
+                  <TableHead>Tracking</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.orders.map((o) => (
+                  <BoardRow key={o.orderId} order={o} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
               {data.total} orders
@@ -163,13 +180,27 @@ function Board() {
 }
 
 function BoardRow({ order: o }: { order: AdminOrderSummary }) {
+  const navigate = useNavigate()
+  const open = () =>
+    void navigate({
+      to: '/admin/orders/$shortId',
+      params: { shortId: o.orderId },
+    })
+
   return (
-    <TableRow>
+    <TableRow
+      className="cursor-pointer"
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') open()
+      }}
+    >
       <TableCell className="font-mono text-xs font-bold tabular-nums">
         <Link
           to="/admin/orders/$shortId"
           params={{ shortId: o.orderId }}
           className="underline underline-offset-4"
+          onClick={(e) => e.stopPropagation()}
         >
           {o.orderId}
         </Link>
@@ -186,26 +217,82 @@ function BoardRow({ order: o }: { order: AdminOrderSummary }) {
       <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
         {formatPlacedDate(o.createdAt, 'en')}
       </TableCell>
-      <TableCell
-        className={cn(
-          'font-mono text-[0.65rem] uppercase',
-          o.overdue ? 'text-destructive font-bold' : 'text-muted-foreground',
-        )}
-      >
-        {o.shipBy ?? '—'}
-        {o.overdue ? ' (overdue)' : ''}
+      <TableCell>
+        <ShipByCell shipBy={o.shipBy} overdue={o.overdue} />
       </TableCell>
       <TableCell>
         {o.dfmFlagged && o.dfmCodes ? (
-          <Badge variant="outline">{o.dfmCodes.join(', ')}</Badge>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline">
+                <AlertTriangle className="text-highlight" />
+                {o.dfmCodes.length} {o.dfmCodes.length === 1 ? 'flag' : 'flags'}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>{o.dfmCodes.join(', ')}</TooltipContent>
+          </Tooltip>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
       <TableCell className="font-mono text-xs">
-        {o.trackingNumber ?? '—'}
+        {o.trackingNumber ? (
+          <span className="inline-flex items-center gap-1.5">
+            <Truck className="text-muted-foreground size-3.5" />
+            {o.trackingNumber}
+          </span>
+        ) : (
+          '—'
+        )}
       </TableCell>
     </TableRow>
+  )
+}
+
+function ShipByCell({
+  shipBy,
+  overdue,
+}: {
+  shipBy: string | null | undefined
+  overdue: boolean | undefined
+}) {
+  const label = formatShipBy(shipBy, overdue)
+  if (!shipBy) return <span className="text-muted-foreground">—</span>
+  const text = (
+    <span
+      className={cn(
+        'font-mono text-[0.65rem] uppercase',
+        overdue ? 'text-destructive font-bold' : 'text-muted-foreground',
+      )}
+    >
+      {overdue && <AlertTriangle className="mr-1 inline size-3" />}
+      {label}
+    </span>
+  )
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{text}</TooltipTrigger>
+      <TooltipContent>Ship by {shipBy}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+function BoardSkeleton() {
+  return (
+    <div className="flex flex-col gap-2">
+      {Array.from({ length: 8 }, (_, i) => (
+        <Skeleton key={i} className="h-10 w-full" />
+      ))}
+    </div>
+  )
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-12">
+      <Inbox className="text-muted-foreground size-6" />
+      <p className="text-muted-foreground text-sm">{label}</p>
+    </div>
   )
 }
 
@@ -221,57 +308,63 @@ function OpsCard({ ops }: { ops: UseQueryResult<OpsToday, Error> }) {
     )
   }
   const data = ops.data
+  const allClear = data.orders.length === 0
   return (
-    <section className="rounded-lg border p-4">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="font-mono text-[0.65rem] font-bold tracking-[0.2em] uppercase">
-          Must ship — {data.date}
-        </h2>
-        {data.orders.length === 0 && (
-          <span className="text-signal flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-            <span className="bg-signal size-1.5 rounded-full" />
-            Nothing due — all clear
-          </span>
-        )}
-      </div>
-      {data.orders.length > 0 && (
-        <Table className="mt-3">
-          <TableBody>
-            {data.orders.map((o) => (
-              <TableRow key={o.orderId}>
-                <TableCell className="font-mono text-xs font-bold">
-                  <Link
-                    to="/admin/orders/$shortId"
-                    params={{ shortId: o.orderId }}
-                    className="underline underline-offset-4"
-                  >
-                    {o.orderId}
-                  </Link>
-                </TableCell>
-                <TableCell className="max-w-52 truncate text-[13px]">
-                  {o.email}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
-                    {o.status}
-                  </Badge>
-                </TableCell>
-                <TableCell
-                  className={cn(
-                    'font-mono text-[0.65rem] uppercase',
-                    o.overdue
-                      ? 'text-destructive font-bold'
-                      : 'text-muted-foreground',
-                  )}
-                >
-                  ship by {o.shipBy}
-                  {o.overdue ? ' (overdue)' : ''}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+    <Card
+      className={cn(
+        'gap-0 py-4',
+        allClear
+          ? 'border-signal/40'
+          : 'border-destructive/40 bg-destructive/5',
       )}
-    </section>
+    >
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-mono text-[0.65rem] font-bold tracking-[0.2em] uppercase">
+          {allClear ? (
+            <CheckCircle2 className="text-signal size-4" />
+          ) : (
+            <Package className="text-destructive size-4" />
+          )}
+          Must ship — {data.date}
+        </CardTitle>
+        {allClear && (
+          <p className="text-signal font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+            Nothing due — all clear
+          </p>
+        )}
+      </CardHeader>
+      {!allClear && (
+        <CardContent>
+          <Table>
+            <TableBody>
+              {data.orders.map((o) => (
+                <TableRow key={o.orderId}>
+                  <TableCell className="font-mono text-xs font-bold">
+                    <Link
+                      to="/admin/orders/$shortId"
+                      params={{ shortId: o.orderId }}
+                      className="underline underline-offset-4"
+                    >
+                      {o.orderId}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="max-w-52 truncate text-[13px]">
+                    {o.email}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
+                      {o.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <ShipByCell shipBy={o.shipBy} overdue={o.overdue} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      )}
+    </Card>
   )
 }

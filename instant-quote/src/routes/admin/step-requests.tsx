@@ -6,10 +6,12 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Check, Download, Inbox, Mail, X } from 'lucide-react'
 
 import { errorCode } from './-components/util'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
   SelectContent,
@@ -103,38 +105,46 @@ function StepQueue() {
       </div>
 
       {isPending ? (
-        <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
-          Loading…
-        </p>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
       ) : error ? (
         <p className="text-destructive font-mono text-xs">{errorCode(error)}</p>
       ) : data.requests.length === 0 ? (
-        <p className="text-muted-foreground text-sm">Queue empty.</p>
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-12">
+          <Inbox className="text-muted-foreground size-6" />
+          <p className="text-muted-foreground text-sm">Queue empty.</p>
+        </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Request</TableHead>
-              <TableHead>File</TableHead>
-              <TableHead className="text-right">Size</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.requests.map((sr) => (
-              <QueueRow
-                key={sr.requestId}
-                sr={sr}
-                busy={update.isPending}
-                onUpdate={(to) =>
-                  update.mutate({ requestId: sr.requestId, to })
-                }
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Request</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>File</TableHead>
+                <TableHead className="text-right">Size</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.requests.map((sr) => (
+                <QueueRow
+                  key={sr.requestId}
+                  sr={sr}
+                  busy={update.isPending}
+                  onUpdate={(to) =>
+                    update.mutate({ requestId: sr.requestId, to })
+                  }
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   )
@@ -149,7 +159,7 @@ function QueueRow({
   busy: boolean
   onUpdate: (to: 'quoted' | 'closed') => void
 }) {
-  const mailto = `mailto:?subject=${encodeURIComponent(
+  const mailto = `mailto:${encodeURIComponent(sr.email)}?subject=${encodeURIComponent(
     `Your STEP quote request ${sr.requestId} (${sr.fileName})`,
   )}`
   return (
@@ -157,16 +167,19 @@ function QueueRow({
       <TableCell className="font-mono text-xs font-bold">
         {sr.requestId}
       </TableCell>
+      <TableCell className="text-[13px]">{sr.email}</TableCell>
       <TableCell className="text-[13px]">
         {sr.fileName}
         {sr.fileId && (
-          <a
-            href={`/api/v1/admin/step-requests/${sr.requestId}/file`}
-            download
-            className="ml-2 font-mono text-[0.6rem] tracking-[0.14em] uppercase underline underline-offset-4"
-          >
-            Download
-          </a>
+          <Button variant="ghost" size="icon-xs" asChild>
+            <a
+              href={`/api/v1/admin/step-requests/${sr.requestId}/file`}
+              download
+              title={`Download ${sr.fileName}`}
+            >
+              <Download />
+            </a>
+          </Button>
         )}
       </TableCell>
       <TableCell className="text-right font-mono text-xs tabular-nums">
@@ -182,12 +195,12 @@ function QueueRow({
       </TableCell>
       <TableCell className="text-right">
         <span className="flex justify-end gap-2">
-          <a
-            href={mailto}
-            className="font-mono text-[0.6rem] tracking-[0.14em] uppercase underline underline-offset-4"
-          >
-            Quote via email
-          </a>
+          <Button variant="ghost" size="sm" asChild>
+            <a href={mailto}>
+              <Mail />
+              Quote via email
+            </a>
+          </Button>
           {sr.status === 'new' && (
             <Button
               size="sm"
@@ -195,6 +208,7 @@ function QueueRow({
               disabled={busy}
               onClick={() => onUpdate('quoted')}
             >
+              <Check />
               Mark quoted
             </Button>
           )}
@@ -205,6 +219,7 @@ function QueueRow({
               disabled={busy}
               onClick={() => onUpdate('closed')}
             >
+              <X />
               Close
             </Button>
           )}

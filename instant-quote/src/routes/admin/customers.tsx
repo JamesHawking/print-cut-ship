@@ -6,11 +6,14 @@ import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Download, Eraser, Search } from 'lucide-react'
 
 import { STATUS_VARIANT, errorCode } from './-components/util'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -93,44 +96,59 @@ function Customers() {
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-extrabold tracking-tight">Customers</h1>
 
-      <form
-        className="flex items-center gap-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (q) search.mutate(q)
-        }}
-      >
-        <Input
-          className="w-72"
-          type="email"
-          placeholder="customer@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Button type="submit" disabled={busy || q === ''}>
-          Look up
-        </Button>
-        {lookup && (
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={() => exportJson.mutate(lookup.email)}
-            >
-              Export JSON
+      <Card className="py-4">
+        <CardContent className="px-4">
+          <form
+            className="flex items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (q) search.mutate(q)
+            }}
+          >
+            <Input
+              className="w-72"
+              type="email"
+              placeholder="customer@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Button type="submit" disabled={busy || q === ''}>
+              <Search />
+              Look up
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={() => eraseDryRun.mutate(lookup.email)}
-            >
-              Erase (dry run)
-            </Button>
-          </>
-        )}
-      </form>
+            {lookup && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => exportJson.mutate(lookup.email)}
+                >
+                  <Download />
+                  Export JSON
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => eraseDryRun.mutate(lookup.email)}
+                >
+                  <Eraser />
+                  Erase (dry run)
+                </Button>
+              </>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
+      {search.isPending && (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+      )}
 
       {lookup && <Trail lookup={lookup} />}
       {erase && <EraseReportView report={erase} />}
@@ -153,42 +171,44 @@ function Trail({ lookup }: { lookup: Lookup }) {
           Orders ({lookup.orders.length})
         </h2>
         {lookup.orders.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Gross</TableHead>
-                <TableHead>Placed</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lookup.orders.map((o) => (
-                <TableRow key={o.orderId}>
-                  <TableCell className="font-mono text-xs font-bold">
-                    <Link
-                      to="/admin/orders/$shortId"
-                      params={{ shortId: o.orderId }}
-                      className="underline underline-offset-4"
-                    >
-                      {o.orderId}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
-                      {o.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums">
-                    {formatPln(o.grossTotalPln, 'en')}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
-                    {formatPlacedDate(o.createdAt, 'en')}
-                  </TableCell>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Gross</TableHead>
+                  <TableHead>Placed</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {lookup.orders.map((o) => (
+                  <TableRow key={o.orderId}>
+                    <TableCell className="font-mono text-xs font-bold">
+                      <Link
+                        to="/admin/orders/$shortId"
+                        params={{ shortId: o.orderId }}
+                        className="underline underline-offset-4"
+                      >
+                        {o.orderId}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={STATUS_VARIANT[o.status] ?? 'outline'}>
+                        {o.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs tabular-nums">
+                      {formatPln(o.grossTotalPln, 'en')}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
+                      {formatPlacedDate(o.createdAt, 'en')}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </section>
 
@@ -197,36 +217,40 @@ function Trail({ lookup }: { lookup: Lookup }) {
           Quotes ({lookup.quotes.length})
         </h2>
         {lookup.quotes.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Quote</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>First file</TableHead>
-                <TableHead className="text-right">Gross</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lookup.quotes.map((q) => (
-                <TableRow key={q.quoteId}>
-                  <TableCell className="font-mono text-xs font-bold">
-                    {q.quoteId}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {q.status}
-                  </TableCell>
-                  <TableCell className="text-xs">{q.fileName ?? '—'}</TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums">
-                    {formatPln(q.grossTotalPln, 'en')}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
-                    {formatPlacedDate(q.createdAt, 'en')}
-                  </TableCell>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Quote</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>First file</TableHead>
+                  <TableHead className="text-right">Gross</TableHead>
+                  <TableHead>Created</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {lookup.quotes.map((q) => (
+                  <TableRow key={q.quoteId}>
+                    <TableCell className="font-mono text-xs font-bold">
+                      {q.quoteId}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {q.status}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {q.fileName ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs tabular-nums">
+                      {formatPln(q.grossTotalPln, 'en')}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
+                      {formatPlacedDate(q.createdAt, 'en')}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </section>
 
@@ -235,32 +259,34 @@ function Trail({ lookup }: { lookup: Lookup }) {
           STEP requests ({lookup.stepRequests.length})
         </h2>
         {lookup.stepRequests.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Request</TableHead>
-                <TableHead>File</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lookup.stepRequests.map((sr) => (
-                <TableRow key={sr.requestId}>
-                  <TableCell className="font-mono text-xs font-bold">
-                    {sr.requestId}
-                  </TableCell>
-                  <TableCell className="text-xs">{sr.fileName}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {sr.status}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
-                    {formatPlacedDate(sr.createdAt, 'en')}
-                  </TableCell>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Request</TableHead>
+                  <TableHead>File</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {lookup.stepRequests.map((sr) => (
+                  <TableRow key={sr.requestId}>
+                    <TableCell className="font-mono text-xs font-bold">
+                      {sr.requestId}
+                    </TableCell>
+                    <TableCell className="text-xs">{sr.fileName}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {sr.status}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
+                      {formatPlacedDate(sr.createdAt, 'en')}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </section>
 
@@ -269,34 +295,38 @@ function Trail({ lookup }: { lookup: Lookup }) {
           Files ({lookup.files.length})
         </h2>
         {lookup.files.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>File</TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead className="text-right">Size</TableHead>
-                <TableHead>Stored</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lookup.files.map((f) => (
-                <TableRow key={f.fileId}>
-                  <TableCell className="text-xs">{f.fileName}</TableCell>
-                  <TableCell className="font-mono text-xs">{f.kind}</TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums">
-                    {(f.sizeBytes / 1024).toFixed(1)} KB
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {f.stored ? 'yes' : 'no'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
-                    {formatPlacedDate(f.createdAt, 'en')}
-                  </TableCell>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>File</TableHead>
+                  <TableHead>Kind</TableHead>
+                  <TableHead className="text-right">Size</TableHead>
+                  <TableHead>Stored</TableHead>
+                  <TableHead>Created</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {lookup.files.map((f) => (
+                  <TableRow key={f.fileId}>
+                    <TableCell className="text-xs">{f.fileName}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {f.kind}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs tabular-nums">
+                      {(f.sizeBytes / 1024).toFixed(1)} KB
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {f.stored ? 'yes' : 'no'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
+                      {formatPlacedDate(f.createdAt, 'en')}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </section>
     </div>

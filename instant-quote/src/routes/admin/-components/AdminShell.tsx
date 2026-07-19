@@ -1,42 +1,75 @@
+// Admin frame (plan 07 UI pass): collapsible shadcn sidebar + sticky header
+// with breadcrumb. EN-only (i18n-exempt directory).
+
 import type { ReactNode } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 
-const NAV = [
-  { to: '/admin', label: 'Board' },
-  { to: '/admin/pricing', label: 'Pricing' },
-  { to: '/admin/customers', label: 'Customers' },
-  { to: '/admin/step-requests', label: 'STEP queue' },
-] as const
+import { AppSidebar } from './AppSidebar'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import { Separator } from '@/components/ui/separator'
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
-// Minimal operator frame: wordmark + section nav. No SiteHeader, no
-// LocaleSwitcher — this is the EN-only back office, not the shop.
+const TITLES: Array<{ prefix: string; title: string }> = [
+  { prefix: '/admin/orders/', title: 'Order' },
+  { prefix: '/admin/pricing', title: 'Pricing' },
+  { prefix: '/admin/customers', title: 'Customers' },
+  { prefix: '/admin/step-requests', title: 'STEP queue' },
+]
+
 export function AdminShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const match = TITLES.find((t) => pathname.startsWith(t.prefix))
+  const isBoard = pathname === '/admin'
+  const shortId =
+    match?.prefix === '/admin/orders/' ? pathname.split('/').pop() : undefined
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-6 px-4 font-mono text-xs tracking-widest uppercase sm:px-6">
-          <Link to="/admin" className="text-foreground font-bold">
-            MICRO_FACTORY
-          </Link>
-          <span className="text-muted-foreground text-[0.6rem]">admin</span>
-          <nav className="flex items-center gap-4 sm:gap-5">
-            {NAV.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                activeOptions={{ exact: item.to === '/admin' }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                activeProps={{ className: 'text-foreground' }}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
-        {children}
-      </main>
-    </div>
+    <TooltipProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                {isBoard ? (
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>Board</BreadcrumbPage>
+                  </BreadcrumbItem>
+                ) : (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <Link to="/admin">Board</Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>
+                        {shortId ? `Order ${shortId}` : match?.title}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                )}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </header>
+          <main className="flex-1 p-4 sm:p-6">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 }
