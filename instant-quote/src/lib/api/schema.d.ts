@@ -1063,6 +1063,7 @@ export interface components {
     }
     AdminStepRequestSummary: {
       requestId: string
+      email: string
       fileName: string
       /** Format: int64 */
       fileSizeBytes: number

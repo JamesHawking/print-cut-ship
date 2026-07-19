@@ -86,6 +86,7 @@ func (s *server) AdminListStepRequests(w http.ResponseWriter, r *http.Request, p
 func adminStepRequestView(sr store.StepRequest) AdminStepRequestSummary {
 	return AdminStepRequestSummary{
 		RequestId:     sr.ShortID,
+		Email:         sr.Email,
 		FileName:      sr.FileName,
 		FileSizeBytes: sr.FileSizeBytes,
 		Status:        AdminStepRequestSummaryStatus(sr.Status),

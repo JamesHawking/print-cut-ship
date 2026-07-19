@@ -180,6 +180,14 @@ func TestAdminPricingConfigRejects(t *testing.T) {
 	})
 	rec = publishConfigRec(t, h, admin, zero)
 	assertPricingInvalid(t, rec, "zero rate")
+
+	// Empty tier list → 400 (InterpolateDiscount reads tiers[0]; an empty
+	// list published as active would panic every price call).
+	noTiers := editDefault(t, func(m map[string]any) {
+		m["DiscountTiers"] = []any{}
+	})
+	rec = publishConfigRec(t, h, admin, noTiers)
+	assertPricingInvalid(t, rec, "empty discount tiers")
 }
 
 func assertPricingInvalid(t *testing.T, rec *httptest.ResponseRecorder, why string) {

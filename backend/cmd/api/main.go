@@ -271,9 +271,10 @@ func envDuration(name string, def int, unit time.Duration) time.Duration {
 // DB-wins): the active pricing_config_snapshots row is the source of truth.
 // No active row → seed one from pricing.Default. An active row that differs
 // from the binary is legitimate (admin editor) and loads as-is — code-side
-// rate changes now land via the editor or plan 14, not by redeploy. Invalid
-// stored JSON self-heals loudly: log Error and replace with a fresh Default
-// snapshot.
+// rate changes now land via the editor or plan 14, not by redeploy. A stored
+// row that fails to parse OR fails pricing.Validate self-heals loudly: log
+// Error and replace with a fresh Default snapshot (the editor gates writes,
+// but a manual SQL edit or pre-validation row must not panic the engine).
 func loadActivePricingConfig(ctx context.Context, st *store.Store, logger *slog.Logger) (*pricing.Holder, error) {
 	row, err := st.GetActivePricingConfig(ctx)
 	switch {
@@ -298,7 +299,11 @@ func loadActivePricingConfig(ctx context.Context, st *store.Store, logger *slog.
 	}
 
 	var cfg pricing.Config
-	if err := json.Unmarshal(row.Config, &cfg); err != nil {
+	err = json.Unmarshal(row.Config, &cfg)
+	if err == nil {
+		err = pricing.Validate(&cfg)
+	}
+	if err != nil {
 		wantJSON, merr := json.Marshal(pricing.Default)
 		if merr != nil {
 			return nil, merr
@@ -307,7 +312,7 @@ func loadActivePricingConfig(ctx context.Context, st *store.Store, logger *slog.
 		if rerr != nil {
 			return nil, rerr
 		}
-		logger.Error("active pricing config was invalid JSON; replaced with pricing.Default",
+		logger.Error("active pricing config was invalid; replaced with pricing.Default",
 			"oldId", row.ID, "oldLabel", row.Label, "newId", id, "err", err)
 		fresh := pricing.Default
 		return pricing.NewHolder(id, &fresh), nil

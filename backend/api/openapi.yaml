@@ -1682,9 +1682,11 @@ components:
 
     AdminStepRequestSummary:
       type: object
-      required: [requestId, fileName, fileSizeBytes, status, createdAt]
+      required: [requestId, email, fileName, fileSizeBytes, status, createdAt]
       properties:
         requestId:
+          type: string
+        email:
           type: string
         fileName:
           type: string

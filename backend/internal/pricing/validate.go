@@ -71,6 +71,11 @@ func Validate(cfg *Config) error {
 	if f.ShellThicknessMm <= 0 || f.ShellGramsPerPrintHour <= 0 || f.InfillGramsPerPrintHour <= 0 {
 		return &FieldError{"Fdm", "shell/infill rates must be positive"}
 	}
+	// InterpolateDiscount reads tiers[0] unconditionally — an empty list would
+	// panic on every price call, so it must never validate.
+	if len(cfg.DiscountTiers) == 0 {
+		return &FieldError{"DiscountTiers", "at least one tier is required"}
+	}
 	for i, t := range cfg.DiscountTiers {
 		pre := fmt.Sprintf("DiscountTiers[%d]", i)
 		if i == 0 && t.Quantity != 1 {

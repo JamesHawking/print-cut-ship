@@ -410,6 +410,7 @@ type AdminStepRequestList struct {
 // AdminStepRequestSummary defines model for AdminStepRequestSummary.
 type AdminStepRequestSummary struct {
 	CreatedAt     time.Time                     `json:"createdAt"`
+	Email         string                        `json:"email"`
 	FileId        *openapi_types.UUID           `json:"fileId,omitempty"`
 	FileName      string                        `json:"fileName"`
 	FileSizeBytes int64                         `json:"fileSizeBytes"`
