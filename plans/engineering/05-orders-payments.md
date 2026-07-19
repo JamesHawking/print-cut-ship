@@ -1,6 +1,9 @@
 # 05 — Orders, checkout & payments
 
-> **Status: 🟨 In progress** (started 2026-07-19, branch `backend/orders-checkout`).
+> **Status: ✅ Done** (2026-07-19, branch `backend/orders-checkout` pending review — as amended 2026-07-19).
+> Shipped: order model + lifecycle state machine, draft-order creation (server-copied money, NIP checksum, stored-file gate), checkout sessions on the Provider port with the stub provider + fake checkout, the idempotent payment-event pipeline (only path that flips `paid`/`refunded`), public tokenized status page, admin refund (request/confirm split), invoice policy seam + `retry-invoices` no-op, orders list on the real orders table.
+> Deferred to **plan 18** (per the amendment, and struck from §5's checklist as belonging to the Stripe/Fakturownia accounts): real test-mode payment, webhook replay/forgery, invoice issue/retry/correction, `retention_until` stamping.
+> Deviations from the original brief, beyond the amendment: (1) `RequireAdmin` is applied **handler-level** on the refund route — generated chi mounts can't be wrapped per-route (same constraint as plan 04; middleware helpers stay for plan 07's manual mounts); (2) `payments.stripe_event_id` became `provider` + `provider_event_id` (provider-agnostic ledger); (3) `OrderSummary.statusToken` is exposed to the session owner so the orders list can link status pages; (4) the stub refund confirms synchronously in-process through the pipeline — preserving the request/confirm split that plan 18's webhook takes over.
 
 > **Amendment (2026-07-19, user-approved): Stripe + Fakturownia-client split to plan 18.**
 > This plan now ships the full order flow on a **payment-provider port** shaped
