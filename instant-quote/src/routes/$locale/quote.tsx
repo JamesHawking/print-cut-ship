@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
@@ -114,12 +114,58 @@ function QuoteWorkspace() {
     gcTime: 10 * 60_000,
   })
 
+  // Minimum on-screen beat for the reprice sequence. Local dev answers in
+  // ~50 ms — without this, dim+dot never paint and the flash reads as a
+  // blink. First load commits immediately (the skeleton covers that wait).
+  const MIN_RECALC_MS = 500
+  const fetching = priceQuery.isFetching && !priceQuery.isPending
+  const [shown, setShown] = useState<{
+    data: NonNullable<typeof priceQuery.data>
+    epoch: number
+  } | null>(null)
+  const [recalculating, setRecalculating] = useState(false)
+  const busySinceRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (fetching) {
+      busySinceRef.current = Date.now()
+      setRecalculating(true)
+      return
+    }
+    if (!priceQuery.data) {
+      // Failed first fetch — the error card takes over; don't stay busy.
+      if (priceQuery.isError) {
+        busySinceRef.current = null
+        setRecalculating(false)
+      }
+      return
+    }
+    const data = priceQuery.data
+    const elapsed =
+      busySinceRef.current == null
+        ? MIN_RECALC_MS
+        : Date.now() - busySinceRef.current
+    busySinceRef.current = null
+    const commit = () => {
+      setShown({ data, epoch: Date.now() })
+      setRecalculating(false)
+    }
+    if (elapsed >= MIN_RECALC_MS) {
+      commit()
+      return
+    }
+    const t = setTimeout(commit, MIN_RECALC_MS - elapsed)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetching, priceQuery.data, priceQuery.isError])
+
   // At most 5 parts — cheap to rebuild each render, keeps the map in sync.
-  // Response parts come back in request order.
+  // Response parts come back in request order. Reads from `shown`, not the
+  // raw query (see above).
   const quotesById = new Map<string, PartQuote>()
-  if (priceQuery.data && priceQuery.data.parts.length === readyParts.length) {
+  if (shown && shown.data.parts.length === readyParts.length) {
     readyParts.forEach((p, i) => {
-      quotesById.set(p.id, priceQuery.data.parts[i])
+      quotesById.set(p.id, shown.data.parts[i])
     })
   }
 
@@ -130,13 +176,10 @@ function QuoteWorkspace() {
         !!e.quote && !e.quote.blocked,
     )
 
-  const totals = priceQuery.data?.totals ?? null
+  const totals = shown?.data.totals ?? null
 
-  // Price-change feedback: dataUpdatedAt only moves when fresh data lands
-  // (keepPreviousData holds stale values without bumping it), and isFetching
-  // tells the cards a reprice is in flight behind those held values.
-  const priceEpoch = priceQuery.dataUpdatedAt
-  const recalculating = priceQuery.isFetching && !priceQuery.isPending
+  // The keyed price elements flash exactly when `shown` commits (see above).
+  const priceEpoch = shown?.epoch ?? 0
 
   // Blocked parts are quoted but excluded from the order — say so.
   const blockedCount = readyParts.filter(
