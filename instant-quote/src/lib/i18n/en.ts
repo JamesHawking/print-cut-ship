@@ -514,6 +514,18 @@ export const en = {
     kicker: 'NEW_QUOTE',
     hint: 'Drop a 3D model — price and ship date in seconds.',
   },
+  editor: {
+    partsHeading: (count: number, max: number) => `Parts · ${count}/${max}`,
+    outlinerEmpty: 'No parts — drop a file on the stage.',
+    inspectorEmpty: 'Select a part to configure it.',
+    viewFront: 'Front',
+    viewTop: 'Top',
+    viewRight: 'Right',
+    viewIso: 'Iso',
+    resetView: 'Frame part',
+    grid: 'Grid',
+    autoRotate: 'Auto-rotate',
+  },
   priceBreak: {
     qty: 'Qty',
     unitPrice: 'Unit price',

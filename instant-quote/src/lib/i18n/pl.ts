@@ -538,6 +538,18 @@ export const pl = {
     kicker: 'NOWA_WYCENA',
     hint: 'Upuść model 3D — cena i termin wysyłki w kilka sekund.',
   },
+  editor: {
+    partsHeading: (count: number, max: number) => `Części · ${count}/${max}`,
+    outlinerEmpty: 'Brak części — upuść plik na scenę.',
+    inspectorEmpty: 'Wybierz część, by ją skonfigurować.',
+    viewFront: 'Przód',
+    viewTop: 'Góra',
+    viewRight: 'Prawo',
+    viewIso: 'Izometria',
+    resetView: 'Kadruj część',
+    grid: 'Siatka',
+    autoRotate: 'Auto-obrót',
+  },
   priceBreak: {
     qty: 'Szt.',
     unitPrice: 'Cena jedn.',
