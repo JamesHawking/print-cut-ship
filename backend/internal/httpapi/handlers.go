@@ -475,6 +475,7 @@ func (s *server) ListOrders(w http.ResponseWriter, r *http.Request) {
 			PartCount:     int(o.PartCount),
 			FileName:      o.FirstFileName,
 			LeadTime:      LeadTimeId(o.FirstLeadTime),
+			StatusToken:   o.StatusToken,
 		})
 	}
 	writeJSON(w, http.StatusOK, ListOrdersResponse{Orders: orders})

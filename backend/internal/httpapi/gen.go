@@ -396,6 +396,9 @@ type OrderSummary struct {
 
 	// Status Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
 	Status OrderStatus `json:"status"`
+
+	// StatusToken The order's public status-page capability — exposed here because this endpoint is session-guarded and the session proves ownership.
+	StatusToken string `json:"statusToken"`
 }
 
 // OrderTotals defines model for OrderTotals.

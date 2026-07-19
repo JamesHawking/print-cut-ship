@@ -19,6 +19,8 @@ import { Route as LocaleSectionRouteRouteImport } from './routes/$locale/$sectio
 import { Route as LocaleSectionIndexRouteImport } from './routes/$locale/$section/index'
 import { Route as PlBazaWiedzyRssDotxmlRouteImport } from './routes/pl/baza-wiedzy/rss[.]xml'
 import { Route as EnBlogRssDotxmlRouteImport } from './routes/en/blog/rss[.]xml'
+import { Route as LocalePaySessionIdRouteImport } from './routes/$locale/pay/$sessionId'
+import { Route as LocaleOrderStatusTokenRouteImport } from './routes/$locale/order/$statusToken'
 import { Route as LocaleSectionDetailRouteImport } from './routes/$locale/$section/$detail'
 
 const LocaleRouteRoute = LocaleRouteRouteImport.update({
@@ -71,6 +73,16 @@ const EnBlogRssDotxmlRoute = EnBlogRssDotxmlRouteImport.update({
   path: '/en/blog/rss.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocalePaySessionIdRoute = LocalePaySessionIdRouteImport.update({
+  id: '/pay/$sessionId',
+  path: '/pay/$sessionId',
+  getParentRoute: () => LocaleRouteRoute,
+} as any)
+const LocaleOrderStatusTokenRoute = LocaleOrderStatusTokenRouteImport.update({
+  id: '/order/$statusToken',
+  path: '/order/$statusToken',
+  getParentRoute: () => LocaleRouteRoute,
+} as any)
 const LocaleSectionDetailRoute = LocaleSectionDetailRouteImport.update({
   id: '/$detail',
   path: '/$detail',
@@ -86,6 +98,8 @@ export interface FileRoutesByFullPath {
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale/': typeof LocaleIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
+  '/$locale/order/$statusToken': typeof LocaleOrderStatusTokenRoute
+  '/$locale/pay/$sessionId': typeof LocalePaySessionIdRoute
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
@@ -97,6 +111,8 @@ export interface FileRoutesByTo {
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale': typeof LocaleIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
+  '/$locale/order/$statusToken': typeof LocaleOrderStatusTokenRoute
+  '/$locale/pay/$sessionId': typeof LocalePaySessionIdRoute
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section': typeof LocaleSectionIndexRoute
@@ -111,6 +127,8 @@ export interface FileRoutesById {
   '/$locale/quote': typeof LocaleQuoteRoute
   '/$locale/': typeof LocaleIndexRoute
   '/$locale/$section/$detail': typeof LocaleSectionDetailRoute
+  '/$locale/order/$statusToken': typeof LocaleOrderStatusTokenRoute
+  '/$locale/pay/$sessionId': typeof LocalePaySessionIdRoute
   '/en/blog/rss.xml': typeof EnBlogRssDotxmlRoute
   '/pl/baza-wiedzy/rss.xml': typeof PlBazaWiedzyRssDotxmlRoute
   '/$locale/$section/': typeof LocaleSectionIndexRoute
@@ -126,6 +144,8 @@ export interface FileRouteTypes {
     | '/$locale/quote'
     | '/$locale/'
     | '/$locale/$section/$detail'
+    | '/$locale/order/$statusToken'
+    | '/$locale/pay/$sessionId'
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section/'
@@ -137,6 +157,8 @@ export interface FileRouteTypes {
     | '/$locale/quote'
     | '/$locale'
     | '/$locale/$section/$detail'
+    | '/$locale/order/$statusToken'
+    | '/$locale/pay/$sessionId'
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section'
@@ -150,6 +172,8 @@ export interface FileRouteTypes {
     | '/$locale/quote'
     | '/$locale/'
     | '/$locale/$section/$detail'
+    | '/$locale/order/$statusToken'
+    | '/$locale/pay/$sessionId'
     | '/en/blog/rss.xml'
     | '/pl/baza-wiedzy/rss.xml'
     | '/$locale/$section/'
@@ -234,6 +258,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EnBlogRssDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$locale/pay/$sessionId': {
+      id: '/$locale/pay/$sessionId'
+      path: '/pay/$sessionId'
+      fullPath: '/$locale/pay/$sessionId'
+      preLoaderRoute: typeof LocalePaySessionIdRouteImport
+      parentRoute: typeof LocaleRouteRoute
+    }
+    '/$locale/order/$statusToken': {
+      id: '/$locale/order/$statusToken'
+      path: '/order/$statusToken'
+      fullPath: '/$locale/order/$statusToken'
+      preLoaderRoute: typeof LocaleOrderStatusTokenRouteImport
+      parentRoute: typeof LocaleRouteRoute
+    }
     '/$locale/$section/$detail': {
       id: '/$locale/$section/$detail'
       path: '/$detail'
@@ -263,6 +301,8 @@ interface LocaleRouteRouteChildren {
   LocaleOrdersRoute: typeof LocaleOrdersRoute
   LocaleQuoteRoute: typeof LocaleQuoteRoute
   LocaleIndexRoute: typeof LocaleIndexRoute
+  LocaleOrderStatusTokenRoute: typeof LocaleOrderStatusTokenRoute
+  LocalePaySessionIdRoute: typeof LocalePaySessionIdRoute
 }
 
 const LocaleRouteRouteChildren: LocaleRouteRouteChildren = {
@@ -271,6 +311,8 @@ const LocaleRouteRouteChildren: LocaleRouteRouteChildren = {
   LocaleOrdersRoute: LocaleOrdersRoute,
   LocaleQuoteRoute: LocaleQuoteRoute,
   LocaleIndexRoute: LocaleIndexRoute,
+  LocaleOrderStatusTokenRoute: LocaleOrderStatusTokenRoute,
+  LocalePaySessionIdRoute: LocalePaySessionIdRoute,
 }
 
 const LocaleRouteRouteWithChildren = LocaleRouteRoute._addFileChildren(

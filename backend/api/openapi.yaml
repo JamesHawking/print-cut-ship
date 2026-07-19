@@ -792,7 +792,7 @@ components:
       type: object
       required:
         [orderId, createdAt, status, grossTotalPln, partCount, fileName,
-         leadTime]
+         leadTime, statusToken]
       properties:
         orderId:
           type: string
@@ -812,6 +812,11 @@ components:
           description: First item's file name
         leadTime:
           $ref: '#/components/schemas/LeadTimeId'
+        statusToken:
+          type: string
+          description: >-
+            The order's public status-page capability — exposed here because
+            this endpoint is session-guarded and the session proves ownership.
 
     Address:
       type: object

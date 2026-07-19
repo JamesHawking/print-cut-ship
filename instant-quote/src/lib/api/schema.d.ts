@@ -584,6 +584,8 @@ export interface components {
       /** @description First item's file name */
       fileName: string
       leadTime: components['schemas']['LeadTimeId']
+      /** @description The order's public status-page capability — exposed here because this endpoint is session-guarded and the session proves ownership. */
+      statusToken: string
     }
     Address: {
       /** @description Full name (B2C) or company name (B2B) */

@@ -414,7 +414,7 @@ func (q *Queries) ListInvoiceableOrders(ctx context.Context) ([]Order, error) {
 }
 
 const listOrdersByEmailOrUser = `-- name: ListOrdersByEmailOrUser :many
-SELECT o.short_id, o.status, o.gross_total_grosze, o.created_at,
+SELECT o.short_id, o.status, o.gross_total_grosze, o.created_at, o.status_token,
        (SELECT count(*) FROM order_items i WHERE i.order_id = o.id)::int AS part_count,
        (SELECT i.file_name FROM order_items i WHERE i.order_id = o.id
         ORDER BY i.created_at, i.id LIMIT 1) AS first_file_name,
@@ -436,6 +436,7 @@ type ListOrdersByEmailOrUserRow struct {
 	Status           string
 	GrossTotalGrosze int32
 	CreatedAt        pgtype.Timestamptz
+	StatusToken      string
 	PartCount        int32
 	FirstFileName    string
 	FirstLeadTime    string
@@ -458,6 +459,7 @@ func (q *Queries) ListOrdersByEmailOrUser(ctx context.Context, arg ListOrdersByE
 			&i.Status,
 			&i.GrossTotalGrosze,
 			&i.CreatedAt,
+			&i.StatusToken,
 			&i.PartCount,
 			&i.FirstFileName,
 			&i.FirstLeadTime,

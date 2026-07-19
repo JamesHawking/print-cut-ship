@@ -38,7 +38,7 @@ SELECT * FROM order_items WHERE order_id = $1 ORDER BY created_at;
 -- Order history for the account page: orders placed under the session's user
 -- id or (for guest checkouts) its email. Newest first; part_count/first_*
 -- summarize the line items like ListQuotesByEmail did.
-SELECT o.short_id, o.status, o.gross_total_grosze, o.created_at,
+SELECT o.short_id, o.status, o.gross_total_grosze, o.created_at, o.status_token,
        (SELECT count(*) FROM order_items i WHERE i.order_id = o.id)::int AS part_count,
        (SELECT i.file_name FROM order_items i WHERE i.order_id = o.id
         ORDER BY i.created_at, i.id LIMIT 1) AS first_file_name,
