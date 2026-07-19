@@ -104,3 +104,72 @@ func (s *Store) CreateOrder(ctx context.Context, order InsertOrderParams, items 
 	}
 	return row, nil
 }
+
+// ApplyPaymentSucceeded records a payment ledger row and flips the order to
+// 'paid' in one transaction. Idempotent: applied=false when the provider
+// event id was already recorded (redelivery) — the transition then provably
+// happened in the earlier delivery's transaction. A redelivery can therefore
+// never double-record or double-apply, and a crash mid-transaction rolls both
+// writes back so the next delivery retries cleanly.
+func (s *Store) ApplyPaymentSucceeded(ctx context.Context, payment InsertPaymentEventParams) (bool, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("store: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := s.Queries.WithTx(tx)
+	inserted, err := qtx.InsertPaymentEvent(ctx, payment)
+	if err != nil {
+		return false, fmt.Errorf("store: insert payment event: %w", err)
+	}
+	if inserted == 0 {
+		return false, nil // already processed
+	}
+	marked, err := qtx.MarkOrderPaid(ctx, MarkOrderPaidParams{
+		ID: payment.OrderID, PaymentRef: payment.PaymentRef,
+	})
+	if err != nil {
+		return false, fmt.Errorf("store: mark order paid: %w", err)
+	}
+	if marked == 0 {
+		// The order was not in draft (e.g. cancelled meanwhile). The ledger
+		// row still records the money; support reconciles the state.
+		return false, fmt.Errorf("store: order %s not in draft for payment event %s", payment.OrderID, payment.ProviderEventID)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("store: commit tx: %w", err)
+	}
+	return true, nil
+}
+
+// ApplyRefundSucceeded records a refund ledger row and flips the order to
+// 'refunded' in one transaction. Same idempotency contract as
+// ApplyPaymentSucceeded.
+func (s *Store) ApplyRefundSucceeded(ctx context.Context, payment InsertPaymentEventParams) (bool, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("store: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := s.Queries.WithTx(tx)
+	inserted, err := qtx.InsertPaymentEvent(ctx, payment)
+	if err != nil {
+		return false, fmt.Errorf("store: insert payment event: %w", err)
+	}
+	if inserted == 0 {
+		return false, nil // already processed
+	}
+	marked, err := qtx.MarkOrderRefunded(ctx, payment.OrderID)
+	if err != nil {
+		return false, fmt.Errorf("store: mark order refunded: %w", err)
+	}
+	if marked == 0 {
+		return false, fmt.Errorf("store: order %s not in paid for refund event %s", payment.OrderID, payment.ProviderEventID)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("store: commit tx: %w", err)
+	}
+	return true, nil
+}

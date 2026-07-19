@@ -163,17 +163,118 @@ paths:
     get:
       operationId: listOrders
       summary: >-
-        List the signed-in user's order requests (submitted quotes), newest
-        first. The email is derived from the session server-side.
+        List the signed-in user's orders, newest first. Identity is derived
+        from the session server-side; guest checkouts appear via their email.
       responses:
         '200':
-          description: Order requests for the session's email, newest first
+          description: Orders for the session's user or email, newest first
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListOrdersResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+    post:
+      operationId: createOrder
+      summary: >-
+        Create a draft order from a persisted quote. The client sends no
+        prices — every money value is copied verbatim from the stored,
+        server-recomputed quote rows (anti-tamper boundary).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '200':
+          description: Draft order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/orders/{orderId}/checkout:
+    post:
+      operationId: createOrderCheckout
+      summary: >-
+        Create (or return the live) payment-provider checkout session for a
+        draft order. The returned URL is provider-hosted (Stripe Checkout in
+        plan 18, a stub page while PAYMENTS_PROVIDER=stub) — the browser
+        redirects to it and never asserts payment itself.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The orderId returned by createOrder, e.g. "O-1A2B3C4D"
+      responses:
+        '200':
+          description: Checkout session URL to redirect the browser to
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/orders/track/{statusToken}:
+    get:
+      operationId: trackOrder
+      summary: >-
+        Public order status view. The statusToken (returned by createOrder and
+        embedded in the post-payment redirect) is the bearer capability; the
+        response is redacted — no internal ids, no raw provider objects, no PII
+        beyond the line items.
+      parameters:
+        - name: statusToken
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Redacted order view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackedOrder'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/orders/{orderId}/refund:
+    post:
+      operationId: refundOrder
+      summary: >-
+        Refund a paid order (admin only). The provider refund is requested
+        here but the status flip to 'refunded' happens in the payment-event
+        pipeline (request/confirm split — same rule as payment).
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Refund requested; status flips when the provider confirms
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/v1/step-quotes:
     post:
@@ -290,6 +391,18 @@ components:
             $ref: '#/components/schemas/ApiError'
     UnauthorizedError:
       description: Missing, invalid, or expired credentials/session
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Forbidden:
+      description: Authenticated but lacking the required role
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Conflict:
+      description: The resource is in the wrong state for this operation
       content:
         application/json:
           schema:
@@ -668,21 +781,27 @@ components:
         totals:
           $ref: '#/components/schemas/OrderTotals'
 
+    OrderStatus:
+      type: string
+      description: >-
+        Order lifecycle state; transitions are owned by the backend state
+        machine (internal/orders).
+      enum: [draft, paid, in_production, shipped, delivered, cancelled, refunded]
+
     OrderSummary:
       type: object
       required:
-        [quoteId, createdAt, status, grossTotalPln, partCount, fileName,
+        [orderId, createdAt, status, grossTotalPln, partCount, fileName,
          leadTime]
       properties:
-        quoteId:
+        orderId:
           type: string
-          description: e.g. "Q-1A2B3C4D"
+          description: e.g. "O-1A2B3C4D"
         createdAt:
           type: string
           format: date-time
         status:
-          type: string
-          enum: [submitted, expired, ordered]
+          $ref: '#/components/schemas/OrderStatus'
         grossTotalPln:
           type: number
           format: double
@@ -690,9 +809,118 @@ components:
           type: integer
         fileName:
           type: string
-          description: First part's file name
+          description: First item's file name
         leadTime:
           $ref: '#/components/schemas/LeadTimeId'
+
+    Address:
+      type: object
+      required: [name, street, city, postalCode]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Full name (B2C) or company name (B2B)
+        street:
+          type: string
+          minLength: 1
+          description: Street and number
+        city:
+          type: string
+          minLength: 1
+        postalCode:
+          type: string
+          minLength: 1
+
+    CreateOrderRequest:
+      type: object
+      required: [quoteId, email, country, shippingAddress]
+      properties:
+        quoteId:
+          type: string
+          description: The quoteId returned by submitQuote, e.g. "Q-1A2B3C4D"
+        email:
+          type: string
+          format: email
+        country:
+          $ref: '#/components/schemas/EuCountry'
+        companyName:
+          type: string
+          description: B2B only; presence together with nip implies always-invoice
+        nip:
+          type: string
+          pattern: '^[0-9]{10}$'
+          description: Polish NIP (10 digits); checksum validated server-side
+        invoiceRequested:
+          type: boolean
+          description: B2C opt-in for a faktura VAT (B2B is always invoiced)
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        billingAddress:
+          $ref: '#/components/schemas/Address'
+          description: Absent ⇒ bill to the shipping address
+
+    CreateOrderResponse:
+      type: object
+      required: [orderId, statusToken]
+      properties:
+        orderId:
+          type: string
+          description: e.g. "O-1A2B3C4D"
+        statusToken:
+          type: string
+          description: >-
+            Bearer capability for the public status page
+            (GET /api/v1/orders/track/{statusToken}); also embedded in the
+            checkout success redirect.
+
+    CheckoutResponse:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: Provider-hosted checkout URL to redirect the browser to
+
+    TrackedOrderItem:
+      type: object
+      required: [fileName, process, quantity, leadTime, unitPricePln, lineTotalPln]
+      properties:
+        fileName:
+          type: string
+        process:
+          $ref: '#/components/schemas/ProcessId'
+        quantity:
+          type: integer
+        leadTime:
+          $ref: '#/components/schemas/LeadTimeId'
+        unitPricePln:
+          type: number
+          format: double
+        lineTotalPln:
+          type: number
+          format: double
+
+    TrackedOrder:
+      type: object
+      required: [orderId, status, createdAt, items, totals]
+      properties:
+        orderId:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackedOrderItem'
+        totals:
+          $ref: '#/components/schemas/OrderTotals'
 
     ListOrdersResponse:
       type: object
@@ -862,4 +1090,8 @@ components:
         - code_expired
         - too_many_attempts
         - unauthorized
+        - order_not_found
+        - order_wrong_state
+        - quote_already_ordered
+        - invalid_nip
         - internal

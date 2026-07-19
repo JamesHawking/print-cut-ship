@@ -65,6 +65,44 @@ func (q *Queries) GetOrderByCheckoutSessionID(ctx context.Context, checkoutSessi
 	return i, err
 }
 
+const getOrderByPaymentRef = `-- name: GetOrderByPaymentRef :one
+SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at FROM orders WHERE payment_ref = $1
+`
+
+func (q *Queries) GetOrderByPaymentRef(ctx context.Context, paymentRef *string) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByPaymentRef, paymentRef)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.ShortID,
+		&i.QuoteID,
+		&i.UserID,
+		&i.Email,
+		&i.Status,
+		&i.GrossTotalGrosze,
+		&i.VatGrosze,
+		&i.PricingConfigID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PricingSnapshot,
+		&i.Locale,
+		&i.Country,
+		&i.CompanyName,
+		&i.Nip,
+		&i.InvoiceRequested,
+		&i.ShippingAddress,
+		&i.BillingAddress,
+		&i.StatusToken,
+		&i.CheckoutSessionID,
+		&i.CheckoutSessionUrl,
+		&i.CheckoutSessionExpiresAt,
+		&i.PaymentRef,
+		&i.RetentionUntil,
+		&i.PaidAt,
+	)
+	return i, err
+}
+
 const getOrderByShortID = `-- name: GetOrderByShortID :one
 SELECT id, short_id, quote_id, user_id, email, status, gross_total_grosze, vat_grosze, pricing_config_id, created_at, updated_at, pricing_snapshot, locale, country, company_name, nip, invoice_requested, shipping_address, billing_address, status_token, checkout_session_id, checkout_session_url, checkout_session_expires_at, payment_ref, retention_until, paid_at FROM orders WHERE short_id = $1
 `
@@ -383,14 +421,14 @@ SELECT o.short_id, o.status, o.gross_total_grosze, o.created_at,
        (SELECT i.lead_time FROM order_items i WHERE i.order_id = o.id
         ORDER BY i.created_at, i.id LIMIT 1) AS first_lead_time
 FROM orders o
-WHERE ($1::uuid IS NOT NULL AND o.user_id = $1) OR o.email = $2
+WHERE o.user_id = $1::uuid OR o.email = $2
 ORDER BY o.created_at DESC
 LIMIT 50
 `
 
 type ListOrdersByEmailOrUserParams struct {
-	Column1 uuid.UUID
-	Email   string
+	UserID uuid.UUID
+	Email  string
 }
 
 type ListOrdersByEmailOrUserRow struct {
@@ -407,7 +445,7 @@ type ListOrdersByEmailOrUserRow struct {
 // id or (for guest checkouts) its email. Newest first; part_count/first_*
 // summarize the line items like ListQuotesByEmail did.
 func (q *Queries) ListOrdersByEmailOrUser(ctx context.Context, arg ListOrdersByEmailOrUserParams) ([]ListOrdersByEmailOrUserRow, error) {
-	rows, err := q.db.Query(ctx, listOrdersByEmailOrUser, arg.Column1, arg.Email)
+	rows, err := q.db.Query(ctx, listOrdersByEmailOrUser, arg.UserID, arg.Email)
 	if err != nil {
 		return nil, err
 	}

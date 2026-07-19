@@ -28,6 +28,9 @@ SELECT * FROM orders WHERE status_token = $1;
 -- name: GetOrderByCheckoutSessionID :one
 SELECT * FROM orders WHERE checkout_session_id = $1;
 
+-- name: GetOrderByPaymentRef :one
+SELECT * FROM orders WHERE payment_ref = $1;
+
 -- name: GetOrderItemsByOrderID :many
 SELECT * FROM order_items WHERE order_id = $1 ORDER BY created_at;
 
@@ -42,7 +45,7 @@ SELECT o.short_id, o.status, o.gross_total_grosze, o.created_at,
        (SELECT i.lead_time FROM order_items i WHERE i.order_id = o.id
         ORDER BY i.created_at, i.id LIMIT 1) AS first_lead_time
 FROM orders o
-WHERE ($1::uuid IS NOT NULL AND o.user_id = $1) OR o.email = $2
+WHERE o.user_id = sqlc.arg(user_id)::uuid OR o.email = sqlc.arg(email)
 ORDER BY o.created_at DESC
 LIMIT 50;
 

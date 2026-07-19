@@ -164,10 +164,62 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** List the signed-in user's order requests (submitted quotes), newest first. The email is derived from the session server-side. */
+    /** List the signed-in user's orders, newest first. Identity is derived from the session server-side; guest checkouts appear via their email. */
     get: operations['listOrders']
     put?: never
+    /** Create a draft order from a persisted quote. The client sends no prices — every money value is copied verbatim from the stored, server-recomputed quote rows (anti-tamper boundary). */
+    post: operations['createOrder']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/orders/{orderId}/checkout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create (or return the live) payment-provider checkout session for a draft order. The returned URL is provider-hosted (Stripe Checkout in plan 18, a stub page while PAYMENTS_PROVIDER=stub) — the browser redirects to it and never asserts payment itself. */
+    post: operations['createOrderCheckout']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/orders/track/{statusToken}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Public order status view. The statusToken (returned by createOrder and embedded in the post-payment redirect) is the bearer capability; the response is redacted — no internal ids, no raw provider objects, no PII beyond the line items. */
+    get: operations['trackOrder']
+    put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/orders/{orderId}/refund': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment). */
+    post: operations['refundOrder']
     delete?: never
     options?: never
     head?: never
@@ -508,19 +560,84 @@ export interface components {
       quoteId: string
       totals: components['schemas']['OrderTotals']
     }
+    /**
+     * @description Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+     * @enum {string}
+     */
+    OrderStatus:
+      | 'draft'
+      | 'paid'
+      | 'in_production'
+      | 'shipped'
+      | 'delivered'
+      | 'cancelled'
+      | 'refunded'
     OrderSummary: {
-      /** @description e.g. "Q-1A2B3C4D" */
-      quoteId: string
+      /** @description e.g. "O-1A2B3C4D" */
+      orderId: string
       /** Format: date-time */
       createdAt: string
-      /** @enum {string} */
-      status: 'submitted' | 'expired' | 'ordered'
+      status: components['schemas']['OrderStatus']
       /** Format: double */
       grossTotalPln: number
       partCount: number
-      /** @description First part's file name */
+      /** @description First item's file name */
       fileName: string
       leadTime: components['schemas']['LeadTimeId']
+    }
+    Address: {
+      /** @description Full name (B2C) or company name (B2B) */
+      name: string
+      /** @description Street and number */
+      street: string
+      city: string
+      postalCode: string
+    }
+    CreateOrderRequest: {
+      /** @description The quoteId returned by submitQuote, e.g. "Q-1A2B3C4D" */
+      quoteId: string
+      /** Format: email */
+      email: string
+      country: components['schemas']['EuCountry']
+      /** @description B2B only; presence together with nip implies always-invoice */
+      companyName?: string
+      /** @description Polish NIP (10 digits); checksum validated server-side */
+      nip?: string
+      /** @description B2C opt-in for a faktura VAT (B2B is always invoiced) */
+      invoiceRequested?: boolean
+      shippingAddress: components['schemas']['Address']
+      /** @description Absent ⇒ bill to the shipping address */
+      billingAddress?: components['schemas']['Address']
+    }
+    CreateOrderResponse: {
+      /** @description e.g. "O-1A2B3C4D" */
+      orderId: string
+      /** @description Bearer capability for the public status page (GET /api/v1/orders/track/{statusToken}); also embedded in the checkout success redirect. */
+      statusToken: string
+    }
+    CheckoutResponse: {
+      /** @description Provider-hosted checkout URL to redirect the browser to */
+      url: string
+    }
+    TrackedOrderItem: {
+      fileName: string
+      process: components['schemas']['ProcessId']
+      quantity: number
+      leadTime: components['schemas']['LeadTimeId']
+      /** Format: double */
+      unitPricePln: number
+      /** Format: double */
+      lineTotalPln: number
+    }
+    TrackedOrder: {
+      orderId: string
+      status: components['schemas']['OrderStatus']
+      /** Format: date-time */
+      createdAt: string
+      /** Format: date-time */
+      paidAt?: string
+      items: components['schemas']['TrackedOrderItem'][]
+      totals: components['schemas']['OrderTotals']
     }
     ListOrdersResponse: {
       orders: components['schemas']['OrderSummary'][]
@@ -625,6 +742,10 @@ export interface components {
       | 'code_expired'
       | 'too_many_attempts'
       | 'unauthorized'
+      | 'order_not_found'
+      | 'order_wrong_state'
+      | 'quote_already_ordered'
+      | 'invalid_nip'
       | 'internal'
   }
   responses: {
@@ -648,6 +769,24 @@ export interface components {
     }
     /** @description Missing, invalid, or expired credentials/session */
     UnauthorizedError: {
+      headers: {
+        [name: string]: unknown
+      }
+      content: {
+        'application/json': components['schemas']['ApiError']
+      }
+    }
+    /** @description Authenticated but lacking the required role */
+    Forbidden: {
+      headers: {
+        [name: string]: unknown
+      }
+      content: {
+        'application/json': components['schemas']['ApiError']
+      }
+    }
+    /** @description The resource is in the wrong state for this operation */
+    Conflict: {
       headers: {
         [name: string]: unknown
       }
@@ -881,7 +1020,7 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Order requests for the session's email, newest first */
+      /** @description Orders for the session's user or email, newest first */
       200: {
         headers: {
           [name: string]: unknown
@@ -891,6 +1030,105 @@ export interface operations {
         }
       }
       401: components['responses']['UnauthorizedError']
+    }
+  }
+  createOrder: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateOrderRequest']
+      }
+    }
+    responses: {
+      /** @description Draft order created */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CreateOrderResponse']
+        }
+      }
+      400: components['responses']['BadRequest']
+      404: components['responses']['NotFound']
+      409: components['responses']['Conflict']
+    }
+  }
+  createOrderCheckout: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The orderId returned by createOrder, e.g. "O-1A2B3C4D" */
+        orderId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Checkout session URL to redirect the browser to */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutResponse']
+        }
+      }
+      404: components['responses']['NotFound']
+      409: components['responses']['Conflict']
+    }
+  }
+  trackOrder: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        statusToken: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Redacted order view */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TrackedOrder']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  refundOrder: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        orderId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Refund requested; status flips when the provider confirms */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+      409: components['responses']['Conflict']
     }
   }
   submitStepQuote: {

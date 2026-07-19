@@ -23,7 +23,7 @@ func testHandler(t *testing.T, cfg Config, mwClient *http.Client) http.Handler {
 	s := &server{cfg: cfg, makerworldClient: mwClient}
 	r := chi.NewRouter()
 	r.Use(s.sessionMiddleware)
-	return HandlerFromMux(s, r)
+	return s.routes(r)
 }
 
 func doJSON(t *testing.T, h http.Handler, method, path, body string) *httptest.ResponseRecorder {
