@@ -8,8 +8,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Check, Download, Inbox, Mail, X } from 'lucide-react'
 
+import { PageHeader } from './-components/PageHeader'
+import { STEP_STATUS_STYLE, StatusPill } from './-components/StatusPill'
 import { errorCode } from './-components/util'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -85,24 +86,27 @@ function StepQueue() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-extrabold tracking-tight">STEP queue</h1>
-        <Select
-          value={status}
-          onValueChange={(v) => setStatus(v as StepStatus | 'all')}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt === 'all' ? 'All' : opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <PageHeader
+        kicker="Commerce / STEP queue"
+        title="STEP queue"
+        action={
+          <Select
+            value={status}
+            onValueChange={(v) => setStatus(v as StepStatus | 'all')}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt === 'all' ? 'All' : opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
 
       {isPending ? (
         <div className="flex flex-col gap-2">
@@ -186,9 +190,7 @@ function QueueRow({
         {(sr.fileSizeBytes / 1024).toFixed(1)} KB
       </TableCell>
       <TableCell>
-        <Badge variant={sr.status === 'new' ? 'default' : 'outline'}>
-          {sr.status}
-        </Badge>
+        <StatusPill status={sr.status} styles={STEP_STATUS_STYLE} />
       </TableCell>
       <TableCell className="text-muted-foreground font-mono text-[0.65rem] uppercase">
         {formatPlacedDate(sr.createdAt, 'en')}

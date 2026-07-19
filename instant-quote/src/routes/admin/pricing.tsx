@@ -179,11 +179,14 @@ function PricingEditor() {
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-background sticky top-14 z-10 -mx-1 flex flex-wrap items-end justify-between gap-4 px-1 pt-1 pb-3">
-        <div>
+        <div className="flex flex-col gap-1">
+          <p className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.2em] uppercase">
+            Config / Pricing
+          </p>
           <h1 className="text-xl font-extrabold tracking-tight">
             Pricing config
           </h1>
-          <p className="text-muted-foreground mt-1 font-mono text-[0.65rem] tracking-[0.14em] uppercase">
+          <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase">
             Active: {active.label} · {formatPlacedDate(active.createdAt, 'en')}
           </p>
         </div>

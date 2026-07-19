@@ -8,6 +8,7 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Download, Eraser, Search } from 'lucide-react'
 
+import { PageHeader } from './-components/PageHeader'
 import { StatusPill } from './-components/StatusPill'
 import { errorCode } from './-components/util'
 import { Button } from '@/components/ui/button'
@@ -94,7 +95,7 @@ function Customers() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-extrabold tracking-tight">Customers</h1>
+      <PageHeader kicker="Commerce / Customers" title="Customers" />
 
       <Card className="py-4">
         <CardContent className="px-4">
