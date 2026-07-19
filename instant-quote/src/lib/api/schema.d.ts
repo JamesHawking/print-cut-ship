@@ -312,6 +312,57 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/admin/customers': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Customer lookup by email (admin only): user account, orders, quotes, STEP requests, and linked files. Guests included — email is the join key. Unknown emails return empty arrays, not 404. */
+    get: operations['adminLookupCustomer']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/customers/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob. */
+    post: operations['adminExportCustomer']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/customers/erase': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** GDPR erasure — DRY-RUN ONLY (admin only). Reports what would be deleted vs retained (invoice-retention carve-out, plan 09). dryRun must be true; anything else is 400 erase_not_enabled. There is no destructive code path. */
+    post: operations['adminEraseCustomer']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/admin/orders/{orderId}/refund': {
     parameters: {
       query?: never
@@ -911,6 +962,92 @@ export interface components {
     ReplacePricingConfigResponse: {
       /** Format: uuid */
       id: string
+    }
+    AdminUserSummary: {
+      /** Format: uuid */
+      id: string
+      email: string
+      role: string
+      /** Format: date-time */
+      createdAt: string
+    }
+    AdminQuoteSummary: {
+      quoteId: string
+      status: string
+      /** Format: double */
+      grossTotalPln: number
+      /** Format: date-time */
+      createdAt: string
+      partCount: number
+      fileName?: string
+    }
+    AdminStepRequestSummary: {
+      requestId: string
+      fileName: string
+      /** Format: int64 */
+      fileSizeBytes: number
+      /** @enum {string} */
+      status: 'new' | 'quoted' | 'closed'
+      /** Format: uuid */
+      fileId?: string
+      /** Format: date-time */
+      createdAt: string
+    }
+    AdminFileSummary: {
+      /** Format: uuid */
+      fileId: string
+      fileName: string
+      kind: string
+      /** Format: int64 */
+      sizeBytes: number
+      /** @description True when the object bytes are in storage. */
+      stored: boolean
+      /** Format: date-time */
+      createdAt: string
+    }
+    CustomerEmailRequest: {
+      /** Format: email */
+      email: string
+    }
+    EraseCustomerRequest: {
+      /** Format: email */
+      email: string
+      /** @description Must be true — there is no destructive path (plan 09). */
+      dryRun: boolean
+    }
+    AdminCustomerLookup: {
+      email: string
+      user?: components['schemas']['AdminUserSummary']
+      orders: components['schemas']['AdminOrderSummary'][]
+      quotes: components['schemas']['AdminQuoteSummary'][]
+      stepRequests: components['schemas']['AdminStepRequestSummary'][]
+      files: components['schemas']['AdminFileSummary'][]
+    }
+    AdminCustomerExport: {
+      email: string
+      /** Format: date-time */
+      exportedAt: string
+      user?: components['schemas']['AdminUserSummary']
+      orders: components['schemas']['AdminOrderDetail'][]
+      quotes: components['schemas']['AdminQuoteSummary'][]
+      stepRequests: components['schemas']['AdminStepRequestSummary'][]
+      files: components['schemas']['AdminFileSummary'][]
+    }
+    AdminEraseEntry: {
+      table: string
+      count: number
+      note?: string
+    }
+    AdminEraseRetained: {
+      table: string
+      count: number
+      reason: string
+    }
+    AdminEraseReport: {
+      email: string
+      dryRun: boolean
+      wouldDelete: components['schemas']['AdminEraseEntry'][]
+      retained: components['schemas']['AdminEraseRetained'][]
     }
     AdminOrderSummary: {
       orderId: string
@@ -1603,6 +1740,85 @@ export interface operations {
       401: components['responses']['UnauthorizedError']
       403: components['responses']['Forbidden']
       404: components['responses']['NotFound']
+    }
+  }
+  adminLookupCustomer: {
+    parameters: {
+      query: {
+        email: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The customer's trail */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminCustomerLookup']
+        }
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminExportCustomer: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerEmailRequest']
+      }
+    }
+    responses: {
+      /** @description Full export bundle */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminCustomerExport']
+        }
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminEraseCustomer: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EraseCustomerRequest']
+      }
+    }
+    responses: {
+      /** @description Dry-run erasure report */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminEraseReport']
+        }
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
     }
   }
   refundOrder: {

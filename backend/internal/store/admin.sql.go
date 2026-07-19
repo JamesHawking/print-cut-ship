@@ -12,6 +12,60 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const adminCountDeletableFilesByEmail = `-- name: AdminCountDeletableFilesByEmail :one
+SELECT count(DISTINCT f.id)::int FROM files f
+WHERE (EXISTS (SELECT 1 FROM quote_parts qp JOIN quotes q ON q.id = qp.quote_id
+               WHERE qp.file_id = f.id AND q.email = $1)
+    OR EXISTS (SELECT 1 FROM order_items oi JOIN orders o ON o.id = oi.order_id
+               WHERE oi.file_id = f.id AND o.email = $1)
+    OR EXISTS (SELECT 1 FROM step_requests sr
+               WHERE sr.file_id = f.id AND sr.email = $1))
+  AND NOT EXISTS (
+       SELECT 1 FROM order_items oi JOIN orders o ON o.id = oi.order_id
+       WHERE oi.file_id = f.id AND o.email = $1
+         AND (o.retention_until IS NOT NULL
+              OR EXISTS (SELECT 1 FROM invoices i WHERE i.order_id = o.id)))
+`
+
+// Files the email touches that no retained order needs.
+func (q *Queries) AdminCountDeletableFilesByEmail(ctx context.Context, email *string) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountDeletableFilesByEmail, email)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountInvoicesByEmail = `-- name: AdminCountInvoicesByEmail :one
+SELECT count(*)::int FROM invoices i JOIN orders o ON o.id = i.order_id
+WHERE o.email = $1
+`
+
+func (q *Queries) AdminCountInvoicesByEmail(ctx context.Context, email string) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountInvoicesByEmail, email)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountOrderItemsByRetention = `-- name: AdminCountOrderItemsByRetention :one
+SELECT count(*)::int FROM order_items oi JOIN orders o ON o.id = oi.order_id
+WHERE o.email = $1
+  AND (o.retention_until IS NOT NULL
+       OR EXISTS (SELECT 1 FROM invoices i WHERE i.order_id = o.id)) = $2::boolean
+`
+
+type AdminCountOrderItemsByRetentionParams struct {
+	Email    string
+	Retained bool
+}
+
+func (q *Queries) AdminCountOrderItemsByRetention(ctx context.Context, arg AdminCountOrderItemsByRetentionParams) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountOrderItemsByRetention, arg.Email, arg.Retained)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const adminCountOrders = `-- name: AdminCountOrders :one
 SELECT count(*)::int FROM orders o
 WHERE ($1::text IS NULL OR o.status = $1::text)
@@ -22,6 +76,171 @@ func (q *Queries) AdminCountOrders(ctx context.Context, status *string) (int32, 
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const adminCountOrdersByRetention = `-- name: AdminCountOrdersByRetention :one
+SELECT count(*)::int FROM orders o
+WHERE o.email = $1
+  AND (o.retention_until IS NOT NULL
+       OR EXISTS (SELECT 1 FROM invoices i WHERE i.order_id = o.id)) = $2::boolean
+`
+
+type AdminCountOrdersByRetentionParams struct {
+	Email    string
+	Retained bool
+}
+
+func (q *Queries) AdminCountOrdersByRetention(ctx context.Context, arg AdminCountOrdersByRetentionParams) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountOrdersByRetention, arg.Email, arg.Retained)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountPaymentsByRetention = `-- name: AdminCountPaymentsByRetention :one
+SELECT count(*)::int FROM payments p JOIN orders o ON o.id = p.order_id
+WHERE o.email = $1
+  AND (o.retention_until IS NOT NULL
+       OR EXISTS (SELECT 1 FROM invoices i WHERE i.order_id = o.id)) = $2::boolean
+`
+
+type AdminCountPaymentsByRetentionParams struct {
+	Email    string
+	Retained bool
+}
+
+func (q *Queries) AdminCountPaymentsByRetention(ctx context.Context, arg AdminCountPaymentsByRetentionParams) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountPaymentsByRetention, arg.Email, arg.Retained)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountQuotePartsByEmail = `-- name: AdminCountQuotePartsByEmail :one
+SELECT count(*)::int FROM quote_parts qp JOIN quotes q ON q.id = qp.quote_id
+WHERE q.email = $1
+`
+
+func (q *Queries) AdminCountQuotePartsByEmail(ctx context.Context, email *string) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountQuotePartsByEmail, email)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountQuotesByEmail = `-- name: AdminCountQuotesByEmail :one
+SELECT count(*)::int FROM quotes WHERE email = $1
+`
+
+func (q *Queries) AdminCountQuotesByEmail(ctx context.Context, email *string) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountQuotesByEmail, email)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountRetainedFilesByEmail = `-- name: AdminCountRetainedFilesByEmail :one
+SELECT count(DISTINCT f.id)::int FROM files f
+JOIN order_items oi ON oi.file_id = f.id
+JOIN orders o ON o.id = oi.order_id
+WHERE o.email = $1
+  AND (o.retention_until IS NOT NULL
+       OR EXISTS (SELECT 1 FROM invoices i WHERE i.order_id = o.id))
+`
+
+func (q *Queries) AdminCountRetainedFilesByEmail(ctx context.Context, email string) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountRetainedFilesByEmail, email)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountSessionsByEmail = `-- name: AdminCountSessionsByEmail :one
+SELECT count(*)::int FROM sessions s JOIN users u ON u.id = s.user_id
+WHERE u.email = $1
+`
+
+func (q *Queries) AdminCountSessionsByEmail(ctx context.Context, email string) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountSessionsByEmail, email)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountStepRequestsByEmail = `-- name: AdminCountStepRequestsByEmail :one
+SELECT count(*)::int FROM step_requests WHERE email = $1
+`
+
+func (q *Queries) AdminCountStepRequestsByEmail(ctx context.Context, email string) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountStepRequestsByEmail, email)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminCountUserByEmail = `-- name: AdminCountUserByEmail :one
+SELECT count(*)::int FROM users WHERE email = $1
+`
+
+// Erase dry-run counts. Retained = the invoice-retention carve-out (plan 09):
+// the order has retention_until set OR any invoice row.
+func (q *Queries) AdminCountUserByEmail(ctx context.Context, email string) (int32, error) {
+	row := q.db.QueryRow(ctx, adminCountUserByEmail, email)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const adminListFilesByEmail = `-- name: AdminListFilesByEmail :many
+SELECT DISTINCT f.id, f.file_name, f.kind, f.file_size_bytes,
+       (f.storage_key IS NOT NULL)::boolean AS stored, f.created_at
+FROM files f
+WHERE f.deleted_at IS NULL
+  AND (EXISTS (SELECT 1 FROM quote_parts qp JOIN quotes q ON q.id = qp.quote_id
+               WHERE qp.file_id = f.id AND q.email = $1)
+    OR EXISTS (SELECT 1 FROM order_items oi JOIN orders o ON o.id = oi.order_id
+               WHERE oi.file_id = f.id AND o.email = $1)
+    OR EXISTS (SELECT 1 FROM step_requests sr
+               WHERE sr.file_id = f.id AND sr.email = $1))
+ORDER BY f.created_at DESC
+`
+
+type AdminListFilesByEmailRow struct {
+	ID            uuid.UUID
+	FileName      string
+	Kind          string
+	FileSizeBytes int64
+	Stored        bool
+	CreatedAt     pgtype.Timestamptz
+}
+
+// Files linked to the email via any of the three attach points (quote parts,
+// order items, STEP requests), deduplicated.
+func (q *Queries) AdminListFilesByEmail(ctx context.Context, email *string) ([]AdminListFilesByEmailRow, error) {
+	rows, err := q.db.Query(ctx, adminListFilesByEmail, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AdminListFilesByEmailRow
+	for rows.Next() {
+		var i AdminListFilesByEmailRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FileName,
+			&i.Kind,
+			&i.FileSizeBytes,
+			&i.Stored,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const adminListOrders = `-- name: AdminListOrders :many
@@ -97,6 +316,70 @@ func (q *Queries) AdminListOrders(ctx context.Context, arg AdminListOrdersParams
 	return items, nil
 }
 
+const adminListOrdersByEmail = `-- name: AdminListOrdersByEmail :many
+SELECT o.short_id, o.email, o.status, o.gross_total_grosze, o.created_at,
+       o.paid_at, o.tracking_number,
+       (SELECT count(*) FROM order_items i WHERE i.order_id = o.id)::int AS part_count,
+       (SELECT coalesce(array_agg(DISTINCT i.lead_time), '{}'::text[])
+          FROM order_items i WHERE i.order_id = o.id)::text[] AS lead_times,
+       (SELECT coalesce(array_agg(DISTINCT f ->> 'code'), '{}'::text[])
+          FROM order_items i,
+               jsonb_array_elements(i.part_quote_snapshot -> 'dfmFlags') f
+          WHERE i.order_id = o.id
+            AND ((f ->> 'severity') IN ('warn', 'block')
+                 OR (f ->> 'code') = 'manual_verify'))::text[] AS dfm_codes
+FROM orders o
+WHERE o.email = $1
+ORDER BY o.created_at DESC
+LIMIT 200
+`
+
+type AdminListOrdersByEmailRow struct {
+	ShortID          string
+	Email            string
+	Status           string
+	GrossTotalGrosze int32
+	CreatedAt        pgtype.Timestamptz
+	PaidAt           pgtype.Timestamptz
+	TrackingNumber   *string
+	PartCount        int32
+	LeadTimes        []string
+	DfmCodes         []string
+}
+
+// Customer lookup: the board's enriched shape filtered to one email (guest
+// orders included — email is the join key). Uses the orders_email index.
+func (q *Queries) AdminListOrdersByEmail(ctx context.Context, email string) ([]AdminListOrdersByEmailRow, error) {
+	rows, err := q.db.Query(ctx, adminListOrdersByEmail, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AdminListOrdersByEmailRow
+	for rows.Next() {
+		var i AdminListOrdersByEmailRow
+		if err := rows.Scan(
+			&i.ShortID,
+			&i.Email,
+			&i.Status,
+			&i.GrossTotalGrosze,
+			&i.CreatedAt,
+			&i.PaidAt,
+			&i.TrackingNumber,
+			&i.PartCount,
+			&i.LeadTimes,
+			&i.DfmCodes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getOrderFileForDownload = `-- name: GetOrderFileForDownload :one
 SELECT f.id, f.file_name, f.file_size_bytes, f.kind, f.storage_key
 FROM files f
@@ -129,6 +412,29 @@ func (q *Queries) GetOrderFileForDownload(ctx context.Context, arg GetOrderFileF
 		&i.FileSizeBytes,
 		&i.Kind,
 		&i.StorageKey,
+	)
+	return i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, email, role, created_at FROM users WHERE email = $1
+`
+
+type GetUserByEmailRow struct {
+	ID        uuid.UUID
+	Email     string
+	Role      string
+	CreatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i GetUserByEmailRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Role,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -191,6 +497,39 @@ func (q *Queries) ListPaymentsByOrderID(ctx context.Context, orderID uuid.UUID) 
 			&i.AmountGrosze,
 			&i.Status,
 			&i.Raw,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStepRequestsByEmail = `-- name: ListStepRequestsByEmail :many
+SELECT id, short_id, email, file_name, file_size_bytes, file_id, status, created_at FROM step_requests WHERE email = $1 ORDER BY created_at DESC LIMIT 200
+`
+
+func (q *Queries) ListStepRequestsByEmail(ctx context.Context, email string) ([]StepRequest, error) {
+	rows, err := q.db.Query(ctx, listStepRequestsByEmail, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StepRequest
+	for rows.Next() {
+		var i StepRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.ShortID,
+			&i.Email,
+			&i.FileName,
+			&i.FileSizeBytes,
+			&i.FileID,
+			&i.Status,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

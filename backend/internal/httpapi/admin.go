@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -166,36 +167,39 @@ func (s *server) AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId s
 		internalError(w, "failed to load order")
 		return
 	}
+	detail, err := s.buildOrderDetail(ctx, o)
+	if err != nil {
+		s.cfg.Logger.Error("admin get order: build failed", "orderId", orderId, "err", err)
+		internalError(w, "failed to load order detail")
+		return
+	}
+	writeJSON(w, http.StatusOK, detail)
+}
+
+// buildOrderDetail assembles the admin detail view for one loaded order row:
+// items with frozen snapshots plus the payment/invoice ledgers. Shared by
+// AdminGetOrder and the GDPR export.
+func (s *server) buildOrderDetail(ctx context.Context, o store.Order) (AdminOrderDetail, error) {
 	items, err := s.cfg.Store.GetOrderItemsByOrderID(ctx, o.ID)
 	if err != nil {
-		s.cfg.Logger.Error("admin get order: items failed", "orderId", orderId, "err", err)
-		internalError(w, "failed to load order items")
-		return
+		return AdminOrderDetail{}, fmt.Errorf("items: %w", err)
 	}
 	payments, err := s.cfg.Store.ListPaymentsByOrderID(ctx, o.ID)
 	if err != nil {
-		s.cfg.Logger.Error("admin get order: payments failed", "orderId", orderId, "err", err)
-		internalError(w, "failed to load payments")
-		return
+		return AdminOrderDetail{}, fmt.Errorf("payments: %w", err)
 	}
 	invoices, err := s.cfg.Store.ListInvoicesByOrderID(ctx, o.ID)
 	if err != nil {
-		s.cfg.Logger.Error("admin get order: invoices failed", "orderId", orderId, "err", err)
-		internalError(w, "failed to load invoices")
-		return
+		return AdminOrderDetail{}, fmt.Errorf("invoices: %w", err)
 	}
 
 	var totals OrderTotals
 	if err := json.Unmarshal(o.PricingSnapshot, &totals); err != nil {
-		s.cfg.Logger.Error("admin get order: snapshot decode failed", "orderId", orderId, "err", err)
-		internalError(w, "failed to read order totals")
-		return
+		return AdminOrderDetail{}, fmt.Errorf("snapshot decode: %w", err)
 	}
 	var shipping Address
 	if err := json.Unmarshal(o.ShippingAddress, &shipping); err != nil {
-		s.cfg.Logger.Error("admin get order: address decode failed", "orderId", orderId, "err", err)
-		internalError(w, "failed to read order address")
-		return
+		return AdminOrderDetail{}, fmt.Errorf("address decode: %w", err)
 	}
 	order := AdminOrder{
 		OrderId:          o.ShortID,
@@ -222,9 +226,7 @@ func (s *server) AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId s
 	if len(o.BillingAddress) > 0 {
 		var billing Address
 		if err := json.Unmarshal(o.BillingAddress, &billing); err != nil {
-			s.cfg.Logger.Error("admin get order: billing decode failed", "orderId", orderId, "err", err)
-			internalError(w, "failed to read order address")
-			return
+			return AdminOrderDetail{}, fmt.Errorf("billing decode: %w", err)
 		}
 		order.BillingAddress = &billing
 	}
@@ -278,12 +280,12 @@ func (s *server) AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId s
 		viewInvoices = append(viewInvoices, out)
 	}
 
-	writeJSON(w, http.StatusOK, AdminOrderDetail{
+	return AdminOrderDetail{
 		Order:    order,
 		Items:    viewItems,
 		Payments: viewPayments,
 		Invoices: viewInvoices,
-	})
+	}, nil
 }
 
 // AdminTransitionOrder moves an order along the lifecycle. Only board

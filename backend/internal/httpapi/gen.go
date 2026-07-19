@@ -26,6 +26,13 @@ const (
 	Refund  AdminPaymentType = "refund"
 )
 
+// Defines values for AdminStepRequestSummaryStatus.
+const (
+	Closed AdminStepRequestSummaryStatus = "closed"
+	New    AdminStepRequestSummaryStatus = "new"
+	Quoted AdminStepRequestSummaryStatus = "quoted"
+)
+
 // Defines values for ApiErrorCode.
 const (
 	CodeExpired           ApiErrorCode = "code_expired"
@@ -192,6 +199,61 @@ type Address struct {
 	Street string `json:"street"`
 }
 
+// AdminCustomerExport defines model for AdminCustomerExport.
+type AdminCustomerExport struct {
+	Email        string                    `json:"email"`
+	ExportedAt   time.Time                 `json:"exportedAt"`
+	Files        []AdminFileSummary        `json:"files"`
+	Orders       []AdminOrderDetail        `json:"orders"`
+	Quotes       []AdminQuoteSummary       `json:"quotes"`
+	StepRequests []AdminStepRequestSummary `json:"stepRequests"`
+	User         *AdminUserSummary         `json:"user,omitempty"`
+}
+
+// AdminCustomerLookup defines model for AdminCustomerLookup.
+type AdminCustomerLookup struct {
+	Email        string                    `json:"email"`
+	Files        []AdminFileSummary        `json:"files"`
+	Orders       []AdminOrderSummary       `json:"orders"`
+	Quotes       []AdminQuoteSummary       `json:"quotes"`
+	StepRequests []AdminStepRequestSummary `json:"stepRequests"`
+	User         *AdminUserSummary         `json:"user,omitempty"`
+}
+
+// AdminEraseEntry defines model for AdminEraseEntry.
+type AdminEraseEntry struct {
+	Count int     `json:"count"`
+	Note  *string `json:"note,omitempty"`
+	Table string  `json:"table"`
+}
+
+// AdminEraseReport defines model for AdminEraseReport.
+type AdminEraseReport struct {
+	DryRun      bool                 `json:"dryRun"`
+	Email       string               `json:"email"`
+	Retained    []AdminEraseRetained `json:"retained"`
+	WouldDelete []AdminEraseEntry    `json:"wouldDelete"`
+}
+
+// AdminEraseRetained defines model for AdminEraseRetained.
+type AdminEraseRetained struct {
+	Count  int    `json:"count"`
+	Reason string `json:"reason"`
+	Table  string `json:"table"`
+}
+
+// AdminFileSummary defines model for AdminFileSummary.
+type AdminFileSummary struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	FileId    openapi_types.UUID `json:"fileId"`
+	FileName  string             `json:"fileName"`
+	Kind      string             `json:"kind"`
+	SizeBytes int64              `json:"sizeBytes"`
+
+	// Stored True when the object bytes are in storage.
+	Stored bool `json:"stored"`
+}
+
 // AdminInvoice defines model for AdminInvoice.
 type AdminInvoice struct {
 	CreatedAt  time.Time        `json:"createdAt"`
@@ -308,6 +370,37 @@ type AdminPaymentType string
 type AdminPricingConfigResponse struct {
 	Active  PricingConfigSnapshot       `json:"active"`
 	History []PricingConfigSnapshotMeta `json:"history"`
+}
+
+// AdminQuoteSummary defines model for AdminQuoteSummary.
+type AdminQuoteSummary struct {
+	CreatedAt     time.Time `json:"createdAt"`
+	FileName      *string   `json:"fileName,omitempty"`
+	GrossTotalPln float64   `json:"grossTotalPln"`
+	PartCount     int       `json:"partCount"`
+	QuoteId       string    `json:"quoteId"`
+	Status        string    `json:"status"`
+}
+
+// AdminStepRequestSummary defines model for AdminStepRequestSummary.
+type AdminStepRequestSummary struct {
+	CreatedAt     time.Time                     `json:"createdAt"`
+	FileId        *openapi_types.UUID           `json:"fileId,omitempty"`
+	FileName      string                        `json:"fileName"`
+	FileSizeBytes int64                         `json:"fileSizeBytes"`
+	RequestId     string                        `json:"requestId"`
+	Status        AdminStepRequestSummaryStatus `json:"status"`
+}
+
+// AdminStepRequestSummaryStatus defines model for AdminStepRequestSummary.Status.
+type AdminStepRequestSummaryStatus string
+
+// AdminUserSummary defines model for AdminUserSummary.
+type AdminUserSummary struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Email     string             `json:"email"`
+	Id        openapi_types.UUID `json:"id"`
+	Role      string             `json:"role"`
 }
 
 // ApiError defines model for ApiError.
@@ -447,6 +540,11 @@ type CreateOrderResponse struct {
 	StatusToken string `json:"statusToken"`
 }
 
+// CustomerEmailRequest defines model for CustomerEmailRequest.
+type CustomerEmailRequest struct {
+	Email openapi_types.Email `json:"email"`
+}
+
 // DfmFlag defines model for DfmFlag.
 type DfmFlag struct {
 	Code DfmFlagCode `json:"code"`
@@ -470,6 +568,13 @@ type DfmFlagSeverity string
 type DiscountTier struct {
 	Fraction float64 `json:"fraction"`
 	Quantity int     `json:"quantity"`
+}
+
+// EraseCustomerRequest defines model for EraseCustomerRequest.
+type EraseCustomerRequest struct {
+	// DryRun Must be true — there is no destructive path (plan 09).
+	DryRun bool                `json:"dryRun"`
+	Email  openapi_types.Email `json:"email"`
 }
 
 // EuCountry Supported EU shipping destinations
@@ -838,12 +943,23 @@ type NotFound = ApiError
 // UnauthorizedError defines model for UnauthorizedError.
 type UnauthorizedError = ApiError
 
+// AdminLookupCustomerParams defines parameters for AdminLookupCustomer.
+type AdminLookupCustomerParams struct {
+	Email openapi_types.Email `form:"email" json:"email"`
+}
+
 // AdminListOrdersParams defines parameters for AdminListOrders.
 type AdminListOrdersParams struct {
 	Status *OrderStatus `form:"status,omitempty" json:"status,omitempty"`
 	Limit  *int         `form:"limit,omitempty" json:"limit,omitempty"`
 	Offset *int         `form:"offset,omitempty" json:"offset,omitempty"`
 }
+
+// AdminEraseCustomerJSONRequestBody defines body for AdminEraseCustomer for application/json ContentType.
+type AdminEraseCustomerJSONRequestBody = EraseCustomerRequest
+
+// AdminExportCustomerJSONRequestBody defines body for AdminExportCustomer for application/json ContentType.
+type AdminExportCustomerJSONRequestBody = CustomerEmailRequest
 
 // AdminTransitionOrderJSONRequestBody defines body for AdminTransitionOrder for application/json ContentType.
 type AdminTransitionOrderJSONRequestBody = TransitionOrderRequest
@@ -877,6 +993,15 @@ type SubmitStepQuoteJSONRequestBody = StepQuoteRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Customer lookup by email (admin only): user account, orders, quotes, STEP requests, and linked files. Guests included — email is the join key. Unknown emails return empty arrays, not 404.
+	// (GET /api/v1/admin/customers)
+	AdminLookupCustomer(w http.ResponseWriter, r *http.Request, params AdminLookupCustomerParams)
+	// GDPR erasure — DRY-RUN ONLY (admin only). Reports what would be deleted vs retained (invoice-retention carve-out, plan 09). dryRun must be true; anything else is 400 erase_not_enabled. There is no destructive code path.
+	// (POST /api/v1/admin/customers/erase)
+	AdminEraseCustomer(w http.ResponseWriter, r *http.Request)
+	// GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob.
+	// (POST /api/v1/admin/customers/export)
+	AdminExportCustomer(w http.ResponseWriter, r *http.Request)
 	// Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items.
 	// (GET /api/v1/admin/orders)
 	AdminListOrders(w http.ResponseWriter, r *http.Request, params AdminListOrdersParams)
@@ -957,6 +1082,24 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Customer lookup by email (admin only): user account, orders, quotes, STEP requests, and linked files. Guests included — email is the join key. Unknown emails return empty arrays, not 404.
+// (GET /api/v1/admin/customers)
+func (_ Unimplemented) AdminLookupCustomer(w http.ResponseWriter, r *http.Request, params AdminLookupCustomerParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GDPR erasure — DRY-RUN ONLY (admin only). Reports what would be deleted vs retained (invoice-retention carve-out, plan 09). dryRun must be true; anything else is 400 erase_not_enabled. There is no destructive code path.
+// (POST /api/v1/admin/customers/erase)
+func (_ Unimplemented) AdminEraseCustomer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GDPR data-portability export (admin only): everything keyed to an email as one JSON bundle — orders in full detail shape (items, payments, invoices). The frontend downloads it as a blob.
+// (POST /api/v1/admin/customers/export)
+func (_ Unimplemented) AdminExportCustomer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items.
 // (GET /api/v1/admin/orders)
@@ -1116,6 +1259,68 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// AdminLookupCustomer operation middleware
+func (siw *ServerInterfaceWrapper) AdminLookupCustomer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AdminLookupCustomerParams
+
+	// ------------- Required query parameter "email" -------------
+
+	if paramValue := r.URL.Query().Get("email"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "email"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "email", r.URL.Query(), &params.Email)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "email", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminLookupCustomer(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminEraseCustomer operation middleware
+func (siw *ServerInterfaceWrapper) AdminEraseCustomer(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminEraseCustomer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminExportCustomer operation middleware
+func (siw *ServerInterfaceWrapper) AdminExportCustomer(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminExportCustomer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // AdminListOrders operation middleware
 func (siw *ServerInterfaceWrapper) AdminListOrders(w http.ResponseWriter, r *http.Request) {
@@ -1717,6 +1922,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/customers", wrapper.AdminLookupCustomer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/customers/erase", wrapper.AdminEraseCustomer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/customers/export", wrapper.AdminExportCustomer)
+	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/orders", wrapper.AdminListOrders)
 	})

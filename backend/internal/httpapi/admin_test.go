@@ -33,6 +33,12 @@ var adminRoutes = []struct {
 	{http.MethodPost, "/api/v1/admin/orders/O-DEADBEEF/refund"},
 	{http.MethodPost, "/api/v1/admin/orders/O-DEADBEEF/transition"},
 	{http.MethodGet, "/api/v1/admin/orders/O-DEADBEEF/files/00000000-0000-0000-0000-000000000000"},
+	{http.MethodGet, "/api/v1/admin/pricing-config"},
+	{http.MethodPost, "/api/v1/admin/pricing-config"},
+	{http.MethodGet, "/api/v1/admin/pricing-config/00000000-0000-0000-0000-000000000000"},
+	{http.MethodGet, "/api/v1/admin/customers?email=a@b.co"},
+	{http.MethodPost, "/api/v1/admin/customers/export"},
+	{http.MethodPost, "/api/v1/admin/customers/erase"},
 }
 
 // makeAdmin promotes the email's user row and returns the session cookie.
@@ -466,5 +472,162 @@ func TestAdminDownloadOrderFile(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &e)
 	if e.Code != FileNotFound {
 		t.Fatalf("code %q, want file_not_found", e.Code)
+	}
+}
+
+func TestAdminCustomerLookup(t *testing.T) {
+	h, st, pool, mailer := setupOrdersTest(t)
+	admin := makeAdmin(t, pool, requestCodeAndVerify(t, h, mailer, "lookup@example.com"), "lookup@example.com")
+
+	// Guest trail: order + quote + step request, no users row.
+	quoteID := submitTestQuote(t, h, st, "guest@example.com")
+	createTestOrder(t, h, quoteID, "guest@example.com", "")
+	rec := doJSON(t, h, http.MethodPost, "/api/v1/step-quotes",
+		`{"email": "guest@example.com", "fileName": "bracket.step", "fileSize": 12345}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("step quote: %d", rec.Code)
+	}
+
+	get := func(email string) AdminCustomerLookup {
+		t.Helper()
+		rec := doJSONCookies(t, h, http.MethodGet, "/api/v1/admin/customers?email="+email, "", admin)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("lookup %s: %d: %s", email, rec.Code, rec.Body)
+		}
+		var res AdminCustomerLookup
+		if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+			t.Fatal(err)
+		}
+		return res
+	}
+
+	res := get("guest@example.com")
+	if res.User != nil {
+		t.Fatalf("guest should have no user row: %+v", res.User)
+	}
+	if len(res.Orders) != 1 || len(res.Quotes) != 1 || len(res.StepRequests) != 1 {
+		t.Fatalf("trail wrong: orders=%d quotes=%d steps=%d",
+			len(res.Orders), len(res.Quotes), len(res.StepRequests))
+	}
+	if res.Orders[0].Email != "guest@example.com" || res.Quotes[0].FileName == nil ||
+		*res.Quotes[0].FileName != "widget.stl" || res.StepRequests[0].FileName != "bracket.step" {
+		t.Fatalf("trail wrong: %+v", res)
+	}
+	// The uploaded file is linked via the quote part.
+	if len(res.Files) != 1 || res.Files[0].FileName != "widget.stl" || !res.Files[0].Stored {
+		t.Fatalf("files wrong: %+v", res.Files)
+	}
+
+	// Registered trail: the users row appears.
+	registered := requestCodeAndVerify(t, h, mailer, "member@example.com")
+	_ = registered
+	res = get("member@example.com")
+	if res.User == nil || res.User.Email != "member@example.com" || res.User.Role != "customer" {
+		t.Fatalf("user wrong: %+v", res.User)
+	}
+	if len(res.Orders) != 0 {
+		t.Fatalf("orders %d, want 0", len(res.Orders))
+	}
+
+	// Unknown email: empty arrays, not 404.
+	res = get("ghost@example.com")
+	if res.User != nil || len(res.Orders) != 0 || len(res.Quotes) != 0 ||
+		len(res.StepRequests) != 0 || len(res.Files) != 0 {
+		t.Fatalf("ghost trail not empty: %+v", res)
+	}
+}
+
+func TestAdminCustomerExport(t *testing.T) {
+	h, st, pool, mailer := setupOrdersTest(t)
+	admin := makeAdmin(t, pool, requestCodeAndVerify(t, h, mailer, "export@example.com"), "export@example.com")
+
+	quoteID := submitTestQuote(t, h, st, "full@example.com")
+	order := createTestOrder(t, h, quoteID, "full@example.com",
+		`"companyName": "ACME sp. z o.o.", "nip": "8567346215", "invoiceRequested": true,`)
+	payTestOrder(t, h, order.OrderId)
+
+	rec := doJSONCookies(t, h, http.MethodPost, "/api/v1/admin/customers/export",
+		`{"email": "full@example.com"}`, admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("export status %d: %s", rec.Code, rec.Body)
+	}
+	var res AdminCustomerExport
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if res.Email != "full@example.com" || res.ExportedAt.IsZero() {
+		t.Fatalf("export meta wrong: %+v", res)
+	}
+	if len(res.Orders) != 1 {
+		t.Fatalf("orders %d, want 1", len(res.Orders))
+	}
+	d := res.Orders[0]
+	// Detail-shaped: items with snapshots, the payment ledger, PII included.
+	if d.Order.Nip == nil || d.Order.ShippingAddress.City != "Warszawa" ||
+		len(d.Items) != 1 || d.Items[0].PartQuoteSnapshot == nil ||
+		len(d.Payments) != 1 || d.Payments[0].Type != Payment {
+		t.Fatalf("export detail incomplete: %+v", d)
+	}
+	if len(res.Quotes) != 1 || len(res.Files) != 1 {
+		t.Fatalf("export trail incomplete: quotes=%d files=%d", len(res.Quotes), len(res.Files))
+	}
+}
+
+func TestAdminCustomerEraseDryRun(t *testing.T) {
+	h, st, pool, mailer := setupOrdersTest(t)
+	admin := makeAdmin(t, pool, requestCodeAndVerify(t, h, mailer, "erase@example.com"), "erase@example.com")
+
+	quoteID := submitTestQuote(t, h, st, "subject@example.com")
+	order := createTestOrder(t, h, quoteID, "subject@example.com", "")
+	payTestOrder(t, h, order.OrderId)
+	// Retention carve-out: this order must be reported as retained.
+	if _, err := pool.Exec(context.Background(),
+		`UPDATE orders SET retention_until = CURRENT_DATE + INTERVAL '5 years'
+		 WHERE short_id = $1`, order.OrderId); err != nil {
+		t.Fatal(err)
+	}
+	requestCodeAndVerify(t, h, mailer, "subject@example.com") // user + session
+
+	// dryRun:false → 400 erase_not_enabled.
+	rec := doJSONCookies(t, h, http.MethodPost, "/api/v1/admin/customers/erase",
+		`{"email": "subject@example.com", "dryRun": false}`, admin)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("dryRun false: %d, want 400", rec.Code)
+	}
+	var e ApiError
+	_ = json.Unmarshal(rec.Body.Bytes(), &e)
+	if e.Code != EraseNotEnabled {
+		t.Fatalf("code %q, want erase_not_enabled", e.Code)
+	}
+
+	// Dry run reports the trail; the retained order is listed with a reason.
+	rec = doJSONCookies(t, h, http.MethodPost, "/api/v1/admin/customers/erase",
+		`{"email": "subject@example.com", "dryRun": true}`, admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("dry run: %d: %s", rec.Code, rec.Body)
+	}
+	var res AdminEraseReport
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if !res.DryRun {
+		t.Fatal("report not marked dryRun")
+	}
+	counts := map[string]int{}
+	for _, wd := range res.WouldDelete {
+		counts[wd.Table] = wd.Count
+	}
+	if counts["users"] != 1 || counts["sessions"] != 1 || counts["quotes"] != 1 ||
+		counts["orders"] != 0 || counts["files"] != 0 {
+		t.Fatalf("wouldDelete wrong: %+v", res.WouldDelete)
+	}
+	var retainedOrders *AdminEraseRetained
+	for i := range res.Retained {
+		if res.Retained[i].Table == "orders" {
+			retainedOrders = &res.Retained[i]
+		}
+	}
+	if retainedOrders == nil || retainedOrders.Count != 1 || retainedOrders.Reason == "" {
+		t.Fatalf("retained wrong: %+v", res.Retained)
 	}
 }

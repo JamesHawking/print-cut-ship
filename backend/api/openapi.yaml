@@ -462,6 +462,92 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/v1/admin/customers:
+    get:
+      operationId: adminLookupCustomer
+      tags: [admin]
+      summary: >-
+        Customer lookup by email (admin only): user account, orders, quotes,
+        STEP requests, and linked files. Guests included — email is the join
+        key. Unknown emails return empty arrays, not 404.
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: The customer's trail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCustomerLookup'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/customers/export:
+    post:
+      operationId: adminExportCustomer
+      tags: [admin]
+      summary: >-
+        GDPR data-portability export (admin only): everything keyed to an
+        email as one JSON bundle — orders in full detail shape (items,
+        payments, invoices). The frontend downloads it as a blob.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerEmailRequest'
+      responses:
+        '200':
+          description: Full export bundle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCustomerExport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/customers/erase:
+    post:
+      operationId: adminEraseCustomer
+      tags: [admin]
+      summary: >-
+        GDPR erasure — DRY-RUN ONLY (admin only). Reports what would be
+        deleted vs retained (invoice-retention carve-out, plan 09). dryRun
+        must be true; anything else is 400 erase_not_enabled. There is no
+        destructive code path.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EraseCustomerRequest'
+      responses:
+        '200':
+          description: Dry-run erasure report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEraseReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /api/v1/admin/orders/{orderId}/refund:
     post:
       operationId: refundOrder
@@ -1425,6 +1511,195 @@ components:
         id:
           type: string
           format: uuid
+
+    AdminUserSummary:
+      type: object
+      required: [id, email, role, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminQuoteSummary:
+      type: object
+      required: [quoteId, status, grossTotalPln, createdAt, partCount]
+      properties:
+        quoteId:
+          type: string
+        status:
+          type: string
+        grossTotalPln:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        partCount:
+          type: integer
+        fileName:
+          type: string
+
+    AdminStepRequestSummary:
+      type: object
+      required: [requestId, fileName, fileSizeBytes, status, createdAt]
+      properties:
+        requestId:
+          type: string
+        fileName:
+          type: string
+        fileSizeBytes:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [new, quoted, closed]
+        fileId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminFileSummary:
+      type: object
+      required: [fileId, fileName, kind, sizeBytes, stored, createdAt]
+      properties:
+        fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        kind:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        stored:
+          type: boolean
+          description: True when the object bytes are in storage.
+        createdAt:
+          type: string
+          format: date-time
+
+    CustomerEmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    EraseCustomerRequest:
+      type: object
+      additionalProperties: false
+      required: [email, dryRun]
+      properties:
+        email:
+          type: string
+          format: email
+        dryRun:
+          type: boolean
+          description: Must be true — there is no destructive path (plan 09).
+
+    AdminCustomerLookup:
+      type: object
+      required: [email, orders, quotes, stepRequests, files]
+      properties:
+        email:
+          type: string
+        user:
+          $ref: '#/components/schemas/AdminUserSummary'
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderSummary'
+        quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminQuoteSummary'
+        stepRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminStepRequestSummary'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFileSummary'
+
+    AdminCustomerExport:
+      type: object
+      required: [email, exportedAt, orders, quotes, stepRequests, files]
+      properties:
+        email:
+          type: string
+        exportedAt:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/AdminUserSummary'
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderDetail'
+        quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminQuoteSummary'
+        stepRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminStepRequestSummary'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFileSummary'
+
+    AdminEraseEntry:
+      type: object
+      required: [table, count]
+      properties:
+        table:
+          type: string
+        count:
+          type: integer
+        note:
+          type: string
+
+    AdminEraseRetained:
+      type: object
+      required: [table, count, reason]
+      properties:
+        table:
+          type: string
+        count:
+          type: integer
+        reason:
+          type: string
+
+    AdminEraseReport:
+      type: object
+      required: [email, dryRun, wouldDelete, retained]
+      properties:
+        email:
+          type: string
+        dryRun:
+          type: boolean
+        wouldDelete:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminEraseEntry'
+        retained:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminEraseRetained'
 
     AdminOrderSummary:
       type: object
