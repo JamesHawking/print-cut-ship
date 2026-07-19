@@ -73,3 +73,34 @@ func (s *Store) CreateQuote(ctx context.Context, quote InsertQuoteParams, parts 
 	}
 	return row, nil
 }
+
+// CreateOrder inserts an order and its items atomically and flips the parent
+// quote to 'ordered', so a quote can never be converted twice (plan 05). The
+// caller leaves each item's OrderID zero; CreateOrder sets it to the new
+// order's id.
+func (s *Store) CreateOrder(ctx context.Context, order InsertOrderParams, items []InsertOrderItemParams) (InsertOrderRow, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return InsertOrderRow{}, fmt.Errorf("store: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx) // no-op after a successful Commit
+
+	qtx := s.Queries.WithTx(tx)
+	row, err := qtx.InsertOrder(ctx, order)
+	if err != nil {
+		return InsertOrderRow{}, fmt.Errorf("store: insert order: %w", err)
+	}
+	for i := range items {
+		items[i].OrderID = row.ID
+		if err := qtx.InsertOrderItem(ctx, items[i]); err != nil {
+			return InsertOrderRow{}, fmt.Errorf("store: insert order item %d: %w", i, err)
+		}
+	}
+	if err := qtx.MarkQuoteOrdered(ctx, order.QuoteID); err != nil {
+		return InsertOrderRow{}, fmt.Errorf("store: mark quote ordered: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return InsertOrderRow{}, fmt.Errorf("store: commit tx: %w", err)
+	}
+	return row, nil
+}
