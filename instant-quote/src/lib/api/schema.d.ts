@@ -209,6 +209,40 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/admin/orders': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items. */
+    get: operations['adminListOrders']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/orders/{orderId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Full order detail for the operator (admin only): addresses, NIP, status capability token, totals, line items with their frozen pricing snapshots, and the payment/invoice ledgers. No email log (plan 06). */
+    get: operations['adminGetOrder']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/admin/orders/{orderId}/refund': {
     parameters: {
       query?: never
@@ -702,6 +736,108 @@ export interface components {
     MeResponse: {
       /** Format: email */
       email: string
+      /** @enum {string} */
+      role: 'customer' | 'admin'
+    }
+    AdminOrderSummary: {
+      orderId: string
+      email: string
+      status: components['schemas']['OrderStatus']
+      /** Format: double */
+      grossTotalPln: number
+      /** Format: date-time */
+      createdAt: string
+      /** Format: date-time */
+      paidAt?: string
+      /** @description Ship-by date (YYYY-MM-DD, Warsaw business calendar) derived from the lead-time engine; present only once the order is paid. */
+      shipBy?: string
+      /** @description Present and true when shipBy is before today (Warsaw). */
+      overdue?: boolean
+      partCount: number
+      /** @description Any item carries a warn/block/manual_verify DFM flag. */
+      dfmFlagged: boolean
+      /** @description Distinct flag codes behind dfmFlagged. */
+      dfmCodes?: string[]
+      trackingNumber?: string
+    }
+    AdminListOrdersResponse: {
+      orders: components['schemas']['AdminOrderSummary'][]
+      total: number
+      limit: number
+      offset: number
+    }
+    AdminOrder: {
+      orderId: string
+      email: string
+      status: components['schemas']['OrderStatus']
+      locale: string
+      country: string
+      companyName?: string
+      nip?: string
+      invoiceRequested: boolean
+      /** Format: date-time */
+      createdAt: string
+      /** Format: date-time */
+      paidAt?: string
+      shippingAddress: components['schemas']['Address']
+      billingAddress?: components['schemas']['Address']
+      /** @description Public status-page capability — exposed because this endpoint is admin-only (support may send the customer their tracking link). */
+      statusToken: string
+      trackingNumber?: string
+      totals: components['schemas']['OrderTotals']
+      /** Format: double */
+      grossTotalPln: number
+      /** Format: double */
+      vatPln: number
+      /** Format: uuid */
+      pricingConfigId: string
+    }
+    AdminOrderItem: {
+      /** Format: uuid */
+      fileId?: string
+      fileName: string
+      process: components['schemas']['ProcessId']
+      quantity: number
+      leadTime: components['schemas']['LeadTimeId']
+      /** Format: double */
+      unitPricePln: number
+      /** Format: double */
+      lineTotalPln: number
+      /** @description The part's frozen PartQuote (breakdown, dfmFlags, plates) copied at order time; shape pinned by the pricing engine, not the spec. */
+      partQuoteSnapshot?: {
+        [key: string]: unknown
+      }
+    }
+    AdminPayment: {
+      provider: string
+      providerEventId: string
+      paymentRef?: string
+      /** @enum {string} */
+      type: 'payment' | 'refund'
+      /** Format: double */
+      amountPln: number
+      status: string
+      /** Format: date-time */
+      createdAt: string
+    }
+    AdminInvoice: {
+      providerId?: string
+      number?: string
+      pdfUrl?: string
+      /** @enum {string} */
+      kind: 'vat' | 'proforma' | 'correction'
+      /** Format: date-time */
+      issuedAt?: string
+      /** @description YYYY-MM-DD; blocks GDPR erasure (plan 09). */
+      retentionUntil?: string
+      /** Format: date-time */
+      createdAt: string
+    }
+    AdminOrderDetail: {
+      order: components['schemas']['AdminOrder']
+      items: components['schemas']['AdminOrderItem'][]
+      payments: components['schemas']['AdminPayment'][]
+      invoices: components['schemas']['AdminInvoice'][]
     }
     ApiError: {
       code: components['schemas']['ApiErrorCode']
@@ -748,6 +884,12 @@ export interface components {
       | 'order_wrong_state'
       | 'quote_already_ordered'
       | 'invalid_nip'
+      | 'transition_not_allowed'
+      | 'tracking_required'
+      | 'pricing_config_invalid'
+      | 'erase_not_enabled'
+      | 'step_request_not_found'
+      | 'step_request_wrong_state'
       | 'internal'
   }
   responses: {
@@ -1106,6 +1248,58 @@ export interface operations {
           'application/json': components['schemas']['TrackedOrder']
         }
       }
+      404: components['responses']['NotFound']
+    }
+  }
+  adminListOrders: {
+    parameters: {
+      query?: {
+        status?: components['schemas']['OrderStatus']
+        limit?: number
+        offset?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Page of orders plus the unfiltered total */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminListOrdersResponse']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+    }
+  }
+  adminGetOrder: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The orderId returned by createOrder, e.g. "O-1A2B3C4D" */
+        orderId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Order detail */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdminOrderDetail']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
       404: components['responses']['NotFound']
     }
   }

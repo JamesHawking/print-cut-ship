@@ -82,7 +82,10 @@ func (s *server) GetMe(w http.ResponseWriter, r *http.Request) {
 		apiError(w, http.StatusUnauthorized, Unauthorized, "authentication required", nil)
 		return
 	}
-	writeJSON(w, http.StatusOK, MeResponse{Email: openapi_types.Email(u.Email)})
+	writeJSON(w, http.StatusOK, MeResponse{
+		Email: openapi_types.Email(u.Email),
+		Role:  MeResponseRole(u.Role),
+	})
 }
 
 // Logout deletes the session and clears the cookie. No-op without a cookie.

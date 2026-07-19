@@ -251,6 +251,73 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/v1/admin/orders:
+    get:
+      operationId: adminListOrders
+      tags: [admin]
+      summary: >-
+        Orders board list (admin only), newest first. shipBy/overdue are
+        derived from the lead-time engine with paid_at as the anchor; dfmCodes
+        collects warn/block/manual_verify flag codes across items.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Page of orders plus the unfiltered total
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListOrdersResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/orders/{orderId}:
+    get:
+      operationId: adminGetOrder
+      tags: [admin]
+      summary: >-
+        Full order detail for the operator (admin only): addresses, NIP,
+        status capability token, totals, line items with their frozen pricing
+        snapshots, and the payment/invoice ledgers. No email log (plan 06).
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The orderId returned by createOrder, e.g. "O-1A2B3C4D"
+      responses:
+        '200':
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrderDetail'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/admin/orders/{orderId}/refund:
     post:
       operationId: refundOrder
@@ -1044,11 +1111,214 @@ components:
 
     MeResponse:
       type: object
-      required: [email]
+      required: [email, role]
       properties:
         email:
           type: string
           format: email
+        role:
+          type: string
+          enum: [customer, admin]
+
+    AdminOrderSummary:
+      type: object
+      required:
+        [orderId, email, status, grossTotalPln, createdAt, partCount,
+         dfmFlagged]
+      properties:
+        orderId:
+          type: string
+        email:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        grossTotalPln:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+        shipBy:
+          type: string
+          description: >-
+            Ship-by date (YYYY-MM-DD, Warsaw business calendar) derived from
+            the lead-time engine; present only once the order is paid.
+        overdue:
+          type: boolean
+          description: Present and true when shipBy is before today (Warsaw).
+        partCount:
+          type: integer
+        dfmFlagged:
+          type: boolean
+          description: Any item carries a warn/block/manual_verify DFM flag.
+        dfmCodes:
+          type: array
+          items: { type: string }
+          description: Distinct flag codes behind dfmFlagged.
+        trackingNumber:
+          type: string
+
+    AdminListOrdersResponse:
+      type: object
+      required: [orders, total, limit, offset]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderSummary'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    AdminOrder:
+      type: object
+      required:
+        [orderId, email, status, locale, country, createdAt, invoiceRequested,
+         shippingAddress, totals, grossTotalPln, vatPln, pricingConfigId,
+         statusToken]
+      properties:
+        orderId:
+          type: string
+        email:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        locale:
+          type: string
+        country:
+          type: string
+        companyName:
+          type: string
+        nip:
+          type: string
+        invoiceRequested:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        billingAddress:
+          $ref: '#/components/schemas/Address'
+        statusToken:
+          type: string
+          description: >-
+            Public status-page capability — exposed because this endpoint is
+            admin-only (support may send the customer their tracking link).
+        trackingNumber:
+          type: string
+        totals:
+          $ref: '#/components/schemas/OrderTotals'
+        grossTotalPln:
+          type: number
+          format: double
+        vatPln:
+          type: number
+          format: double
+        pricingConfigId:
+          type: string
+          format: uuid
+
+    AdminOrderItem:
+      type: object
+      required: [fileName, process, quantity, leadTime, unitPricePln, lineTotalPln]
+      properties:
+        fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        process:
+          $ref: '#/components/schemas/ProcessId'
+        quantity:
+          type: integer
+        leadTime:
+          $ref: '#/components/schemas/LeadTimeId'
+        unitPricePln:
+          type: number
+          format: double
+        lineTotalPln:
+          type: number
+          format: double
+        partQuoteSnapshot:
+          type: object
+          additionalProperties: true
+          description: >-
+            The part's frozen PartQuote (breakdown, dfmFlags, plates) copied
+            at order time; shape pinned by the pricing engine, not the spec.
+
+    AdminPayment:
+      type: object
+      required: [provider, providerEventId, type, amountPln, status, createdAt]
+      properties:
+        provider:
+          type: string
+        providerEventId:
+          type: string
+        paymentRef:
+          type: string
+        type:
+          type: string
+          enum: [payment, refund]
+        amountPln:
+          type: number
+          format: double
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminInvoice:
+      type: object
+      required: [kind, createdAt]
+      properties:
+        providerId:
+          type: string
+        number:
+          type: string
+        pdfUrl:
+          type: string
+        kind:
+          type: string
+          enum: [vat, proforma, correction]
+        issuedAt:
+          type: string
+          format: date-time
+        retentionUntil:
+          type: string
+          description: YYYY-MM-DD; blocks GDPR erasure (plan 09).
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminOrderDetail:
+      type: object
+      required: [order, items, payments, invoices]
+      properties:
+        order:
+          $ref: '#/components/schemas/AdminOrder'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderItem'
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPayment'
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminInvoice'
 
     ApiError:
       type: object
@@ -1099,4 +1369,10 @@ components:
         - order_wrong_state
         - quote_already_ordered
         - invalid_nip
+        - transition_not_allowed
+        - tracking_required
+        - pricing_config_invalid
+        - erase_not_enabled
+        - step_request_not_found
+        - step_request_wrong_state
         - internal

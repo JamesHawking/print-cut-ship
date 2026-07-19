@@ -6,6 +6,7 @@ package httpapi
 import (
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -45,6 +46,9 @@ type Config struct {
 	// startup to equal the compiled-in pricing.Default (see cmd/api). Quotes
 	// are stamped with it; plan 07 replaces this with a live-swappable config.
 	PricingConfigID uuid.UUID
+	// Now is the clock seam for ship-by/ops derivations (plan 07); nil means
+	// time.Now. Tests pin it for deterministic ship-date assertions.
+	Now func() time.Time
 }
 
 func NewRouter(cfg Config) http.Handler {
@@ -67,6 +71,11 @@ func NewRouter(cfg Config) http.Handler {
 // surface, and the generated OpenAPI routes. Shared with tests so guard/stub
 // wiring has a single source of truth.
 func (s *server) routes(r chi.Router) http.Handler {
+	// Fail-closed guard for every /api/v1/admin/* path (plan 07). Must be the
+	// first statement: chi forbids Use after route registration, and this
+	// runs after sessionMiddleware by Use order (NewRouter/tests mount it).
+	r.Use(adminPrefixGuard)
+
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))

@@ -13,40 +13,59 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AdminInvoiceKind.
+const (
+	Correction AdminInvoiceKind = "correction"
+	Proforma   AdminInvoiceKind = "proforma"
+	Vat        AdminInvoiceKind = "vat"
+)
+
+// Defines values for AdminPaymentType.
+const (
+	Payment AdminPaymentType = "payment"
+	Refund  AdminPaymentType = "refund"
+)
+
 // Defines values for ApiErrorCode.
 const (
-	CodeExpired         ApiErrorCode = "code_expired"
-	CodeInvalid         ApiErrorCode = "code_invalid"
-	FileMissingHash     ApiErrorCode = "file_missing_hash"
-	FileNotFound        ApiErrorCode = "file_not_found"
-	FileSizeRange       ApiErrorCode = "file_size_range"
-	Internal            ApiErrorCode = "internal"
-	InvalidBody         ApiErrorCode = "invalid_body"
-	InvalidDesignId     ApiErrorCode = "invalid_design_id"
-	InvalidEmail        ApiErrorCode = "invalid_email"
-	InvalidFileSize     ApiErrorCode = "invalid_file_size"
-	InvalidHash         ApiErrorCode = "invalid_hash"
-	InvalidMetrics      ApiErrorCode = "invalid_metrics"
-	InvalidNip          ApiErrorCode = "invalid_nip"
-	InvalidProfileId    ApiErrorCode = "invalid_profile_id"
-	MissingFileFields   ApiErrorCode = "missing_file_fields"
-	MissingFileName     ApiErrorCode = "missing_file_name"
-	OrderNotFound       ApiErrorCode = "order_not_found"
-	OrderWrongState     ApiErrorCode = "order_wrong_state"
-	PartsCount          ApiErrorCode = "parts_count"
-	QuantityRange       ApiErrorCode = "quantity_range"
-	QuoteAlreadyOrdered ApiErrorCode = "quote_already_ordered"
-	QuoteFileInvalid    ApiErrorCode = "quote_file_invalid"
-	QuoteNotFound       ApiErrorCode = "quote_not_found"
-	StorageUnavailable  ApiErrorCode = "storage_unavailable"
-	TooManyAttempts     ApiErrorCode = "too_many_attempts"
-	Unauthorized        ApiErrorCode = "unauthorized"
-	UnknownLeadTime     ApiErrorCode = "unknown_lead_time"
-	UnknownProcess      ApiErrorCode = "unknown_process"
-	UnsupportedCountry  ApiErrorCode = "unsupported_country"
-	UnsupportedKind     ApiErrorCode = "unsupported_kind"
-	UploadObjectMissing ApiErrorCode = "upload_object_missing"
-	UploadSizeMismatch  ApiErrorCode = "upload_size_mismatch"
+	CodeExpired           ApiErrorCode = "code_expired"
+	CodeInvalid           ApiErrorCode = "code_invalid"
+	EraseNotEnabled       ApiErrorCode = "erase_not_enabled"
+	FileMissingHash       ApiErrorCode = "file_missing_hash"
+	FileNotFound          ApiErrorCode = "file_not_found"
+	FileSizeRange         ApiErrorCode = "file_size_range"
+	Internal              ApiErrorCode = "internal"
+	InvalidBody           ApiErrorCode = "invalid_body"
+	InvalidDesignId       ApiErrorCode = "invalid_design_id"
+	InvalidEmail          ApiErrorCode = "invalid_email"
+	InvalidFileSize       ApiErrorCode = "invalid_file_size"
+	InvalidHash           ApiErrorCode = "invalid_hash"
+	InvalidMetrics        ApiErrorCode = "invalid_metrics"
+	InvalidNip            ApiErrorCode = "invalid_nip"
+	InvalidProfileId      ApiErrorCode = "invalid_profile_id"
+	MissingFileFields     ApiErrorCode = "missing_file_fields"
+	MissingFileName       ApiErrorCode = "missing_file_name"
+	OrderNotFound         ApiErrorCode = "order_not_found"
+	OrderWrongState       ApiErrorCode = "order_wrong_state"
+	PartsCount            ApiErrorCode = "parts_count"
+	PricingConfigInvalid  ApiErrorCode = "pricing_config_invalid"
+	QuantityRange         ApiErrorCode = "quantity_range"
+	QuoteAlreadyOrdered   ApiErrorCode = "quote_already_ordered"
+	QuoteFileInvalid      ApiErrorCode = "quote_file_invalid"
+	QuoteNotFound         ApiErrorCode = "quote_not_found"
+	StepRequestNotFound   ApiErrorCode = "step_request_not_found"
+	StepRequestWrongState ApiErrorCode = "step_request_wrong_state"
+	StorageUnavailable    ApiErrorCode = "storage_unavailable"
+	TooManyAttempts       ApiErrorCode = "too_many_attempts"
+	TrackingRequired      ApiErrorCode = "tracking_required"
+	TransitionNotAllowed  ApiErrorCode = "transition_not_allowed"
+	Unauthorized          ApiErrorCode = "unauthorized"
+	UnknownLeadTime       ApiErrorCode = "unknown_lead_time"
+	UnknownProcess        ApiErrorCode = "unknown_process"
+	UnsupportedCountry    ApiErrorCode = "unsupported_country"
+	UnsupportedKind       ApiErrorCode = "unsupported_kind"
+	UploadObjectMissing   ApiErrorCode = "upload_object_missing"
+	UploadSizeMismatch    ApiErrorCode = "upload_size_mismatch"
 )
 
 // Defines values for BreakdownLineKey.
@@ -127,6 +146,12 @@ const (
 	TooLarge       MakerworldErrorCode = "too_large"
 )
 
+// Defines values for MeResponseRole.
+const (
+	Admin    MeResponseRole = "admin"
+	Customer MeResponseRole = "customer"
+)
+
 // Defines values for OrderStatus.
 const (
 	Cancelled    OrderStatus = "cancelled"
@@ -166,6 +191,118 @@ type Address struct {
 	// Street Street and number
 	Street string `json:"street"`
 }
+
+// AdminInvoice defines model for AdminInvoice.
+type AdminInvoice struct {
+	CreatedAt  time.Time        `json:"createdAt"`
+	IssuedAt   *time.Time       `json:"issuedAt,omitempty"`
+	Kind       AdminInvoiceKind `json:"kind"`
+	Number     *string          `json:"number,omitempty"`
+	PdfUrl     *string          `json:"pdfUrl,omitempty"`
+	ProviderId *string          `json:"providerId,omitempty"`
+
+	// RetentionUntil YYYY-MM-DD; blocks GDPR erasure (plan 09).
+	RetentionUntil *string `json:"retentionUntil,omitempty"`
+}
+
+// AdminInvoiceKind defines model for AdminInvoice.Kind.
+type AdminInvoiceKind string
+
+// AdminListOrdersResponse defines model for AdminListOrdersResponse.
+type AdminListOrdersResponse struct {
+	Limit  int                 `json:"limit"`
+	Offset int                 `json:"offset"`
+	Orders []AdminOrderSummary `json:"orders"`
+	Total  int                 `json:"total"`
+}
+
+// AdminOrder defines model for AdminOrder.
+type AdminOrder struct {
+	BillingAddress   *Address           `json:"billingAddress,omitempty"`
+	CompanyName      *string            `json:"companyName,omitempty"`
+	Country          string             `json:"country"`
+	CreatedAt        time.Time          `json:"createdAt"`
+	Email            string             `json:"email"`
+	GrossTotalPln    float64            `json:"grossTotalPln"`
+	InvoiceRequested bool               `json:"invoiceRequested"`
+	Locale           string             `json:"locale"`
+	Nip              *string            `json:"nip,omitempty"`
+	OrderId          string             `json:"orderId"`
+	PaidAt           *time.Time         `json:"paidAt,omitempty"`
+	PricingConfigId  openapi_types.UUID `json:"pricingConfigId"`
+	ShippingAddress  Address            `json:"shippingAddress"`
+
+	// Status Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+	Status OrderStatus `json:"status"`
+
+	// StatusToken Public status-page capability — exposed because this endpoint is admin-only (support may send the customer their tracking link).
+	StatusToken    string      `json:"statusToken"`
+	Totals         OrderTotals `json:"totals"`
+	TrackingNumber *string     `json:"trackingNumber,omitempty"`
+	VatPln         float64     `json:"vatPln"`
+}
+
+// AdminOrderDetail defines model for AdminOrderDetail.
+type AdminOrderDetail struct {
+	Invoices []AdminInvoice   `json:"invoices"`
+	Items    []AdminOrderItem `json:"items"`
+	Order    AdminOrder       `json:"order"`
+	Payments []AdminPayment   `json:"payments"`
+}
+
+// AdminOrderItem defines model for AdminOrderItem.
+type AdminOrderItem struct {
+	FileId       *openapi_types.UUID `json:"fileId,omitempty"`
+	FileName     string              `json:"fileName"`
+	LeadTime     LeadTimeId          `json:"leadTime"`
+	LineTotalPln float64             `json:"lineTotalPln"`
+
+	// PartQuoteSnapshot The part's frozen PartQuote (breakdown, dfmFlags, plates) copied at order time; shape pinned by the pricing engine, not the spec.
+	PartQuoteSnapshot *map[string]interface{} `json:"partQuoteSnapshot,omitempty"`
+	Process           ProcessId               `json:"process"`
+	Quantity          int                     `json:"quantity"`
+	UnitPricePln      float64                 `json:"unitPricePln"`
+}
+
+// AdminOrderSummary defines model for AdminOrderSummary.
+type AdminOrderSummary struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	// DfmCodes Distinct flag codes behind dfmFlagged.
+	DfmCodes *[]string `json:"dfmCodes,omitempty"`
+
+	// DfmFlagged Any item carries a warn/block/manual_verify DFM flag.
+	DfmFlagged    bool    `json:"dfmFlagged"`
+	Email         string  `json:"email"`
+	GrossTotalPln float64 `json:"grossTotalPln"`
+	OrderId       string  `json:"orderId"`
+
+	// Overdue Present and true when shipBy is before today (Warsaw).
+	Overdue   *bool      `json:"overdue,omitempty"`
+	PaidAt    *time.Time `json:"paidAt,omitempty"`
+	PartCount int        `json:"partCount"`
+
+	// ShipBy Ship-by date (YYYY-MM-DD, Warsaw business calendar) derived from the lead-time engine; present only once the order is paid.
+	ShipBy *string `json:"shipBy,omitempty"`
+
+	// Status Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+	Status         OrderStatus `json:"status"`
+	TrackingNumber *string     `json:"trackingNumber,omitempty"`
+}
+
+// AdminPayment defines model for AdminPayment.
+type AdminPayment struct {
+	AmountPln       float64          `json:"amountPln"`
+	CreatedAt       time.Time        `json:"createdAt"`
+	PaymentRef      *string          `json:"paymentRef,omitempty"`
+	Provider        string           `json:"provider"`
+	ProviderEventId string           `json:"providerEventId"`
+	Status          string           `json:"status"`
+	Type            AdminPaymentType `json:"type"`
+}
+
+// AdminPaymentType defines model for AdminPayment.Type.
+type AdminPaymentType string
 
 // ApiError defines model for ApiError.
 type ApiError struct {
@@ -365,7 +502,11 @@ type MakerworldFetchRequest struct {
 // MeResponse defines model for MeResponse.
 type MeResponse struct {
 	Email openapi_types.Email `json:"email"`
+	Role  MeResponseRole      `json:"role"`
 }
+
+// MeResponseRole defines model for MeResponse.Role.
+type MeResponseRole string
 
 // MeshMetrics Pricing-relevant subset of client-side mesh analysis
 type MeshMetrics struct {
@@ -597,6 +738,13 @@ type NotFound = ApiError
 // UnauthorizedError defines model for UnauthorizedError.
 type UnauthorizedError = ApiError
 
+// AdminListOrdersParams defines parameters for AdminListOrders.
+type AdminListOrdersParams struct {
+	Status *OrderStatus `form:"status,omitempty" json:"status,omitempty"`
+	Limit  *int         `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int         `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // RequestLoginCodeJSONRequestBody defines body for RequestLoginCode for application/json ContentType.
 type RequestLoginCodeJSONRequestBody = RequestCodeRequest
 
@@ -623,6 +771,12 @@ type SubmitStepQuoteJSONRequestBody = StepQuoteRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items.
+	// (GET /api/v1/admin/orders)
+	AdminListOrders(w http.ResponseWriter, r *http.Request, params AdminListOrdersParams)
+	// Full order detail for the operator (admin only): addresses, NIP, status capability token, totals, line items with their frozen pricing snapshots, and the payment/invoice ledgers. No email log (plan 06).
+	// (GET /api/v1/admin/orders/{orderId})
+	AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId string)
 	// Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment).
 	// (POST /api/v1/admin/orders/{orderId}/refund)
 	RefundOrder(w http.ResponseWriter, r *http.Request, orderId string)
@@ -682,6 +836,18 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Orders board list (admin only), newest first. shipBy/overdue are derived from the lead-time engine with paid_at as the anchor; dfmCodes collects warn/block/manual_verify flag codes across items.
+// (GET /api/v1/admin/orders)
+func (_ Unimplemented) AdminListOrders(w http.ResponseWriter, r *http.Request, params AdminListOrdersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Full order detail for the operator (admin only): addresses, NIP, status capability token, totals, line items with their frozen pricing snapshots, and the payment/invoice ledgers. No email log (plan 06).
+// (GET /api/v1/admin/orders/{orderId})
+func (_ Unimplemented) AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment).
 // (POST /api/v1/admin/orders/{orderId}/refund)
@@ -799,6 +965,74 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// AdminListOrders operation middleware
+func (siw *ServerInterfaceWrapper) AdminListOrders(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AdminListOrdersParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminListOrders(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetOrder operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", chi.URLParam(r, "orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetOrder(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // RefundOrder operation middleware
 func (siw *ServerInterfaceWrapper) RefundOrder(w http.ResponseWriter, r *http.Request) {
@@ -1220,6 +1454,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/orders", wrapper.AdminListOrders)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/orders/{orderId}", wrapper.AdminGetOrder)
+	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/admin/orders/{orderId}/refund", wrapper.RefundOrder)
 	})

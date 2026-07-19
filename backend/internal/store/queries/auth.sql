@@ -60,3 +60,8 @@ DELETE FROM sessions WHERE expires_at <= now();
 
 -- name: DeleteExpiredLoginCodes :exec
 DELETE FROM login_codes WHERE expires_at <= now();
+
+-- name: SetUserRoleByEmail :execrows
+-- api promote-admin: the only role-escalation path (SQL-only by design; the
+-- 0-rows case means the email has never verified a login code).
+UPDATE users SET role = $2, updated_at = now() WHERE email = $1;

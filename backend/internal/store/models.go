@@ -76,6 +76,7 @@ type Order struct {
 	PaymentRef               *string
 	RetentionUntil           pgtype.Date
 	PaidAt                   pgtype.Timestamptz
+	TrackingNumber           *string
 }
 
 type OrderItem struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -61,13 +62,22 @@ func main() {
 			logger.Error("retry-invoices failed", "err", err)
 			os.Exit(1)
 		}
+	case "promote-admin":
+		if len(os.Args) < 3 {
+			logger.Error("promote-admin requires an email", "usage", "api promote-admin <email>")
+			os.Exit(2)
+		}
+		if err := promoteAdmin(context.Background(), logger, os.Args[2]); err != nil {
+			logger.Error("promote-admin failed", "err", err)
+			os.Exit(1)
+		}
 	case "reference-prices":
 		if err := referencePrices(); err != nil {
 			logger.Error("reference-prices failed", "err", err)
 			os.Exit(1)
 		}
 	default:
-		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed|sweep|retry-invoices|reference-prices]")
+		logger.Error("unknown command", "cmd", cmd, "usage", "api [serve|migrate|seed|sweep|retry-invoices|promote-admin|reference-prices]")
 		os.Exit(2)
 	}
 }
@@ -194,6 +204,29 @@ func sweep(ctx context.Context, logger *slog.Logger) error {
 		}
 	}
 	return storage.RunSweep(ctx, store.NewStore(pool), strg, days, logger)
+}
+
+// promoteAdmin flips a verified user's role to 'admin' (plan 07 — the only
+// role-escalation path; run it via a Coolify task or locally). Errors when
+// the email has no users row (i.e. never completed a login).
+func promoteAdmin(ctx context.Context, logger *slog.Logger, email string) error {
+	pool, err := db.New(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	updated, err := store.NewStore(pool).SetUserRoleByEmail(ctx, store.SetUserRoleByEmailParams{
+		Email: email,
+		Role:  "admin",
+	})
+	if err != nil {
+		return err
+	}
+	if updated == 0 {
+		return fmt.Errorf("no user with email %q (the user must log in once first)", email)
+	}
+	logger.Info("user promoted to admin", "email", email)
+	return nil
 }
 
 // retryInvoices lists paid, invoice-eligible orders that have no VAT invoice
