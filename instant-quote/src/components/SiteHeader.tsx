@@ -1,10 +1,5 @@
 import { useState } from 'react'
-import {
-  Link,
-  useLocation,
-  useNavigate,
-  useParams,
-} from '@tanstack/react-router'
+import { Link, useLocation, useParams } from '@tanstack/react-router'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { Menu, PackageSearch, X } from 'lucide-react'
 import { formatPln } from '@/lib/format'
@@ -14,20 +9,10 @@ import { useFilePicker } from '@/hooks/useFilePicker'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { sectionKeyFor } from '@/content/sections'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { DesktopNav } from './header/DesktopNav'
 import { MobileNav } from './header/MobileNav'
 import { LocaleSwitcher } from './LocaleSwitcher'
+import { NewQuoteReset } from './NewQuoteReset'
 
 /** Landing section anchors the scroll-spy watches, and the nav item each
     one lights up (the landing sections preview their content pages). */
@@ -66,9 +51,8 @@ export function SiteHeader({
 }) {
   const strings = useStrings()
   const locale = useLocale()
-  const { parts, clear } = useParts()
+  const { parts } = useParts()
   const openFilePicker = useFilePicker()
-  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   // Current content section, if any — SSR-stable (derived from URL params).
   const { section } = useParams({ strict: false })
@@ -221,43 +205,7 @@ export function SiteHeader({
                 {strings.hero.status}
               </span>
               <LocaleSwitcher />
-              {/* Reset discards the cart — confirm first. Orange, not red:
-                data loss, not an error. */}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button
-                    type="button"
-                    className="bg-card hover:bg-secondary cursor-pointer rounded-md border px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
-                  >
-                    {strings.nav.newQuote}
-                  </button>
-                </AlertDialogTrigger>
-                {/* Mono/uppercase to match the header's TE language (the
-                  vendored primitive stays stock sans). */}
-                <AlertDialogContent className="font-mono tracking-widest uppercase">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {strings.nav.newQuoteConfirmTitle}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {strings.nav.newQuoteConfirmBody(parts.length)}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>
-                      {strings.nav.newQuoteConfirmCancel}
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        clear()
-                        void navigate({ to: '/$locale', params: { locale } })
-                      }}
-                    >
-                      {strings.nav.newQuoteConfirmAction}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <NewQuoteReset />
             </nav>
           )}
         </div>
