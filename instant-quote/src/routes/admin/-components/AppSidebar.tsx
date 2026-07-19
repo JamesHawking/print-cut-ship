@@ -157,7 +157,7 @@ export function AppSidebar() {
                       asChild
                       isActive={isActive(item)}
                       tooltip={item.label}
-                      className="data-[active=true]:bg-primary-tint data-[active=true]:font-semibold data-[active=true]:shadow-[inset_2px_0_0_0_var(--primary)]"
+                      className="data-[active=true]:bg-primary-tint data-[active=true]:font-semibold"
                     >
                       <Link
                         to={item.to}
