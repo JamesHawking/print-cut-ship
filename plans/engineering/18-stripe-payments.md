@@ -27,7 +27,7 @@ Business prerequisites (ROADMAP tracker): Stripe account activated with **P24 + 
   - `Refund`: `refund.New` against the stored `payment_ref`.
 - Webhook: `POST /api/v1/stripe/webhook` — plain chi route (raw body), `webhook.ConstructEvent(raw, sig, STRIPE_WEBHOOK_SECRET)`, then map event type → existing `ProcessEvent`. Signature failure → 400, no DB write. Registered regardless of provider (harmless without secrets? — no: register only when `PAYMENTS_PROVIDER=stripe`, matching the stub's conditional pattern).
 - Env/config: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (+ `.env.example` placeholders same commit); `PAYMENTS_PROVIDER=stripe` fails fast at boot when keys are missing. `stripe` never in the repo — Coolify env only.
-- Retire the stub in prod: decide at implementation time whether `stub` remains selectable outside dev (default: keep for CI/E2E, log a loud warning when selected).
+- Retire the stub in prod: decide at implementation time whether `stub` remains selectable outside dev (default: keep for CI/E2E, log a loud warning when selected). Known stub-surface flaws to retire with it (plan-05 review, non-blocking because dev-only): the stub's `CreateCheckoutSession` doesn't URL-encode the `success`/`cancel` query params, and the pay page redirects to the unvalidated `success` param (open redirect).
 
 **Verify A:** `stripe listen --forward-to` + test-mode Checkout (card *and* P24 test flow) → `draft → paid` with `paid_at`; `stripe events resend` replay → exactly one `payments` row, no double fulfilment; forged signature → 400, no writes; refund from the admin endpoint round-trips via the real `charge.refunded` webhook.
 
