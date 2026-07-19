@@ -710,6 +710,15 @@ type TrackedOrderItem struct {
 	UnitPricePln float64    `json:"unitPricePln"`
 }
 
+// TransitionOrderRequest defines model for TransitionOrderRequest.
+type TransitionOrderRequest struct {
+	// To Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
+	To OrderStatus `json:"to"`
+
+	// TrackingNumber Required for to=shipped; stored on the order.
+	TrackingNumber *string `json:"trackingNumber,omitempty"`
+}
+
 // Vec3Mm defines model for Vec3Mm.
 type Vec3Mm struct {
 	X float64 `json:"x"`
@@ -745,6 +754,9 @@ type AdminListOrdersParams struct {
 	Offset *int         `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// AdminTransitionOrderJSONRequestBody defines body for AdminTransitionOrder for application/json ContentType.
+type AdminTransitionOrderJSONRequestBody = TransitionOrderRequest
+
 // RequestLoginCodeJSONRequestBody defines body for RequestLoginCode for application/json ContentType.
 type RequestLoginCodeJSONRequestBody = RequestCodeRequest
 
@@ -777,9 +789,15 @@ type ServerInterface interface {
 	// Full order detail for the operator (admin only): addresses, NIP, status capability token, totals, line items with their frozen pricing snapshots, and the payment/invoice ledgers. No email log (plan 06).
 	// (GET /api/v1/admin/orders/{orderId})
 	AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId string)
+	// Download a stored model file that is part of the order (admin only) — production needs the actual geometry. 404 file_not_found when the file is not attached to this order (or was deleted).
+	// (GET /api/v1/admin/orders/{orderId}/files/{fileId})
+	AdminDownloadOrderFile(w http.ResponseWriter, r *http.Request, orderId string, fileId openapi_types.UUID)
 	// Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment).
 	// (POST /api/v1/admin/orders/{orderId}/refund)
 	RefundOrder(w http.ResponseWriter, r *http.Request, orderId string)
+	// Move an order along the lifecycle (admin only). Only board transitions are accepted — paid/refunded flip exclusively through the payment pipeline, so draft/paid/refunded targets get 400 transition_not_allowed. Shipped requires a tracking number (400 tracking_required). Illegal edges get 409 order_wrong_state.
+	// (POST /api/v1/admin/orders/{orderId}/transition)
+	AdminTransitionOrder(w http.ResponseWriter, r *http.Request, orderId string)
 	// Delete the current session and clear the cookie
 	// (POST /api/v1/auth/logout)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -849,9 +867,21 @@ func (_ Unimplemented) AdminGetOrder(w http.ResponseWriter, r *http.Request, ord
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Download a stored model file that is part of the order (admin only) — production needs the actual geometry. 404 file_not_found when the file is not attached to this order (or was deleted).
+// (GET /api/v1/admin/orders/{orderId}/files/{fileId})
+func (_ Unimplemented) AdminDownloadOrderFile(w http.ResponseWriter, r *http.Request, orderId string, fileId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Refund a paid order (admin only). The provider refund is requested here but the status flip to 'refunded' happens in the payment-event pipeline (request/confirm split — same rule as payment).
 // (POST /api/v1/admin/orders/{orderId}/refund)
 func (_ Unimplemented) RefundOrder(w http.ResponseWriter, r *http.Request, orderId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Move an order along the lifecycle (admin only). Only board transitions are accepted — paid/refunded flip exclusively through the payment pipeline, so draft/paid/refunded targets get 400 transition_not_allowed. Shipped requires a tracking number (400 tracking_required). Illegal edges get 409 order_wrong_state.
+// (POST /api/v1/admin/orders/{orderId}/transition)
+func (_ Unimplemented) AdminTransitionOrder(w http.ResponseWriter, r *http.Request, orderId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1034,6 +1064,40 @@ func (siw *ServerInterfaceWrapper) AdminGetOrder(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// AdminDownloadOrderFile operation middleware
+func (siw *ServerInterfaceWrapper) AdminDownloadOrderFile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", chi.URLParam(r, "orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "fileId" -------------
+	var fileId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fileId", chi.URLParam(r, "fileId"), &fileId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fileId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminDownloadOrderFile(w, r, orderId, fileId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RefundOrder operation middleware
 func (siw *ServerInterfaceWrapper) RefundOrder(w http.ResponseWriter, r *http.Request) {
 
@@ -1050,6 +1114,31 @@ func (siw *ServerInterfaceWrapper) RefundOrder(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RefundOrder(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminTransitionOrder operation middleware
+func (siw *ServerInterfaceWrapper) AdminTransitionOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", chi.URLParam(r, "orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminTransitionOrder(w, r, orderId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1461,7 +1550,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/admin/orders/{orderId}", wrapper.AdminGetOrder)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/orders/{orderId}/files/{fileId}", wrapper.AdminDownloadOrderFile)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/admin/orders/{orderId}/refund", wrapper.RefundOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/orders/{orderId}/transition", wrapper.AdminTransitionOrder)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)

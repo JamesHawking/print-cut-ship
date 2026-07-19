@@ -318,6 +318,77 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/v1/admin/orders/{orderId}/transition:
+    post:
+      operationId: adminTransitionOrder
+      tags: [admin]
+      summary: >-
+        Move an order along the lifecycle (admin only). Only board transitions
+        are accepted — paid/refunded flip exclusively through the payment
+        pipeline, so draft/paid/refunded targets get 400 transition_not_allowed.
+        Shipped requires a tracking number (400 tracking_required). Illegal
+        edges get 409 order_wrong_state.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitionOrderRequest'
+      responses:
+        '204':
+          description: Transition applied
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/admin/orders/{orderId}/files/{fileId}:
+    get:
+      operationId: adminDownloadOrderFile
+      tags: [admin]
+      summary: >-
+        Download a stored model file that is part of the order (admin only) —
+        production needs the actual geometry. 404 file_not_found when the file
+        is not attached to this order (or was deleted).
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Raw file bytes as an attachment
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/admin/orders/{orderId}/refund:
     post:
       operationId: refundOrder
@@ -1119,6 +1190,17 @@ components:
         role:
           type: string
           enum: [customer, admin]
+
+    TransitionOrderRequest:
+      type: object
+      required: [to]
+      properties:
+        to:
+          $ref: '#/components/schemas/OrderStatus'
+        trackingNumber:
+          type: string
+          minLength: 1
+          description: Required for to=shipped; stored on the order.
 
     AdminOrderSummary:
       type: object

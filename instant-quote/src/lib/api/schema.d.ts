@@ -243,6 +243,40 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/admin/orders/{orderId}/transition': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Move an order along the lifecycle (admin only). Only board transitions are accepted — paid/refunded flip exclusively through the payment pipeline, so draft/paid/refunded targets get 400 transition_not_allowed. Shipped requires a tracking number (400 tracking_required). Illegal edges get 409 order_wrong_state. */
+    post: operations['adminTransitionOrder']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/admin/orders/{orderId}/files/{fileId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Download a stored model file that is part of the order (admin only) — production needs the actual geometry. 404 file_not_found when the file is not attached to this order (or was deleted). */
+    get: operations['adminDownloadOrderFile']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/admin/orders/{orderId}/refund': {
     parameters: {
       query?: never
@@ -738,6 +772,11 @@ export interface components {
       email: string
       /** @enum {string} */
       role: 'customer' | 'admin'
+    }
+    TransitionOrderRequest: {
+      to: components['schemas']['OrderStatus']
+      /** @description Required for to=shipped; stored on the order. */
+      trackingNumber?: string
     }
     AdminOrderSummary: {
       orderId: string
@@ -1296,6 +1335,61 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AdminOrderDetail']
+        }
+      }
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+    }
+  }
+  adminTransitionOrder: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        orderId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TransitionOrderRequest']
+      }
+    }
+    responses: {
+      /** @description Transition applied */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      400: components['responses']['BadRequest']
+      401: components['responses']['UnauthorizedError']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+      409: components['responses']['Conflict']
+    }
+  }
+  adminDownloadOrderFile: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        orderId: string
+        fileId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Raw file bytes as an attachment */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/octet-stream': string
         }
       }
       401: components['responses']['UnauthorizedError']

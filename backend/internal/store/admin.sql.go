@@ -97,6 +97,42 @@ func (q *Queries) AdminListOrders(ctx context.Context, arg AdminListOrdersParams
 	return items, nil
 }
 
+const getOrderFileForDownload = `-- name: GetOrderFileForDownload :one
+SELECT f.id, f.file_name, f.file_size_bytes, f.kind, f.storage_key
+FROM files f
+JOIN order_items i ON i.file_id = f.id
+JOIN orders o ON o.id = i.order_id
+WHERE o.short_id = $1 AND f.id = $2 AND f.deleted_at IS NULL
+`
+
+type GetOrderFileForDownloadParams struct {
+	ShortID string
+	ID      uuid.UUID
+}
+
+type GetOrderFileForDownloadRow struct {
+	ID            uuid.UUID
+	FileName      string
+	FileSizeBytes int64
+	Kind          string
+	StorageKey    *string
+}
+
+// The admin download gate: the file must be attached to THIS order (and not
+// soft-deleted) — a foreign file id is a 404, never a leak.
+func (q *Queries) GetOrderFileForDownload(ctx context.Context, arg GetOrderFileForDownloadParams) (GetOrderFileForDownloadRow, error) {
+	row := q.db.QueryRow(ctx, getOrderFileForDownload, arg.ShortID, arg.ID)
+	var i GetOrderFileForDownloadRow
+	err := row.Scan(
+		&i.ID,
+		&i.FileName,
+		&i.FileSizeBytes,
+		&i.Kind,
+		&i.StorageKey,
+	)
+	return i, err
+}
+
 const listInvoicesByOrderID = `-- name: ListInvoicesByOrderID :many
 SELECT id, order_id, provider_id, number, pdf_url, pdf_storage_key, kind, issued_at, retention_until, created_at FROM invoices WHERE order_id = $1 ORDER BY created_at
 `
@@ -165,4 +201,63 @@ func (q *Queries) ListPaymentsByOrderID(ctx context.Context, orderID uuid.UUID) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const markOrderCancelled = `-- name: MarkOrderCancelled :execrows
+UPDATE orders SET status = 'cancelled', updated_at = now()
+WHERE id = $1 AND status IN ('draft', 'paid', 'in_production', 'shipped')
+`
+
+// Cancel is allowed from every non-terminal state (internal/orders/status.go).
+func (q *Queries) MarkOrderCancelled(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, markOrderCancelled, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const markOrderDelivered = `-- name: MarkOrderDelivered :execrows
+UPDATE orders SET status = 'delivered', updated_at = now()
+WHERE id = $1 AND status = 'shipped'
+`
+
+func (q *Queries) MarkOrderDelivered(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, markOrderDelivered, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const markOrderInProduction = `-- name: MarkOrderInProduction :execrows
+UPDATE orders SET status = 'in_production', updated_at = now()
+WHERE id = $1 AND status = 'paid'
+`
+
+// SQL-guarded like MarkOrderPaid: 0 rows means a race already moved the order.
+func (q *Queries) MarkOrderInProduction(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, markOrderInProduction, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const markOrderShipped = `-- name: MarkOrderShipped :execrows
+UPDATE orders SET status = 'shipped', tracking_number = $2, updated_at = now()
+WHERE id = $1 AND status = 'in_production'
+`
+
+type MarkOrderShippedParams struct {
+	ID             uuid.UUID
+	TrackingNumber *string
+}
+
+func (q *Queries) MarkOrderShipped(ctx context.Context, arg MarkOrderShippedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markOrderShipped, arg.ID, arg.TrackingNumber)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

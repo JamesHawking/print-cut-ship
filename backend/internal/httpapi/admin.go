@@ -3,14 +3,19 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	openapi_types "github.com/oapi-codegen/runtime/types"
+
 	"github.com/JamesHawking/print-cut-ship/backend/internal/leadtime"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/orders"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
@@ -278,4 +283,130 @@ func (s *server) AdminGetOrder(w http.ResponseWriter, r *http.Request, orderId s
 		Payments: viewPayments,
 		Invoices: viewInvoices,
 	})
+}
+
+// AdminTransitionOrder moves an order along the lifecycle. Only board
+// transitions are accepted: paid/refunded flip exclusively through
+// payments.Pipeline (the money invariant), so those targets are 400s here.
+// The state machine asserts the edge and the SQL-guarded Mark* is the
+// race-proof second gate. Guarded by adminPrefixGuard.
+func (s *server) AdminTransitionOrder(w http.ResponseWriter, r *http.Request, orderId string) {
+	if s.cfg.Store == nil {
+		internalError(w, "store not configured")
+		return
+	}
+	var req TransitionOrderRequest
+	if !decodeBody(w, r, &req) {
+		return
+	}
+	to := orders.Status(req.To)
+	switch to {
+	case orders.StatusInProduction, orders.StatusShipped, orders.StatusDelivered, orders.StatusCancelled:
+	default:
+		badRequest(w, TransitionNotAllowed,
+			fmt.Sprintf("status %q is not a board transition target", req.To),
+			map[string]any{"to": string(req.To)})
+		return
+	}
+	if to == orders.StatusShipped && (req.TrackingNumber == nil || *req.TrackingNumber == "") {
+		badRequest(w, TrackingRequired, "shipped requires a tracking number", nil)
+		return
+	}
+
+	ctx := r.Context()
+	o, err := s.cfg.Store.GetOrderByShortID(ctx, orderId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apiError(w, http.StatusNotFound, OrderNotFound, "order not found", nil)
+			return
+		}
+		s.cfg.Logger.Error("transition: load order failed", "orderId", orderId, "err", err)
+		internalError(w, "failed to load order")
+		return
+	}
+	if err := orders.AssertTransition(orders.Status(o.Status), to); err != nil {
+		apiError(w, http.StatusConflict, OrderWrongState, err.Error(),
+			map[string]any{"from": o.Status, "to": string(to)})
+		return
+	}
+
+	var marked int64
+	switch to {
+	case orders.StatusInProduction:
+		marked, err = s.cfg.Store.MarkOrderInProduction(ctx, o.ID)
+	case orders.StatusShipped:
+		marked, err = s.cfg.Store.MarkOrderShipped(ctx, store.MarkOrderShippedParams{
+			ID: o.ID, TrackingNumber: req.TrackingNumber,
+		})
+	case orders.StatusDelivered:
+		marked, err = s.cfg.Store.MarkOrderDelivered(ctx, o.ID)
+	case orders.StatusCancelled:
+		marked, err = s.cfg.Store.MarkOrderCancelled(ctx, o.ID)
+	}
+	if err != nil {
+		s.cfg.Logger.Error("transition: mark failed", "orderId", orderId, "to", to, "err", err)
+		internalError(w, "failed to transition order")
+		return
+	}
+	if marked == 0 {
+		// Lost a race with another transition between load and mark.
+		apiError(w, http.StatusConflict, OrderWrongState,
+			fmt.Sprintf("order no longer in %s", o.Status),
+			map[string]any{"from": o.Status, "to": string(to)})
+		return
+	}
+
+	// Notify seam (plan 06 Phase 6 hooks SendTransactional exactly here):
+	// one structured line per applied transition — StatusChange for
+	// in_production/delivered/cancelled, Shipped (with tracking) for shipped.
+	attrs := []any{"orderId", o.ShortID, "from", o.Status, "to", string(to)}
+	if to == orders.StatusShipped && req.TrackingNumber != nil {
+		attrs = append(attrs, "trackingNumber", *req.TrackingNumber)
+	}
+	s.cfg.Logger.Info("notify seam: order status email (plan 06 hook)", attrs...)
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// AdminDownloadOrderFile streams a stored model file attached to the order.
+// Guarded by adminPrefixGuard; the query itself enforces that the file
+// belongs to THIS order (a foreign file id is a 404, never a leak).
+func (s *server) AdminDownloadOrderFile(w http.ResponseWriter, r *http.Request, orderId string, fileId openapi_types.UUID) {
+	if s.cfg.Store == nil || s.cfg.Storage == nil {
+		internalError(w, "store/storage not configured")
+		return
+	}
+	ctx := r.Context()
+	f, err := s.cfg.Store.GetOrderFileForDownload(ctx, store.GetOrderFileForDownloadParams{
+		ShortID: orderId, ID: fileId,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apiError(w, http.StatusNotFound, FileNotFound, "file not found for this order", nil)
+			return
+		}
+		s.cfg.Logger.Error("download: lookup failed", "orderId", orderId, "fileId", fileId, "err", err)
+		internalError(w, "failed to load file")
+		return
+	}
+	if f.StorageKey == nil {
+		apiError(w, http.StatusNotFound, FileNotFound, "file bytes not stored", nil)
+		return
+	}
+	rc, err := s.cfg.Storage.Get(ctx, *f.StorageKey)
+	if err != nil {
+		s.cfg.Logger.Error("download: storage get failed", "orderId", orderId, "fileId", fileId, "err", err)
+		internalError(w, "failed to read file")
+		return
+	}
+	defer rc.Close()
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition",
+		fmt.Sprintf("attachment; filename*=UTF-8''%s", encodeURIComponent(f.FileName)))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", f.FileSizeBytes))
+	w.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(w, rc); err != nil {
+		s.cfg.Logger.Warn("download: stream failed", "orderId", orderId, "fileId", fileId, "err", err)
+	}
 }

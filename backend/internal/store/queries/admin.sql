@@ -29,3 +29,30 @@ SELECT * FROM payments WHERE order_id = $1 ORDER BY created_at;
 
 -- name: ListInvoicesByOrderID :many
 SELECT * FROM invoices WHERE order_id = $1 ORDER BY created_at;
+
+-- name: MarkOrderInProduction :execrows
+-- SQL-guarded like MarkOrderPaid: 0 rows means a race already moved the order.
+UPDATE orders SET status = 'in_production', updated_at = now()
+WHERE id = $1 AND status = 'paid';
+
+-- name: MarkOrderShipped :execrows
+UPDATE orders SET status = 'shipped', tracking_number = $2, updated_at = now()
+WHERE id = $1 AND status = 'in_production';
+
+-- name: MarkOrderDelivered :execrows
+UPDATE orders SET status = 'delivered', updated_at = now()
+WHERE id = $1 AND status = 'shipped';
+
+-- name: MarkOrderCancelled :execrows
+-- Cancel is allowed from every non-terminal state (internal/orders/status.go).
+UPDATE orders SET status = 'cancelled', updated_at = now()
+WHERE id = $1 AND status IN ('draft', 'paid', 'in_production', 'shipped');
+
+-- name: GetOrderFileForDownload :one
+-- The admin download gate: the file must be attached to THIS order (and not
+-- soft-deleted) — a foreign file id is a 404, never a leak.
+SELECT f.id, f.file_name, f.file_size_bytes, f.kind, f.storage_key
+FROM files f
+JOIN order_items i ON i.file_id = f.id
+JOIN orders o ON o.id = i.order_id
+WHERE o.short_id = $1 AND f.id = $2 AND f.deleted_at IS NULL;
