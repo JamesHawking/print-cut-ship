@@ -92,7 +92,7 @@ export function OrderPanel({
 
   return (
     <Card>
-      <CardContent className="space-y-4 pt-6">
+      <CardContent className="space-y-4 leading-[normal]">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             {/* Checked = VAT included (the default) — the resting state

@@ -126,7 +126,7 @@ export function ShareMenu({ parts, quotes, totals }: Props) {
               <span className="text-foreground block text-[0.8125rem] font-semibold">
                 {item.title}
               </span>
-              <span className="text-muted-foreground mt-0.5 block truncate text-[0.6875rem]">
+              <span className="text-muted-foreground mt-px block truncate text-[0.6875rem]">
                 {item.sub}
               </span>
             </span>

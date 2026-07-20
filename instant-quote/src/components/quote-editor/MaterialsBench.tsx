@@ -107,7 +107,7 @@ export function MaterialsBench({ part, onSelectProcess, onClose }: Props) {
               }
             }}
             className={cn(
-              'border-border flex items-center gap-3.5 border-t px-3.5 py-2 transition-colors',
+              'border-border flex items-center gap-3.5 border-t px-3.5 py-[9px] transition-colors',
               blocked ? 'opacity-50' : 'hover:bg-primary/5 cursor-pointer',
               current &&
                 'bg-secondary/50 shadow-[inset_2px_0_0_var(--foreground)]',
@@ -116,6 +116,8 @@ export function MaterialsBench({ part, onSelectProcess, onClose }: Props) {
             <span className="w-[110px] shrink-0 text-[0.8125rem] font-bold">
               {proc?.label ?? row.process}
             </span>
+            {/* 170px, not the workbench's 150px: real catalog rows measure
+              up to ~165px and would bleed into the tagline. */}
             <span className="text-muted-foreground w-[170px] shrink-0 font-mono text-[0.625rem] tracking-wider whitespace-nowrap tabular-nums">
               {proc &&
                 `${formatDecimal(proc.densityGCm3, locale, 2, 2)} g/cm³ · ${proc.plnPerKg} zł/kg`}
