@@ -18,6 +18,11 @@ interface Props {
   priceEpoch: number
   /** A reprice is in flight (keepPreviousData holds the old values). */
   recalculating?: boolean
+  /** Editor only: flags render in the viewport checks rail, not as badges. */
+  showDfmBadges?: boolean
+  /** Editor only: shows the materials-bench toggle next to the process label. */
+  compareOpen?: boolean
+  onToggleCompare?: () => void
 }
 
 export function QuoteCard({
@@ -27,24 +32,47 @@ export function QuoteCard({
   onRetryUpload,
   priceEpoch,
   recalculating = false,
+  showDfmBadges = true,
+  compareOpen,
+  onToggleCompare,
 }: Props) {
   const strings = useStrings()
   const locale = useLocale()
   const discount = quote.discountFraction
+  const ext = (part.fileName.split('.').pop() ?? '').toUpperCase()
+  // Next-tier nudge: the cheapest quantity break that improves the discount.
+  // The unit-price check matters when the per-part floor flattens the tiers —
+  // a "−5%" that still costs the same is not an unlock.
+  const nudge =
+    quote.priceBreaks.find(
+      (b) =>
+        b.quantity > part.config.quantity &&
+        b.discountFraction > discount &&
+        b.unitPricePln < quote.unitPricePln,
+    ) ?? null
 
   return (
     // Mounts when the skeleton hands over — settle in instead of snapping
     // (fade only under reduced motion).
     <Card className="animate-in fade-in zoom-in-[0.98] motion-reduce:zoom-in-100 duration-200 ease-out">
       <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-          <div className="min-w-0 flex-1 basis-44">
-            <p
-              className="truncate text-[0.9375rem] font-bold"
-              title={part.fileName}
-            >
-              {part.fileName}
-            </p>
+        {/* min-w-0: CardHeader is a grid — without it the filename's nowrap
+          truncation sets the column's min-content and blows out the card.
+          No wrap: the price stays top-right and the filename truncates,
+          matching the workbench design. */}
+        <div className="flex min-w-0 items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="bg-secondary shrink-0 rounded px-1.5 py-[3px] font-mono text-[0.59375rem] font-bold tracking-wider">
+                {ext}
+              </span>
+              <p
+                className="truncate text-[0.9375rem] font-bold"
+                title={part.fileName}
+              >
+                {part.fileName}
+              </p>
+            </div>
             {part.metrics && (
               <p className="text-muted-foreground mt-1.5 font-mono text-[0.625rem] tracking-wider tabular-nums">
                 {formatVolume(quote.billableVolumeCm3, locale)} ·{' '}
@@ -87,7 +115,7 @@ export function QuoteCard({
               <>
                 <div
                   key={priceEpoch}
-                  className="text-primary-text motion-safe:animate-price-flash-accent font-mono text-[clamp(1.375rem,3.5vw,1.75rem)] font-bold tracking-tight whitespace-nowrap tabular-nums"
+                  className="text-primary-text motion-safe:animate-price-flash-accent font-mono text-[clamp(1.375rem,3.5vw,1.625rem)] font-bold tracking-tight whitespace-nowrap tabular-nums"
                 >
                   {formatPln(quote.unitPricePln, locale)}
                 </div>
@@ -107,7 +135,7 @@ export function QuoteCard({
                   )}
                 </p>
                 {part.config.quantity > 1 && (
-                  <p className="text-muted-foreground text-xs tabular-nums">
+                  <p className="text-xs font-semibold tabular-nums">
                     {strings.quote.lineTotalFor(
                       formatPln(quote.lineTotalPln, locale),
                       part.config.quantity,
@@ -118,7 +146,28 @@ export function QuoteCard({
             )}
           </div>
         </div>
-        {quote.dfmFlags.length > 0 && (
+        {nudge && (
+          <button
+            type="button"
+            onClick={() => onConfigChange({ quantity: nudge.quantity })}
+            className="border-signal/60 bg-signal/[0.07] hover:border-signal hover:bg-signal/[0.14] mt-3 flex w-full min-w-0 cursor-pointer items-center justify-between gap-2.5 rounded-md border border-dashed px-2.5 py-2 text-left font-mono text-[0.59375rem] font-bold tracking-wider uppercase transition-colors"
+          >
+            <span className="inline-flex items-center gap-[7px]">
+              <span
+                aria-hidden
+                className="bg-signal inline-block size-1.5 rounded-full"
+              />
+              {strings.editor.nudge(
+                nudge.quantity,
+                formatPercent(nudge.discountFraction),
+              )}
+            </span>
+            <span className="tabular-nums">
+              {strings.editor.nudgeApply(formatPln(nudge.unitPricePln, locale))}
+            </span>
+          </button>
+        )}
+        {showDfmBadges && quote.dfmFlags.length > 0 && (
           <div className="pt-2">
             <DfmBadges flags={quote.dfmFlags} />
           </div>
@@ -129,6 +178,8 @@ export function QuoteCard({
           config={part.config}
           onChange={onConfigChange}
           quote={quote}
+          compareOpen={compareOpen}
+          onToggleCompare={onToggleCompare}
         />
         {!quote.blocked && (
           <PriceBreakTable

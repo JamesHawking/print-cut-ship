@@ -29,7 +29,9 @@ export function ViewSwitch({ view, onChange }: Props) {
           aria-pressed={view === value}
           onClick={() => onChange(value)}
           className={cn(
-            'cursor-pointer rounded px-2.5 py-1 transition-colors',
+            // uppercase on the button itself: the CSS reset's
+            // `button { text-transform: none }` beats the wrapper's class.
+            'cursor-pointer rounded px-2.5 py-1 uppercase transition-colors',
             view === value
               ? 'bg-foreground text-background'
               : 'text-muted-foreground hover:text-foreground',

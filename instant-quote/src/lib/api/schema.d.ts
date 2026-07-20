@@ -21,6 +21,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/price/compare': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Unit price of one part across every process in the catalog, for the materials-compare UI. Blocked (oversized) processes are returned with blocked=true rather than omitted. */
+    post: operations['priceCompare']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/config': {
     parameters: {
       query?: never
@@ -602,6 +619,19 @@ export interface components {
     }
     PriceRequest: {
       parts: components['schemas']['PricePart'][]
+    }
+    /** @description One part without a process — process is the loop variable */
+    PriceCompareRequest: {
+      metrics: components['schemas']['MeshMetrics']
+      quantity: number
+      leadTime: components['schemas']['LeadTimeId']
+    }
+    PriceCompareRow: {
+      process: components['schemas']['ProcessId']
+      quote: components['schemas']['PartQuote']
+    }
+    PriceCompareResponse: {
+      rows: components['schemas']['PriceCompareRow'][]
     }
     DfmFlag: {
       /** @enum {string} */
@@ -1404,6 +1434,31 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['PriceResponse']
+        }
+      }
+      400: components['responses']['BadRequest']
+    }
+  }
+  priceCompare: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PriceCompareRequest']
+      }
+    }
+    responses: {
+      /** @description Per-process quotes for the part, in catalog order */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PriceCompareResponse']
         }
       }
       400: components['responses']['BadRequest']

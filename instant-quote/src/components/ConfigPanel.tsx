@@ -26,13 +26,22 @@ interface Props {
   onChange: (patch: Partial<PartConfig>) => void
   /** Enables the material meta line (weight / print-time estimates). */
   quote?: PartQuote
+  /** Editor only: shows the materials-bench toggle next to the label. */
+  compareOpen?: boolean
+  onToggleCompare?: () => void
 }
 
 // Chips and selects requote instantly; the free-form quantity input debounces
 // so typing "125" doesn't fire a pricing request per keystroke.
 const QTY_DEBOUNCE_MS = 250
 
-export function ConfigPanel({ config, onChange, quote }: Props) {
+export function ConfigPanel({
+  config,
+  onChange,
+  quote,
+  compareOpen,
+  onToggleCompare,
+}: Props) {
   const strings = useStrings()
   const locale = useLocale()
   const catalog = useCatalog()
@@ -76,9 +85,21 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
   return (
     <div className="space-y-5" aria-busy={loading}>
       <div className="space-y-2">
-        <Label className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
-          {strings.config.process}
-        </Label>
+        <div className="flex items-baseline justify-between gap-3">
+          <Label className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase">
+            {strings.config.process}
+          </Label>
+          {onToggleCompare && (
+            <button
+              type="button"
+              aria-pressed={compareOpen}
+              onClick={onToggleCompare}
+              className="text-primary-text hover:text-foreground cursor-pointer font-mono text-[0.625rem] font-bold tracking-[0.14em] uppercase transition-colors"
+            >
+              {strings.editor.compare} ↗
+            </button>
+          )}
+        </div>
         <Select
           value={config.process}
           onValueChange={(v) => onChange({ process: v as ProcessId })}
@@ -109,7 +130,7 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
       <div className="space-y-2">
         <Label
           htmlFor="qty"
-          className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase"
+          className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase"
         >
           {strings.config.quantity}
         </Label>
@@ -159,7 +180,7 @@ export function ConfigPanel({ config, onChange, quote }: Props) {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
+        <Label className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase">
           {strings.config.leadTime}
         </Label>
         {loading ? (

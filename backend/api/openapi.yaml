@@ -28,6 +28,29 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /api/v1/price/compare:
+    post:
+      operationId: priceCompare
+      summary: >-
+        Unit price of one part across every process in the catalog, for the
+        materials-compare UI. Blocked (oversized) processes are returned with
+        blocked=true rather than omitted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriceCompareRequest'
+      responses:
+        '200':
+          description: Per-process quotes for the part, in catalog order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceCompareResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /api/v1/config:
     get:
       operationId: getConfig
@@ -915,6 +938,38 @@ components:
           maxItems: 5
           items:
             $ref: '#/components/schemas/PricePart'
+
+    PriceCompareRequest:
+      type: object
+      description: One part without a process — process is the loop variable
+      required: [metrics, quantity, leadTime]
+      properties:
+        metrics:
+          $ref: '#/components/schemas/MeshMetrics'
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        leadTime:
+          $ref: '#/components/schemas/LeadTimeId'
+
+    PriceCompareRow:
+      type: object
+      required: [process, quote]
+      properties:
+        process:
+          $ref: '#/components/schemas/ProcessId'
+        quote:
+          $ref: '#/components/schemas/PartQuote'
+
+    PriceCompareResponse:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceCompareRow'
 
     DfmFlag:
       type: object

@@ -5,7 +5,12 @@ import { useEditorShortcuts } from '@/hooks/useEditorShortcuts'
 import type { CameraPreset } from '@/lib/camera-presets'
 import { MAX_PARTS } from '@/lib/upload'
 import { cn } from '@/lib/utils'
-import type { OrderTotals, PartConfig, PartQuote } from '@/lib/api/client'
+import type {
+  OrderTotals,
+  PartConfig,
+  PartQuote,
+  ProcessId,
+} from '@/lib/api/client'
 import { EditorTopBar } from './EditorTopBar'
 import { InspectorPanel } from './InspectorPanel'
 import { PartsOutliner } from './PartsOutliner'
@@ -92,6 +97,10 @@ export function EditorShell({
     nonce: number
   } | null>(null)
   const [resetNonce, setResetNonce] = useState(0)
+  // Viewport overlays: DFM check hover/pin and the materials bench.
+  const [checkHovered, setCheckHovered] = useState<string | null>(null)
+  const [checkPinned, setCheckPinned] = useState<string | null>(null)
+  const [compareOpen, setCompareOpen] = useState(false)
 
   const status: CanvasStatus =
     parts.length === 0
@@ -104,6 +113,16 @@ export function EditorShell({
           ? 'error'
           : 'parsing'
 
+  // Overlays belong to the part on stage — a selection change resets them.
+  const selectedId = selectedPart?.id ?? null
+  const [overlayPartId, setOverlayPartId] = useState(selectedId)
+  if (overlayPartId !== selectedId) {
+    setOverlayPartId(selectedId)
+    setCheckHovered(null)
+    setCheckPinned(null)
+    setCompareOpen(false)
+  }
+
   const requestPreset = useCallback(
     (preset: CameraPreset) => setViewRequest({ preset, nonce: Date.now() }),
     [],
@@ -111,6 +130,18 @@ export function EditorShell({
   const requestReset = useCallback(() => setResetNonce((n) => n + 1), [])
   const toggleGrid = useCallback(() => setGridVisible((v) => !v), [])
   const toggleAutoRotate = useCallback(() => setAutoRotate((v) => !v), [])
+  const toggleCompare = useCallback(() => setCompareOpen((v) => !v), [])
+  const closeCompare = useCallback(() => setCompareOpen(false), [])
+  const toggleCheckPin = useCallback(
+    (code: string) => setCheckPinned((p) => (p === code ? null : code)),
+    [],
+  )
+  const selectProcess = useCallback(
+    (process: ProcessId) => {
+      if (selectedId) onConfigChange(selectedId, { process })
+    },
+    [selectedId, onConfigChange],
+  )
 
   // View tools only make sense with a part on stage.
   const toolsEnabled = viewerEnabled && status === 'ready'
@@ -122,15 +153,18 @@ export function EditorShell({
     onToggleAutoRotate: toggleAutoRotate,
   })
 
+  // The intake tile hides with no parts — the stage's empty state covers it.
+  const canAddMore = parts.length < MAX_PARTS && parts.length > 0
+
   return (
     <section className={cn('bg-background h-dvh flex-col', className)}>
       <EditorTopBar
         summary={summary}
         totals={totals}
         pricesExVat={pricesExVat}
-        priceEpoch={priceEpoch}
-        recalculating={recalculating}
         orderableCount={orderableEntries.length}
+        parts={parts}
+        quotes={quotesById}
         onOrderClick={onOrderClick}
         viewSwitch={<ViewSwitch view={view} onChange={onViewChange} />}
         toolbar={
@@ -154,19 +188,27 @@ export function EditorShell({
           onSelect={onSelectPart}
           onRemove={onRemovePart}
           onRetryUpload={onRetryUpload}
-          canAddMore={parts.length < MAX_PARTS}
+          canAddMore={canAddMore}
           onFiles={onFiles}
           onUrl={onUrl}
           urlPending={urlPending}
         />
         <ViewportCanvas
           part={selectedPart}
+          quote={selectedQuote}
           status={status}
           viewerEnabled={viewerEnabled}
           gridVisible={gridVisible}
           autoRotate={autoRotate}
           viewRequest={viewRequest}
           resetNonce={resetNonce}
+          checkHovered={checkHovered}
+          checkPinned={checkPinned}
+          onCheckHover={setCheckHovered}
+          onCheckTogglePin={toggleCheckPin}
+          compareOpen={compareOpen}
+          onCloseCompare={closeCompare}
+          onSelectProcess={selectProcess}
           onFiles={onFiles}
           onUrl={onUrl}
           urlPending={urlPending}
@@ -190,6 +232,8 @@ export function EditorShell({
           onConfigChange={onConfigChange}
           onRetryUpload={onRetryUpload}
           onOrderClick={onOrderClick}
+          compareOpen={compareOpen}
+          onToggleCompare={toggleCompare}
         />
       </div>
       <StatusStrip part={selectedPart} quote={selectedQuote} clock={clock} />

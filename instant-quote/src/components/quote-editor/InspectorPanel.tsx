@@ -22,10 +22,17 @@ interface Props {
   onConfigChange: (id: string, patch: Partial<PartConfig>) => void
   onRetryUpload: (id: string) => void
   onOrderClick: () => void
+  compareOpen: boolean
+  onToggleCompare: () => void
 }
 
 /** Desktop editor's right rail: config + price + order for the selected part. */
-export function InspectorPanel({ empty, ...content }: Props) {
+export function InspectorPanel({
+  empty,
+  compareOpen,
+  onToggleCompare,
+  ...content
+}: Props) {
   const strings = useStrings()
 
   return (
@@ -38,7 +45,12 @@ export function InspectorPanel({ empty, ...content }: Props) {
           {strings.editor.inspectorEmpty}
         </p>
       ) : (
-        <QuoteColumnContent {...content} />
+        <QuoteColumnContent
+          {...content}
+          showDfmBadges={false}
+          compareOpen={compareOpen}
+          onToggleCompare={onToggleCompare}
+        />
       )}
     </aside>
   )

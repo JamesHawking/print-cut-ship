@@ -18,7 +18,7 @@ export function HowWePriceDialog() {
 
   return (
     <Dialog>
-      <DialogTrigger className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2">
+      <DialogTrigger className="text-muted-foreground hover:text-foreground text-xs whitespace-nowrap underline underline-offset-2">
         {strings.quote.howWePrice}
       </DialogTrigger>
       <DialogContent className="max-w-lg">

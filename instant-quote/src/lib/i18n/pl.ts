@@ -21,6 +21,7 @@ export type MaterialFamily = 'standard' | 'engineering' | 'specialty'
 type OrderStatus = components['schemas']['OrderSummary']['status']
 type DfmCode = components['schemas']['DfmFlag']['code']
 type ApiErrorCode = components['schemas']['ApiErrorCode']
+type ProcessId = components['schemas']['ProcessId']
 
 type Params = Record<string, unknown>
 
@@ -519,7 +520,7 @@ export const pl = {
     minOrderHint: (min: string) =>
       `Minimalne zamówienie ${min} — doliczono wyrównanie`,
     exVat: 'Ceny netto',
-    incVat: 'Ceny brutto (23% VAT PL)',
+    incVat: 'VAT w cenie · 23% PL',
     priceBreaksTitle: 'Cena za sztukę przy ilości',
     breakdownTitle: 'Rozbicie ceny',
     howWePrice: 'Jak wyceniamy',
@@ -553,6 +554,48 @@ export const pl = {
     resetView: 'Kadruj część',
     grid: 'Siatka',
     autoRotate: 'Auto-obrót',
+    addPart: 'Dodaj kolejną część',
+    addHint: (slots: number) =>
+      `Dołączy do wyceny · ${slots} ${plPlural(slots, 'wolne miejsce', 'wolne miejsca', 'wolnych miejsc')}`,
+    mwImport: 'Import z MakerWorld',
+    compare: 'Porównaj',
+    compareTitle: 'Stół materiałów',
+    compareContext: (qty: number, lead: string) =>
+      `cena za szt. przy ×${qty} · ${lead}`,
+    compareCurrent: 'Wybrany',
+    compareUnavailable: 'Poza zakresem',
+    compareLoading: 'Liczenie cen…',
+    compareFailed: 'Nie udało się pobrać cen.',
+    compareClose: 'Zamknij porównanie materiałów',
+    compareTaglines: {
+      pla: 'Najtańszy i najłatwiejszy w druku. Prototypy, modele koncepcyjne, ekspozycje.',
+      petg: 'Wytrzymały, odporny na wilgoć koń roboczy. Obudowy, wsporniki, części funkcjonalne.',
+      pctg: 'Ulepszony PETG o wyższej udarności. Obudowy i części mechaniczne.',
+      asa: 'Stabilny UV i pogodowo. Części zewnętrzne, motoryzacyjne, elewacyjne.',
+      petg_fr: 'Trudnopalny (UL94 V-0). Obudowy elektroniki i rozdzielnice.',
+      pa12_cf: 'Nylon z włóknem węglowym — szczytowa wytrzymałość, do ~170°C.',
+      iglidur:
+        'Samosmarujący materiał Igus. Łożyska, tuleje, elementy ślizgowe.',
+    } satisfies Record<ProcessId, string>,
+    checksPass: 'Bez uwag',
+    checksLabel: 'Kontrole',
+    checksSummary: (n: number) =>
+      `${n} ${plPlural(n, 'uwaga', 'uwagi', 'uwag')}`,
+    checksSummaryPass: 'Czysto',
+    footerCutoff: 'zamówienia tego samego dnia do 14:00',
+    nudge: (qty: number, pct: string) =>
+      `×${qty} odblokowuje −${pct} za sztukę`,
+    nudgeApply: (price: string) => `${price} / szt. →`,
+    share: 'Udostępnij',
+    shareCopyLink: 'Kopiuj link',
+    shareCopyLinkSub: 'Adres tej strony z bieżącą wyceną',
+    shareCsv: 'Pobierz CSV',
+    shareCsvSub: 'Pozycje wyceny do systemu zakupów',
+    shareCopied: 'Skopiowano ✓',
+    shareSaved: 'Zapisano ✓',
+    shareCsvHeader: 'plik,material,ilosc,cena_jedn_pln,wartosc_pln',
+    shareCsvTotal: 'suma',
+    shareNote: 'Link otwiera tę stronę — wycena zostaje w tej przeglądarce.',
   },
   priceBreak: {
     qty: 'Szt.',

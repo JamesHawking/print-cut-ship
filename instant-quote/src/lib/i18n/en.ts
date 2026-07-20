@@ -11,6 +11,7 @@ import { enPlural } from './plural'
 type OrderStatus = components['schemas']['OrderSummary']['status']
 type DfmCode = components['schemas']['DfmFlag']['code']
 type ApiErrorCode = components['schemas']['ApiErrorCode']
+type ProcessId = components['schemas']['ProcessId']
 
 type Params = Record<string, unknown>
 
@@ -495,7 +496,7 @@ export const en = {
     orderButton: (price: string) => `Order for ${price}`,
     minOrderHint: (min: string) => `Minimum order ${min} — top-up applied`,
     exVat: 'Prices ex VAT',
-    incVat: 'Prices incl. VAT (23% PL)',
+    incVat: 'VAT included · 23% PL',
     priceBreaksTitle: 'Price per unit at quantity',
     breakdownTitle: 'Price breakdown',
     howWePrice: 'How we price',
@@ -529,6 +530,48 @@ export const en = {
     resetView: 'Frame part',
     grid: 'Grid',
     autoRotate: 'Auto-rotate',
+    addPart: 'Add another part',
+    addHint: (slots: number) =>
+      `Joins this quote · ${slots} ${enPlural(slots, 'slot', 'slots')} left`,
+    mwImport: 'MakerWorld import',
+    compare: 'Compare',
+    compareTitle: 'Materials bench',
+    compareContext: (qty: number, lead: string) =>
+      `unit price @ ×${qty} · ${lead}`,
+    compareCurrent: 'Current',
+    compareUnavailable: 'Out of range',
+    compareLoading: 'Pricing…',
+    compareFailed: 'Couldn’t load prices.',
+    compareClose: 'Close compare',
+    compareTaglines: {
+      pla: 'Cheapest and easiest to print. Prototypes, concept models, display parts.',
+      petg: 'Tough, moisture-resistant workhorse. Enclosures, brackets, functional parts.',
+      pctg: 'Upgraded PETG with higher impact resistance. Housings and mechanical parts.',
+      asa: 'UV- and weather-stable. Outdoor, automotive and exterior parts.',
+      petg_fr:
+        'Flame-retardant (UL94 V-0). Electronics enclosures and control cabinets.',
+      pa12_cf:
+        'Carbon-filled nylon — peak strength, heat resistance to ~170°C.',
+      iglidur:
+        'Self-lubricating Igus material. Bearings, bushings and sliding parts.',
+    } satisfies Record<ProcessId, string>,
+    checksPass: 'Checks pass',
+    checksLabel: 'Checks',
+    checksSummary: (n: number) => `${n} ${enPlural(n, 'notice', 'notices')}`,
+    checksSummaryPass: 'Pass',
+    footerCutoff: '14:00 same-day cutoff',
+    nudge: (qty: number, pct: string) => `×${qty} unlocks −${pct} per part`,
+    nudgeApply: (price: string) => `${price} / part →`,
+    share: 'Share',
+    shareCopyLink: 'Copy quote link',
+    shareCopyLinkSub: 'Address of this page with the current quote',
+    shareCsv: 'Download CSV',
+    shareCsvSub: 'Line items for procurement systems',
+    shareCopied: 'Copied ✓',
+    shareSaved: 'Saved ✓',
+    shareCsvHeader: 'file,material,qty,unit_price_pln,line_total_pln',
+    shareCsvTotal: 'total',
+    shareNote: 'Link opens this page — your quote stays in this browser.',
   },
   priceBreak: {
     qty: 'Qty',

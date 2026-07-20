@@ -1,6 +1,8 @@
-import { X } from 'lucide-react'
+import { useState } from 'react'
+import { Loader2, X } from 'lucide-react'
 import { DropZone } from '@/components/DropZone'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useCatalog } from '@/hooks/useApi'
@@ -42,6 +44,7 @@ export function PartsOutliner({
   const strings = useStrings()
   const locale = useLocale()
   const catalog = useCatalog()
+  const [mwUrl, setMwUrl] = useState('')
   const processLabel = (id: string) =>
     catalog?.processes.find((p) => p.id === id)?.label ?? id
 
@@ -162,14 +165,57 @@ export function PartsOutliner({
       )}
 
       {canAddMore && (
-        <div className="border-t p-3">
-          <DropZone
-            variant="compact"
-            onFiles={onFiles}
-            onUrl={onUrl}
-            urlPending={urlPending}
-          />
-        </div>
+        <>
+          <div className="border-t p-3">
+            <DropZone
+              variant="tile"
+              onFiles={onFiles}
+              tileHint={strings.editor.addHint(MAX_PARTS - parts.length)}
+            />
+          </div>
+          <form
+            className="flex flex-col gap-2 border-t p-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const url = mwUrl.trim()
+              if (!url || urlPending) return
+              onUrl(url)
+              setMwUrl('')
+            }}
+          >
+            <span className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
+              {strings.editor.mwImport}
+            </span>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                inputMode="url"
+                value={mwUrl}
+                disabled={urlPending}
+                placeholder={strings.dropzone.mwPlaceholder}
+                aria-label={strings.editor.mwImport}
+                className="h-9 font-mono text-xs"
+                onChange={(e) => setMwUrl(e.target.value)}
+              />
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 font-bold"
+                disabled={urlPending || !mwUrl.trim()}
+              >
+                {urlPending ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    {strings.dropzone.mwFetching}
+                  </>
+                ) : (
+                  strings.dropzone.mwButton
+                )}
+              </Button>
+            </div>
+          </form>
+        </>
       )}
     </aside>
   )

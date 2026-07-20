@@ -756,6 +756,26 @@ type PriceBreak struct {
 	UnitPricePln     float64 `json:"unitPricePln"`
 }
 
+// PriceCompareRequest One part without a process — process is the loop variable
+type PriceCompareRequest struct {
+	LeadTime LeadTimeId `json:"leadTime"`
+
+	// Metrics Pricing-relevant subset of client-side mesh analysis
+	Metrics  MeshMetrics `json:"metrics"`
+	Quantity int         `json:"quantity"`
+}
+
+// PriceCompareResponse defines model for PriceCompareResponse.
+type PriceCompareResponse struct {
+	Rows []PriceCompareRow `json:"rows"`
+}
+
+// PriceCompareRow defines model for PriceCompareRow.
+type PriceCompareRow struct {
+	Process ProcessId `json:"process"`
+	Quote   PartQuote `json:"quote"`
+}
+
 // PricePart defines model for PricePart.
 type PricePart struct {
 	LeadTime LeadTimeId `json:"leadTime"`
@@ -1056,6 +1076,9 @@ type CreateOrderJSONRequestBody = CreateOrderRequest
 // PriceJSONRequestBody defines body for Price for application/json ContentType.
 type PriceJSONRequestBody = PriceRequest
 
+// PriceCompareJSONRequestBody defines body for PriceCompare for application/json ContentType.
+type PriceCompareJSONRequestBody = PriceCompareRequest
+
 // SubmitQuoteJSONRequestBody defines body for SubmitQuote for application/json ContentType.
 type SubmitQuoteJSONRequestBody = SubmitQuoteRequest
 
@@ -1151,6 +1174,9 @@ type ServerInterface interface {
 	// Price a set of parts and compute order totals
 	// (POST /api/v1/price)
 	Price(w http.ResponseWriter, r *http.Request)
+	// Unit price of one part across every process in the catalog, for the materials-compare UI. Blocked (oversized) processes are returned with blocked=true rather than omitted.
+	// (POST /api/v1/price/compare)
+	PriceCompare(w http.ResponseWriter, r *http.Request)
 	// Submit an order request; prices are recomputed server-side
 	// (POST /api/v1/quotes)
 	SubmitQuote(w http.ResponseWriter, r *http.Request)
@@ -1340,6 +1366,12 @@ func (_ Unimplemented) CreateOrderCheckout(w http.ResponseWriter, r *http.Reques
 // Price a set of parts and compute order totals
 // (POST /api/v1/price)
 func (_ Unimplemented) Price(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Unit price of one part across every process in the catalog, for the materials-compare UI. Blocked (oversized) processes are returned with blocked=true rather than omitted.
+// (POST /api/v1/price/compare)
+func (_ Unimplemented) PriceCompare(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1963,6 +1995,20 @@ func (siw *ServerInterfaceWrapper) Price(w http.ResponseWriter, r *http.Request)
 	handler.ServeHTTP(w, r)
 }
 
+// PriceCompare operation middleware
+func (siw *ServerInterfaceWrapper) PriceCompare(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PriceCompare(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SubmitQuote operation middleware
 func (siw *ServerInterfaceWrapper) SubmitQuote(w http.ResponseWriter, r *http.Request) {
 
@@ -2229,6 +2275,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/price", wrapper.Price)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/price/compare", wrapper.PriceCompare)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/quotes", wrapper.SubmitQuote)

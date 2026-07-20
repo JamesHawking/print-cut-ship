@@ -92,6 +92,58 @@ func TestPriceEndpoint(t *testing.T) {
 	}
 }
 
+func TestPriceCompareEndpoint(t *testing.T) {
+	h := testHandler(t, Config{}, nil)
+
+	const validCompare = `{
+		"metrics": {"volumeCm3": 100, "surfaceAreaCm2": 130,
+		            "bboxMm": {"x": 60, "y": 50, "z": 40}, "usedHullFallback": false},
+		"quantity": 2, "leadTime": "standard"
+	}`
+
+	t.Run("happy path quotes every catalog process", func(t *testing.T) {
+		rec := doJSON(t, h, http.MethodPost, "/api/v1/price/compare", validCompare)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status %d: %s", rec.Code, rec.Body)
+		}
+		var res PriceCompareResponse
+		if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+			t.Fatal(err)
+		}
+		if len(res.Rows) != len(pricing.Default.Processes) {
+			t.Fatalf("rows len %d, want %d", len(res.Rows), len(pricing.Default.Processes))
+		}
+		metrics := pricing.MeshMetrics{VolumeCm3: 100, SurfaceAreaCm2: 130,
+			BboxMm: pricing.Vec3{X: 60, Y: 50, Z: 40}}
+		for i, p := range pricing.Default.Processes {
+			row := res.Rows[i]
+			if string(row.Process) != p.ID {
+				t.Fatalf("row %d process %q, want %q", i, row.Process, p.ID)
+			}
+			want := pricing.Default.ComputePartQuote(metrics,
+				pricing.PartConfig{Process: p.ID, Quantity: 2, LeadTime: "standard"})
+			if row.Quote.UnitPricePln != want.UnitPricePln {
+				t.Errorf("row %d unit %v, want %v", i, row.Quote.UnitPricePln, want.UnitPricePln)
+			}
+		}
+	})
+
+	badBodies := map[string]string{
+		"unknown leadTime": strings.Replace(validCompare, `"standard"`, `"warp"`, 1),
+		"zero quantity":    strings.Replace(validCompare, `"quantity": 2`, `"quantity": 0`, 1),
+		"huge quantity":    strings.Replace(validCompare, `"quantity": 2`, `"quantity": 15000000`, 1),
+		"negative volume":  strings.Replace(validCompare, `"volumeCm3": 100`, `"volumeCm3": -1`, 1),
+		"not JSON":         `{`,
+	}
+	for name, body := range badBodies {
+		t.Run("400 on "+name, func(t *testing.T) {
+			if rec := doJSON(t, h, http.MethodPost, "/api/v1/price/compare", body); rec.Code != http.StatusBadRequest {
+				t.Errorf("status %d, want 400", rec.Code)
+			}
+		})
+	}
+}
+
 func TestConfigEndpoint(t *testing.T) {
 	h := testHandler(t, Config{}, nil)
 	rec := doJSON(t, h, http.MethodGet, "/api/v1/config", "")

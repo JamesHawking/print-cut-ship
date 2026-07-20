@@ -197,6 +197,12 @@ func validatePart(cfg *pricing.Config, metrics MeshMetrics, process ProcessId, q
 			fmt.Sprintf("unknown process %q", process),
 			map[string]any{"process": string(process)}}
 	}
+	return validateMetricsQtyLead(cfg, metrics, quantity, lead)
+}
+
+// validateMetricsQtyLead checks the process-independent fields shared by the
+// price and price-compare endpoints.
+func validateMetricsQtyLead(cfg *pricing.Config, metrics MeshMetrics, quantity int, lead LeadTimeId) *validationError {
 	if _, ok := cfg.LeadTime(string(lead)); !ok {
 		return &validationError{UnknownLeadTime,
 			fmt.Sprintf("unknown leadTime %q", lead),
@@ -258,6 +264,31 @@ func (s *server) Price(w http.ResponseWriter, r *http.Request) {
 		Parts:  quotes,
 		Totals: fromDomainTotals(cfg.ComputeOrderTotals(domainQuotes)),
 	})
+}
+
+func (s *server) PriceCompare(w http.ResponseWriter, r *http.Request) {
+	var req PriceCompareRequest
+	if !decodeBody(w, r, &req) {
+		return
+	}
+	cfg := s.activePricing().Cfg
+	if v := validateMetricsQtyLead(cfg, req.Metrics, req.Quantity, req.LeadTime); v != nil {
+		badRequest(w, v.code, v.msg, v.params)
+		return
+	}
+	rows := make([]PriceCompareRow, 0, len(cfg.Processes))
+	for _, p := range cfg.Processes {
+		q := cfg.ComputePartQuote(toDomainMetrics(req.Metrics), pricing.PartConfig{
+			Process:  p.ID,
+			Quantity: float64(req.Quantity),
+			LeadTime: string(req.LeadTime),
+		})
+		rows = append(rows, PriceCompareRow{
+			Process: ProcessId(p.ID),
+			Quote:   fromDomainQuote(q),
+		})
+	}
+	writeJSON(w, http.StatusOK, PriceCompareResponse{Rows: rows})
 }
 
 func (s *server) GetConfig(w http.ResponseWriter, _ *http.Request) {
