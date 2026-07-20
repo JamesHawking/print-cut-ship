@@ -14,6 +14,7 @@ import (
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
+	"github.com/JamesHawking/print-cut-ship/backend/internal/email"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/leadtime"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/orders"
@@ -359,14 +360,45 @@ func (s *server) AdminTransitionOrder(w http.ResponseWriter, r *http.Request, or
 		return
 	}
 
-	// Notify seam (plan 06 Phase 6 hooks SendTransactional exactly here):
-	// one structured line per applied transition — StatusChange for
-	// in_production/delivered/cancelled, Shipped (with tracking) for shipped.
+	// Notify seam (plan 06): one structured line per applied transition, then
+	// the status email — Shipped (with tracking) for shipped, StatusChange
+	// for in_production/delivered/cancelled. Deduped per (to, order).
 	attrs := []any{"orderId", o.ShortID, "from", o.Status, "to", string(to)}
 	if to == orders.StatusShipped && req.TrackingNumber != nil {
 		attrs = append(attrs, "trackingNumber", *req.TrackingNumber)
 	}
 	s.cfg.Logger.Info("notify seam: order status email (plan 06 hook)", attrs...)
+	if s.cfg.Email != nil && s.cfg.Store != nil {
+		data, derr := s.orderEmailData(ctx, o)
+		if derr != nil {
+			s.cfg.Logger.Error("status email: load items failed", "orderId", o.ShortID, "err", derr)
+		} else {
+			in := email.Input{
+				To: o.Email, Locale: o.Locale, OrderID: &o.ID, UserID: o.UserID,
+				DedupeKey: "status_" + string(to) + ":" + o.ShortID,
+			}
+			if to == orders.StatusShipped {
+				in.Template = email.Shipped
+				tracking := ""
+				if req.TrackingNumber != nil {
+					tracking = *req.TrackingNumber
+				}
+				in.Data = email.ShippedData{
+					OrderShortID:   data.OrderShortID,
+					TrackingNumber: tracking,
+					StatusURL:      data.StatusURL,
+				}
+			} else {
+				in.Template = email.StatusChange
+				in.Data = email.StatusChangeData{
+					OrderShortID: data.OrderShortID,
+					NewStatus:    string(to),
+					StatusURL:    data.StatusURL,
+				}
+			}
+			s.sendMail(ctx, in)
+		}
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -127,6 +127,28 @@ func serve(logger *slog.Logger) {
 		os.Exit(1)
 	}
 
+	// Transactional email (plan 06). Without RESEND_API_KEY the LogTransport
+	// keeps the full path (render, dedupe, email_log) but only logs — same
+	// degradation pattern as BAMBU_CLOUD_TOKEN. Going live is env-only; the
+	// DNS/DKIM checklist is plans/engineering/runbooks/email-dns.md.
+	var transport email.Transport = email.LogTransport{Logger: logger}
+	if key := os.Getenv("RESEND_API_KEY"); key != "" {
+		transport = email.NewResendTransport(key)
+	} else {
+		logger.Warn("email: RESEND_API_KEY absent — logging mail instead of sending")
+	}
+	mailer := &email.Service{
+		Store:      st,
+		Logger:     logger,
+		Transport:  transport,
+		FromOrders: envOr("EMAIL_FROM_ORDERS", "orders@localhost"),
+		FromAuth:   envOr("EMAIL_FROM_AUTH", "no-reply@localhost"),
+		ReplyTo:    envOr("EMAIL_REPLY_TO", "support@localhost"),
+		Support:    envOr("EMAIL_SUPPORT", "support@localhost"),
+	}
+	pipeline.Email = mailer
+	pipeline.PublicBaseURL = publicBaseURL
+
 	srv := &http.Server{
 		Addr: ":" + port,
 		Handler: httpapi.NewRouter(httpapi.Config{
@@ -136,12 +158,12 @@ func serve(logger *slog.Logger) {
 			Storage:         strg,
 			Auth: auth.NewService(
 				st,
-				// Console transport until plan 06 swaps in Resend (launch gate).
-				email.ConsoleSender{Logger: logger},
+				mailer,
 				logger,
 				envDurationMinutes("LOGIN_CODE_TTL_MINUTES", 10),
 				envDurationDays("SESSION_TTL_DAYS", 30),
 			),
+			Email:         mailer,
 			Payments:      provider,
 			Pipeline:      pipeline,
 			PublicBaseURL: publicBaseURL,
@@ -246,6 +268,14 @@ func retryInvoices(ctx context.Context, logger *slog.Logger) error {
 	}
 	logger.Info("retry-invoices complete", "pending", len(orders))
 	return nil
+}
+
+// envOr reads an env var with a fallback default.
+func envOr(name, def string) string {
+	if v := os.Getenv(name); v != "" {
+		return v
+	}
+	return def
 }
 
 // envDurationDays reads a whole-days duration env var with a default.

@@ -1,0 +1,1 @@
+STEP do ręcznej wyceny: {{.FileName}}

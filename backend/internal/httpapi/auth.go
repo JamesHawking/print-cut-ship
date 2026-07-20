@@ -29,7 +29,11 @@ func (s *server) RequestLoginCode(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if err := s.cfg.Auth.RequestCode(r.Context(), string(req.Email)); err != nil {
+	locale := "pl"
+	if req.Locale != nil {
+		locale = string(*req.Locale)
+	}
+	if err := s.cfg.Auth.RequestCode(r.Context(), string(req.Email), locale); err != nil {
 		s.cfg.Logger.Error("request code failed", "err", err)
 		internalError(w, "failed to send login code")
 		return

@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/JamesHawking/print-cut-ship/backend/internal/email"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/leadtime"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/makerworld"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
@@ -76,6 +77,19 @@ func makeID(prefix string) string {
 func validEmail(s string) bool {
 	addr, err := mail.ParseAddress(s)
 	return err == nil && addr.Address == s
+}
+
+// sendMail is the commerce-caller contract for transactional email (plan 06):
+// mail never fails an order — a send error is logged, never propagated. The
+// auth flow is the exception and propagates via email.Sender instead.
+func (s *server) sendMail(ctx context.Context, in email.Input) {
+	if s.cfg.Email == nil {
+		return
+	}
+	if err := s.cfg.Email.SendTransactional(ctx, in); err != nil {
+		s.cfg.Logger.Error("transactional email failed",
+			"template", in.Template, "to", in.To, "err", err)
+	}
 }
 
 var euCountries = map[EuCountry]bool{
@@ -642,6 +656,30 @@ func (s *server) SubmitStepQuote(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		s.cfg.Logger.Warn("store not configured; step request not persisted", "requestId", requestID)
+	}
+
+	// Plan 06: customer acknowledgement in the request locale + operator
+	// notification to the support inbox (feeds plan 07's STEP queue).
+	locale := "pl"
+	if req.Locale != nil {
+		locale = string(*req.Locale)
+	}
+	s.sendMail(r.Context(), email.Input{
+		To: string(req.Email), Template: email.StepAck, Locale: locale,
+		DedupeKey: "step_ack:" + requestID,
+		Data:      email.StepAckData{FileName: req.FileName},
+	})
+	if s.cfg.Email != nil {
+		s.sendMail(r.Context(), email.Input{
+			To: s.cfg.Email.Support, Template: email.StepNotify, Locale: "pl",
+			DedupeKey: "step_notify:" + requestID,
+			Data: email.StepNotifyData{
+				RequestID: requestID,
+				Email:     string(req.Email),
+				FileName:  req.FileName,
+				FileSize:  email.FormatBytes(int64(req.FileSize)),
+			},
+		})
 	}
 
 	writeJSON(w, http.StatusOK, StepQuoteResponse{RequestId: requestID})

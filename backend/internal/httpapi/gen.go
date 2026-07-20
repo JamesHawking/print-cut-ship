@@ -181,6 +181,18 @@ const (
 	Pla     ProcessId = "pla"
 )
 
+// Defines values for RequestCodeRequestLocale.
+const (
+	RequestCodeRequestLocaleEn RequestCodeRequestLocale = "en"
+	RequestCodeRequestLocalePl RequestCodeRequestLocale = "pl"
+)
+
+// Defines values for StepQuoteRequestLocale.
+const (
+	StepQuoteRequestLocaleEn StepQuoteRequestLocale = "en"
+	StepQuoteRequestLocalePl StepQuoteRequestLocale = "pl"
+)
+
 // Defines values for SubmitQuoteRequestLocale.
 const (
 	En SubmitQuoteRequestLocale = "en"
@@ -888,7 +900,13 @@ type ReplacePricingConfigResponse struct {
 // RequestCodeRequest defines model for RequestCodeRequest.
 type RequestCodeRequest struct {
 	Email openapi_types.Email `json:"email"`
+
+	// Locale UI locale for the login-code email (plan 06). Absent → pl.
+	Locale *RequestCodeRequestLocale `json:"locale,omitempty"`
 }
+
+// RequestCodeRequestLocale UI locale for the login-code email (plan 06). Absent → pl.
+type RequestCodeRequestLocale string
 
 // ShipDate defines model for ShipDate.
 type ShipDate struct {
@@ -910,7 +928,13 @@ type StepQuoteRequest struct {
 	Email    openapi_types.Email `json:"email"`
 	FileName string              `json:"fileName"`
 	FileSize int                 `json:"fileSize"`
+
+	// Locale UI locale at submit time; the acknowledgement email (plan 06) renders in it. Absent → pl.
+	Locale *StepQuoteRequestLocale `json:"locale,omitempty"`
 }
+
+// StepQuoteRequestLocale UI locale at submit time; the acknowledgement email (plan 06) renders in it. Absent → pl.
+type StepQuoteRequestLocale string
 
 // StepQuoteResponse defines model for StepQuoteResponse.
 type StepQuoteResponse struct {

@@ -3,6 +3,7 @@ import { MaterialsIndex } from '@/components/materials/MaterialsIndex'
 import { PricingPage } from '@/components/pricing/PricingPage'
 import { ComparisonsIndex } from '@/components/compare/ComparisonsIndex'
 import { BlogIndex } from '@/components/blog/BlogIndex'
+import { ContactPage } from '@/components/ContactPage'
 import {
   DEFAULT_LOCALE,
   getStrings,
@@ -38,6 +39,7 @@ export const Route = createFileRoute('/$locale/$section/')({
     if (key === 'pricing') return pricingHead(locale)
     if (key === 'compare') return compareIndexHead(locale)
     if (key === 'blog') return blogIndexHead(locale)
+    if (key === 'contact') return contactHead(locale)
     return materialsHead(locale)
   },
   component: SectionIndex,
@@ -162,6 +164,33 @@ function blogIndexHead(locale: Locale) {
   }
 }
 
+function contactHead(locale: Locale) {
+  const s = getStrings(locale).contactPage
+  const path = sectionPath(locale, 'contact')
+  const head = seoHead({
+    locale,
+    path,
+    title: s.metaTitle,
+    description: s.metaDescription,
+    alternates: sectionAlternates('contact'),
+  })
+  return {
+    meta: [
+      ...head.meta,
+      jsonLd(
+        breadcrumbJsonLd([
+          {
+            name: getStrings(locale).materialsPages.breadcrumbHome,
+            path: `/${locale}`,
+          },
+          { name: s.breadcrumb, path },
+        ]),
+      ),
+    ],
+    links: head.links,
+  }
+}
+
 function SectionIndex() {
   const locale = useLocale()
   const { section } = Route.useParams()
@@ -169,5 +198,6 @@ function SectionIndex() {
   if (key === 'pricing') return <PricingPage />
   if (key === 'compare') return <ComparisonsIndex />
   if (key === 'blog') return <BlogIndex />
+  if (key === 'contact') return <ContactPage />
   return <MaterialsIndex />
 }

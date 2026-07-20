@@ -22,6 +22,8 @@ at [`README.md`](README.md) for the map.
   - `instant-quote/src/lib/api/schema.d.ts`
   - `instant-quote/src/routeTree.gen.ts`
   - `instant-quote/src/content/reference-prices.json`
+  - `backend/internal/email/templates/` (rendered by `bun run emails:build`
+    from `instant-quote/src/emails/`)
 
   Change the source (`api/openapi.yaml`, `internal/store/queries/*.sql`, route
   files, the pricing engine) and regenerate.
@@ -61,6 +63,7 @@ at [`README.md`](README.md) for the map.
 | Frontend | `cd instant-quote && bun test && bun run typecheck && bun run check-strings && bun run format:check` |
 | Both unit suites | `make test` (repo root) |
 | Codegen sync | `make -C backend gen`, then `git status` must show no changes |
+| Email templates | `bun run emails:build` (in `instant-quote/`), then `git status` must show no changes |
 
 Run the gates for every scope you touched before declaring done. Prettier
 formats Markdown too — run `bun run format` if `format:check` flags a doc you

@@ -21,11 +21,11 @@ import (
 // captureMailer records the codes RequestCode "sends" (console transport
 // stand-in for tests).
 type captureMailer struct {
-	sent []struct{ email, code string }
+	sent []struct{ email, code, locale string }
 }
 
-func (m *captureMailer) SendLoginCode(_ context.Context, email, code string) error {
-	m.sent = append(m.sent, struct{ email, code string }{email, code})
+func (m *captureMailer) SendLoginCode(_ context.Context, email, code, locale string) error {
+	m.sent = append(m.sent, struct{ email, code, locale string }{email, code, locale})
 	return nil
 }
 

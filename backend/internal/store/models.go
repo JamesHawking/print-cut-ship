@@ -9,6 +9,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type EmailLog struct {
+	ID                uuid.UUID
+	DedupeKey         *string
+	ToAddr            string
+	Template          string
+	Locale            string
+	Status            string
+	ProviderMessageID *string
+	Error             *string
+	OrderID           *uuid.UUID
+	UserID            *uuid.UUID
+	CreatedAt         pgtype.Timestamptz
+}
+
 type File struct {
 	ID            uuid.UUID
 	UserID        *uuid.UUID

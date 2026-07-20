@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/email"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/orders"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/payments"
@@ -103,6 +104,28 @@ func (s *server) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	s.cfg.Logger.Info("order created",
 		"orderId", row.ShortID, "quoteId", req.QuoteId, "email", string(req.Email))
+
+	// Plan 06: order confirmation in the order's locale, with the tokenized
+	// status-page link. Deduped on the order id; mail never fails the order.
+	data := email.OrderData{
+		OrderShortID: row.ShortID,
+		GrossTotal:   email.FormatPLN(params.GrossTotalGrosze, params.Locale),
+		StatusURL:    s.pageURL(params.Locale, "/order/"+params.StatusToken),
+	}
+	for _, it := range items {
+		data.Items = append(data.Items, email.OrderItemData{
+			FileName:  it.FileName,
+			Quantity:  it.Quantity,
+			LineTotal: email.FormatPLN(it.LineTotalGrosze, params.Locale),
+		})
+	}
+	s.sendMail(ctx, email.Input{
+		To: string(req.Email), Template: email.OrderConfirmation, Locale: params.Locale,
+		DedupeKey: "order_confirmation:" + row.ShortID,
+		OrderID:   &row.ID, UserID: params.UserID,
+		Data: data,
+	})
+
 	writeJSON(w, http.StatusOK, CreateOrderResponse{
 		OrderId:     row.ShortID,
 		StatusToken: params.StatusToken,
@@ -341,6 +364,28 @@ func makeStatusToken() string {
 // pageURL builds an absolute frontend URL for provider redirects.
 func (s *server) pageURL(locale, path string) string {
 	return fmt.Sprintf("%s/%s%s", s.cfg.PublicBaseURL, locale, path)
+}
+
+// orderEmailData builds the shared payload for order lifecycle emails (plan
+// 06) from a stored order row: items, preformatted money, status-page link.
+func (s *server) orderEmailData(ctx context.Context, o store.Order) (email.OrderData, error) {
+	items, err := s.cfg.Store.GetOrderItemsByOrderID(ctx, o.ID)
+	if err != nil {
+		return email.OrderData{}, fmt.Errorf("load order items: %w", err)
+	}
+	data := email.OrderData{
+		OrderShortID: o.ShortID,
+		GrossTotal:   email.FormatPLN(o.GrossTotalGrosze, o.Locale),
+		StatusURL:    s.pageURL(o.Locale, "/order/"+o.StatusToken),
+	}
+	for _, it := range items {
+		data.Items = append(data.Items, email.OrderItemData{
+			FileName:  it.FileName,
+			Quantity:  it.Quantity,
+			LineTotal: email.FormatPLN(it.LineTotalGrosze, o.Locale),
+		})
+	}
+	return data, nil
 }
 
 // gateQuoteFiles enforces the plan-02 boundary: every quote part must

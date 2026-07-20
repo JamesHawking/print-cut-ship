@@ -1,28 +1,11 @@
-// Package email is the outbound-mail port (plan 04 §E, plan 06 supplies the
-// production transport + PL/EN templates). Until plan 06 lands, ConsoleSender
-// logs the message — production launch stays gated on plan 06.
+// Package email is the outbound-mail port plus its plan-06 implementation:
+// pre-rendered Go templates (instant-quote/src/emails → templates/), a
+// dedupe/logging send wrapper over email_log, and Resend/log transports.
 package email
 
-import (
-	"context"
-	"log/slog"
-)
+import "context"
 
-// Sender delivers a login code to an email address.
+// Sender delivers a login code to an email address (the auth port, plan 04).
 type Sender interface {
-	SendLoginCode(ctx context.Context, email, code string) error
-}
-
-// ConsoleSender logs the code instead of sending it (dev/staging transport).
-type ConsoleSender struct {
-	Logger *slog.Logger
-}
-
-func (c ConsoleSender) SendLoginCode(_ context.Context, email, code string) error {
-	logger := c.Logger
-	if logger == nil {
-		logger = slog.Default()
-	}
-	logger.Info("login code (console transport)", "email", email, "code", code)
-	return nil
+	SendLoginCode(ctx context.Context, email, code, locale string) error
 }

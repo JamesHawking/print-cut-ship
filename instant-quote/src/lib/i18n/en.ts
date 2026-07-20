@@ -271,6 +271,7 @@ export const en = {
     cutoff: '14:00 cutoff',
     navLabel: 'Navigate',
     orderLabel: 'Order',
+    contactLabel: 'Contact',
   },
   notFound: {
     tag: 'Error 404',
@@ -854,5 +855,81 @@ export const en = {
     mwDownloadFailed:
       'Could not download the model from MakerWorld. Try again.',
     mwTooLarge: 'That model is over 100 MB. Download and simplify it first.',
+  },
+  emails: {
+    footerBrand: 'EU · FDM · PLN · 23% VAT',
+    footerSupport: 'Questions? Just reply to this email — a human reads it.',
+    itemsLabel: 'Parts',
+    orderLabel: 'Order',
+    totalLabel: 'Total (gross)',
+    qtySuffix: 'pcs',
+    statusLinkLabel: 'Live order status:',
+    loginCode: {
+      subject: 'Your login code: {{.Code}}',
+      heading: 'Your one-time code',
+      body: 'Enter this code to see your orders:',
+      validity: 'The code is valid for 10 minutes.',
+      ignore: 'Didn’t ask for a code? Ignore this email.',
+    },
+    orderConfirmation: {
+      subject: 'Order {{.OrderShortID}} confirmation',
+      heading: 'Order received',
+      body: 'Thank you! Your order is saved and awaiting payment — complete it and the parts go into production.',
+    },
+    paymentReceipt: {
+      subject: 'Payment received for order {{.OrderShortID}}',
+      heading: 'Payment received',
+      body: 'Your payment is in — the order moves into production. Track progress on the status page.',
+    },
+    statusChange: {
+      subject: 'Order {{.OrderShortID}} update',
+      inProduction: {
+        heading: 'Parts in production',
+        body: 'Your order is on the machines. We’ll let you know when the parcel leaves.',
+      },
+      delivered: {
+        heading: 'Order delivered',
+        body: 'The parcel has arrived. If anything is off with the parts, reply to this email.',
+      },
+      cancelled: {
+        heading: 'Order cancelled',
+        body: 'Your order has been cancelled. If that’s a mistake, reply to this email and we’ll fix it.',
+      },
+      refunded: {
+        heading: 'Refund booked',
+        body: 'We returned the full amount to your original payment method. Depending on your bank this can take a few days.',
+      },
+    },
+    shipped: {
+      subject: 'Order {{.OrderShortID}} shipped',
+      heading: 'Parcel on its way',
+      body: 'Your parts have left. Tracking number:',
+    },
+    stepAck: {
+      subject: 'We received {{.FileName}} for manual quoting',
+      heading: 'File received',
+      body: 'This STEP file needs a manual check — we’ll quote it within 4 working hours and reply to this address.',
+    },
+    stepNotify: {
+      subject: 'STEP to quote manually: {{.FileName}}',
+      heading: 'New STEP request',
+      requestLabel: 'Request',
+      emailLabel: 'Customer email',
+      fileLabel: 'File',
+      sizeLabel: 'Size',
+    },
+  },
+  contactPage: {
+    metaTitle: 'Contact | MICRO_FACTORY',
+    metaDescription:
+      'Question about an order, a quote, or a file? Write to us — we reply within one working day.',
+    breadcrumb: 'Contact',
+    kicker: 'Contact',
+    heading: 'Write to us.',
+    body: 'Question about an order, a quote, or a file? Write to us — a human replies, not a bot.',
+    emailLabel: 'Email',
+    responseTime: 'We reply within one working day (Mon–Fri, 9:00–17:00).',
+    orderNote:
+      'Writing about an order? Include its number — you’ll find it in the confirmation email.',
   },
 } satisfies Dictionary

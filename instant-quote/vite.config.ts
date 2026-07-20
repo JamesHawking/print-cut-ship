@@ -52,6 +52,7 @@ const localizedPages: Array<{
     priority: 0.8,
   })),
   { paths: { pl: '/pl/baza-wiedzy', en: '/en/blog' }, priority: 0.7 },
+  { paths: { pl: '/pl/kontakt', en: '/en/contact' }, priority: 0.5 },
 ]
 
 // Blog article pages come from the filesystem, not a hand-mirrored list:

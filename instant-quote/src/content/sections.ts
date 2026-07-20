@@ -11,6 +11,10 @@ export const SECTIONS = {
   pricing: { pl: 'cennik', en: 'pricing' },
   compare: { pl: 'porownanie', en: 'compare' },
   blog: { pl: 'baza-wiedzy', en: 'blog' },
+  // Plan 06 contact page — a section, but deliberately NOT in NAV_SECTIONS:
+  // it stays out of the header nav and the 01–05 numbering; the footer
+  // links it explicitly.
+  contact: { pl: 'kontakt', en: 'contact' },
 } as const
 
 export type SectionKey = keyof typeof SECTIONS

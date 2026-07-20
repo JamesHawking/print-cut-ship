@@ -286,6 +286,7 @@ export const pl = {
     cutoff: 'zamówienia do 14:00',
     navLabel: 'Nawigacja',
     orderLabel: 'Zamówienie',
+    contactLabel: 'Kontakt',
   },
   notFound: {
     tag: 'Błąd 404',
@@ -887,5 +888,88 @@ export const pl = {
     mwDownloadFailed:
       'Nie udało się pobrać modelu z MakerWorld. Spróbuj ponownie.',
     mwTooLarge: 'Ten model ma ponad 100 MB. Pobierz go i uprość.',
+  },
+  // Transactional email copy (plan 06). scripts/build-emails.ts renders it
+  // into Go templates; {{…}} literals are Go-template placeholders the
+  // backend interpolates at send time (money/URLs arrive preformatted).
+  emails: {
+    footerBrand: 'UE · FDM · PLN · 23% VAT',
+    footerSupport:
+      'Masz pytanie? Odpisz po prostu na tego e-maila — czyta go człowiek.',
+    itemsLabel: 'Części',
+    orderLabel: 'Zamówienie',
+    totalLabel: 'Razem (brutto)',
+    qtySuffix: 'szt.',
+    statusLinkLabel: 'Status zamówienia na żywo:',
+    loginCode: {
+      subject: 'Twój kod logowania: {{.Code}}',
+      heading: 'Twój jednorazowy kod',
+      body: 'Wpisz ten kod, aby zobaczyć swoje zamówienia:',
+      validity: 'Kod jest ważny 10 minut.',
+      ignore: 'Nie prosiłeś o kod? Zignoruj tego e-maila.',
+    },
+    orderConfirmation: {
+      subject: 'Potwierdzenie zamówienia {{.OrderShortID}}',
+      heading: 'Zamówienie przyjęte',
+      body: 'Dziękujemy! Zamówienie jest zapisane i czeka na płatność — dokończ ją, a części trafią do produkcji.',
+    },
+    paymentReceipt: {
+      subject: 'Płatność za zamówienie {{.OrderShortID}} zaksięgowana',
+      heading: 'Mamy twoją płatność',
+      body: 'Płatność zaksięgowana — zamówienie przechodzi do produkcji. Postęp zobaczysz na stronie statusu.',
+    },
+    statusChange: {
+      subject: 'Aktualizacja zamówienia {{.OrderShortID}}',
+      inProduction: {
+        heading: 'Części są w produkcji',
+        body: 'Twoje zamówienie trafiło na maszyny. Damy znać, gdy paczka wyjedzie.',
+      },
+      delivered: {
+        heading: 'Zamówienie dostarczone',
+        body: 'Paczka dotarła. Jeśli coś z częściami będzie nie tak, odpisz na tego e-maila.',
+      },
+      cancelled: {
+        heading: 'Zamówienie anulowane',
+        body: 'Twoje zamówienie zostało anulowane. Jeśli to pomyłka, odpisz na tego e-maila — naprawimy to.',
+      },
+      refunded: {
+        heading: 'Zwrot zaksięgowany',
+        body: 'Zwróciliśmy pełną kwotę tą samą metodą płatności. Zależnie od banku może to potrwać kilka dni.',
+      },
+    },
+    shipped: {
+      subject: 'Wysłaliśmy zamówienie {{.OrderShortID}}',
+      heading: 'Paczka w drodze',
+      body: 'Twoje części wyjechały. Numer śledzenia:',
+    },
+    stepAck: {
+      subject: 'Przyjęliśmy {{.FileName}} do ręcznej wyceny',
+      heading: 'Plik u nas',
+      body: 'Ten STEP wymaga ręcznej weryfikacji — wycenimy go w ciągu 4 godzin roboczych i odpowiemy na ten adres.',
+    },
+    stepNotify: {
+      subject: 'STEP do ręcznej wyceny: {{.FileName}}',
+      heading: 'Nowe zgłoszenie STEP',
+      requestLabel: 'Zgłoszenie',
+      emailLabel: 'E-mail klienta',
+      fileLabel: 'Plik',
+      sizeLabel: 'Rozmiar',
+    },
+  },
+  // /kontakt page (plan 06) — mailto-only at launch; a hosted form is
+  // deliberately deferred (no new spam surface).
+  contactPage: {
+    metaTitle: 'Kontakt | MICRO_FACTORY',
+    metaDescription:
+      'Pytanie o zamówienie, wycenę albo plik? Napisz — odpowiadamy w ciągu jednego dnia roboczego.',
+    breadcrumb: 'Kontakt',
+    kicker: 'Kontakt',
+    heading: 'Napisz do nas.',
+    body: 'Pytanie o zamówienie, wycenę albo plik? Napisz — odpowiada człowiek, nie bot.',
+    emailLabel: 'E-mail',
+    responseTime:
+      'Odpowiadamy w ciągu jednego dnia roboczego (pn–pt, 9:00–17:00).',
+    orderNote:
+      'W sprawie zamówienia podaj jego numer — znajdziesz go w e-mailu z potwierdzeniem.',
   },
 }
