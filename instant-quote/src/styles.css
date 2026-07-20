@@ -204,12 +204,11 @@
   }
 }
 
-/* Landing v2 ambient motion (Landing Page v2.dc.html): rate-ticker marquee
-   and the hero courier drone. All applied behind motion-safe variants. */
+/* Landing v2 ambient motion (Landing Page v2.dc.html): rate-ticker marquee.
+   The hero courier drone is JS-driven (spring simulation in Hero.tsx) —
+   no keyframes here. Applied behind motion-safe variants. */
 @theme {
   --animate-ticker: ticker 48s linear infinite;
-  --animate-drone-x: drone-x 34s linear infinite;
-  --animate-drone-y: drone-y 5.5s ease-in-out infinite;
 
   @keyframes ticker {
     from {
@@ -217,23 +216,6 @@
     }
     to {
       transform: translateX(-50%);
-    }
-  }
-  @keyframes drone-x {
-    from {
-      transform: translateX(-100px);
-    }
-    to {
-      transform: translateX(calc(100vw + 100px));
-    }
-  }
-  @keyframes drone-y {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(26px);
     }
   }
 }
