@@ -10,6 +10,7 @@
 | `SEO Pages Revamp.dc.html` | 2026-07-17 | AI design tool | Design revamp brief for the SEO pages — reference for plan 13 / `plans/seo/` work |
 | `drone-cuas-verification.md` | 2026-07-17 | Verification pass (audit + primary sources) | Verifies the FDM→MJF/CNC→dual-use drone/C-UAS assumptions; C-UAS market data and the EDIP/SAFE moat |
 | `competitors/sendcutsend-capability-review.md` | 2026-07-18 | sendcutsend.com + FAQ | App/commerce-funnel gap analysis vs a best-in-class US instant-quote shop; feeds plans 04/05/14 prioritization |
+| `funding-pl-eu.md` | 2026-07-20 | PARP/NCBR/BGK/ARP + EIC/EDF/EUDIS/DIANA primary pages | Public funding catalog (PL + EU, civilian + dual-use) with deadlines and stage-routing; drives incorporation timing and voivodeship choice |
 
 Conventions:
 
