@@ -27,6 +27,11 @@ interface Props {
   onConfigChange: (id: string, patch: Partial<PartConfig>) => void
   onRetryUpload: (id: string) => void
   onOrderClick: () => void
+  /** Editor only: flags render in the viewport checks rail, not as badges. */
+  showDfmBadges?: boolean
+  /** Editor only: materials-bench toggle in the config panel. */
+  compareOpen?: boolean
+  onToggleCompare?: () => void
 }
 
 /**
@@ -52,6 +57,9 @@ export function QuoteColumnContent({
   onConfigChange,
   onRetryUpload,
   onOrderClick,
+  showDfmBadges,
+  compareOpen,
+  onToggleCompare,
 }: Props) {
   const strings = useStrings()
 
@@ -96,6 +104,9 @@ export function QuoteColumnContent({
           onRetryUpload={() => onRetryUpload(selectedPart.id)}
           priceEpoch={priceEpoch}
           recalculating={recalculating}
+          showDfmBadges={showDfmBadges}
+          compareOpen={compareOpen}
+          onToggleCompare={onToggleCompare}
         />
       ) : null}
 

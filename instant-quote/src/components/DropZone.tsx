@@ -1,5 +1,5 @@
 import { useRef, useState, type DragEvent, type FormEvent } from 'react'
-import { Loader2, Upload } from 'lucide-react'
+import { Loader2, Plus, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useStrings } from '@/lib/i18n'
 import { ACCEPT_ATTR } from '@/lib/upload'
@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input'
 
 interface DropZoneProps {
   onFiles: (files: File[]) => void
-  variant?: 'default' | 'compact' | 'hero'
+  variant?: 'default' | 'compact' | 'hero' | 'tile'
   disabled?: boolean
   onUrl?: (url: string) => void
   urlPending?: boolean
+  /** tile variant only: mono hint line under the label (e.g. slots left). */
+  tileHint?: string
 }
 
 export function DropZone({
@@ -20,6 +22,7 @@ export function DropZone({
   disabled,
   onUrl,
   urlPending,
+  tileHint,
 }: DropZoneProps) {
   const strings = useStrings()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -133,6 +136,37 @@ export function DropZone({
       </div>
     </form>
   )
+
+  if (variant === 'tile') {
+    // The editor outliner's add-part tile: dashed drop target with the plus
+    // medallion; the MakerWorld form lives as its own section below it.
+    return (
+      <div
+        {...dropHandlers}
+        {...pickerButton}
+        aria-label={strings.editor.addPart}
+        className={cn(
+          'flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-4 text-center transition-colors',
+          'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+          dragging
+            ? 'border-primary bg-primary/5'
+            : 'border-muted-foreground/25 hover:border-primary/50',
+          disabled && 'pointer-events-none opacity-50',
+        )}
+      >
+        <span className="border-border bg-card inline-flex size-[22px] items-center justify-center rounded-full border">
+          <Plus aria-hidden className="size-3.5" />
+        </span>
+        <p className="text-sm font-medium">{strings.editor.addPart}</p>
+        {tileHint && (
+          <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase">
+            {tileHint}
+          </p>
+        )}
+        {input}
+      </div>
+    )
+  }
 
   if (hero) {
     return (

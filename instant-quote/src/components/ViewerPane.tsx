@@ -26,6 +26,8 @@ export function ViewerPane({
   autoRotate,
   viewRequest,
   resetNonce,
+  overlay,
+  dimsBadgeCorner,
 }: {
   positions: Float32Array
   bboxMm: { x: number; y: number; z: number }
@@ -35,6 +37,8 @@ export function ViewerPane({
   autoRotate?: boolean
   viewRequest?: { preset: CameraPreset; nonce: number } | null
   resetNonce?: number
+  overlay?: 'multi_plate' | null
+  dimsBadgeCorner?: 'left' | 'right'
 }) {
   const [mounted, setMounted] = useState(false)
   const [webgl, setWebgl] = useState(true)
@@ -60,6 +64,8 @@ export function ViewerPane({
         autoRotate={autoRotate}
         viewRequest={viewRequest}
         resetNonce={resetNonce}
+        overlay={overlay}
+        dimsBadgeCorner={dimsBadgeCorner}
       />
     </Suspense>
   )

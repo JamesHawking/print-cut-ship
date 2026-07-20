@@ -5,18 +5,20 @@ import { Button } from '@/components/ui/button'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { NewQuoteReset } from '@/components/NewQuoteReset'
 import type { QuoteSummary } from '@/components/SiteHeader'
+import type { Part } from '@/hooks/useParts'
 import { formatPln } from '@/lib/format'
-import { cn } from '@/lib/utils'
 import { useLocale, useStrings } from '@/lib/i18n'
-import type { OrderTotals } from '@/lib/api/client'
+import type { OrderTotals, PartQuote } from '@/lib/api/client'
+import { ShareMenu } from './ShareMenu'
 
 interface Props {
   summary: QuoteSummary | undefined
   totals: OrderTotals | null
   pricesExVat: boolean
-  priceEpoch: number
-  recalculating: boolean
   orderableCount: number
+  /** Share menu data: every part plus the live quotes. */
+  parts: Part[]
+  quotes: Map<string, PartQuote>
   onOrderClick: () => void
   /** ViewportToolbar, rendered centered; null when no part is on stage. */
   toolbar: ReactNode
@@ -33,9 +35,9 @@ export function EditorTopBar({
   summary,
   totals,
   pricesExVat,
-  priceEpoch,
-  recalculating,
   orderableCount,
+  parts,
+  quotes,
   onOrderClick,
   toolbar,
   viewSwitch,
@@ -54,7 +56,9 @@ export function EditorTopBar({
           className="text-muted-foreground hover:text-foreground flex shrink-0 items-center gap-1.5 transition-colors"
         >
           <ArrowLeft aria-hidden className="size-3.5" />
-          {strings.editor.backHome}
+          {/* Below xl only the arrow: the 1024–1280 band can't fit the label
+            alongside the toolbar and the order cluster. */}
+          <span className="hidden xl:inline">{strings.editor.backHome}</span>
         </Link>
         <span aria-hidden className="bg-border h-4 w-px shrink-0" />
         {/* exact: fuzzy matching would mark the home link current on every
@@ -63,13 +67,15 @@ export function EditorTopBar({
           to="/$locale"
           params={{ locale }}
           activeOptions={{ exact: true }}
-          className="text-foreground hover:text-foreground flex shrink-0 items-center gap-2 font-bold"
+          className="text-foreground hover:text-foreground flex min-w-0 items-center gap-2 font-bold"
         >
           <span
             aria-hidden
             className="bg-signal motion-safe:animate-led size-2 shrink-0 rounded-full shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-signal)_22%,transparent)]"
           />
-          {strings.hero.wordmark}
+          {/* Truncates when the bar is tight — sliding under the toolbar
+            reads as a rendering bug. */}
+          <span className="truncate">{strings.hero.wordmark}</span>
         </Link>
         {summary && (
           // Hidden below xl: in the 1024–1280 band the summary crowds the
@@ -94,22 +100,9 @@ export function EditorTopBar({
         {viewSwitch}
         {totals && orderableCount > 0 && (
           <>
-            <span
-              key={priceEpoch}
-              aria-live="polite"
-              className={cn(
-                'motion-safe:animate-price-flash font-bold tabular-nums transition-opacity duration-200',
-                recalculating && 'opacity-60',
-              )}
-            >
-              {formatPln(
-                pricesExVat ? totals.netTotalPln : totals.grossTotalPln,
-                locale,
-              )}
-            </span>
             <Button
               size="sm"
-              className="font-mono font-bold tracking-widest uppercase"
+              className="font-mono text-[0.65rem] font-bold tracking-widest uppercase"
               onClick={onOrderClick}
             >
               {strings.quote.orderButton(
@@ -119,6 +112,7 @@ export function EditorTopBar({
                 ),
               )}
             </Button>
+            <ShareMenu parts={parts} quotes={quotes} totals={totals} />
           </>
         )}
         <LocaleSwitcher />

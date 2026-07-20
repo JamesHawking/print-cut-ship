@@ -95,14 +95,23 @@ export function OrderPanel({
       <CardContent className="space-y-4 pt-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
+            {/* Checked = VAT included (the default) — the resting state
+              reads as "on", per the workbench design. */}
             <Switch
               id={vatSwitchId}
-              checked={pricesExVat}
-              onCheckedChange={onTogglePricesExVat}
+              checked={!pricesExVat}
+              onCheckedChange={(checked) => onTogglePricesExVat(!checked)}
             />
+            {/* On-state reads bold/dark, off-state recedes — per the
+              workbench design. */}
             <Label
               htmlFor={vatSwitchId}
-              className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider uppercase"
+              className={cn(
+                'font-mono text-[0.59375rem] tracking-wider whitespace-nowrap uppercase',
+                pricesExVat
+                  ? 'text-muted-foreground font-normal'
+                  : 'text-foreground font-bold',
+              )}
             >
               {pricesExVat ? strings.quote.exVat : strings.quote.incVat}
             </Label>
