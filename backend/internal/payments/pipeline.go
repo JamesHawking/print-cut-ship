@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/JamesHawking/print-cut-ship/backend/internal/email"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/store"
 )
 
@@ -25,6 +26,12 @@ var ErrUnknownOrder = errors.New("payments: unknown order")
 type Pipeline struct {
 	Store  *store.Store
 	Logger *slog.Logger
+	// Email sends the receipt / refund status mail on applied transitions
+	// (plan 06). Nil disables mail; sends always log-and-continue — a mail
+	// failure must never turn into a webhook retry.
+	Email *email.Service
+	// PublicBaseURL builds the status-page link inside order mail.
+	PublicBaseURL string
 }
 
 // ProcessEvent applies one verified provider event. Unknown event types are
@@ -72,6 +79,8 @@ func (p *Pipeline) ProcessEvent(ctx context.Context, ev Event) error {
 		}
 		if applied {
 			p.Logger.Info("order paid", "orderId", ev.OrderShortID, "eventId", ev.ID)
+			p.sendOrderMail(ctx, order, email.PaymentReceipt,
+				"payment_receipt:"+order.ShortID, nil)
 		}
 		return nil
 	case EventChargeRefunded:
@@ -86,6 +95,12 @@ func (p *Pipeline) ProcessEvent(ctx context.Context, ev Event) error {
 		}
 		if applied {
 			p.Logger.Info("order refunded", "orderId", ev.OrderShortID, "eventId", ev.ID)
+			p.sendOrderMail(ctx, order, email.StatusChange,
+				"status_refunded:"+order.ShortID, email.StatusChangeData{
+					OrderShortID: order.ShortID,
+					NewStatus:    "refunded",
+					StatusURL:    p.statusURL(order),
+				})
 		}
 		return nil
 	case EventPaymentFailed:
@@ -98,6 +113,48 @@ func (p *Pipeline) ProcessEvent(ctx context.Context, ev Event) error {
 	default:
 		p.Logger.Info("ignoring payment event type", "type", string(ev.Type), "eventId", ev.ID)
 		return nil
+	}
+}
+
+// statusURL builds the tokenized public status-page link for an order.
+func (p *Pipeline) statusURL(o store.Order) string {
+	return fmt.Sprintf("%s/%s/order/%s", p.PublicBaseURL, o.Locale, o.StatusToken)
+}
+
+// sendOrderMail fires the lifecycle email for an applied transition (plan
+// 06). data==nil builds the standard order payload (items, totals, status
+// link). Deduped by the caller-supplied key, so a webhook replay is a no-op;
+// failures log-and-continue — mail must never turn into an event retry.
+func (p *Pipeline) sendOrderMail(ctx context.Context, o store.Order, tmpl email.Template, dedupeKey string, data any) {
+	if p.Email == nil {
+		return
+	}
+	if data == nil {
+		items, err := p.Store.GetOrderItemsByOrderID(ctx, o.ID)
+		if err != nil {
+			p.Logger.Error("order email: load items failed", "orderId", o.ShortID, "err", err)
+			return
+		}
+		orderData := email.OrderData{
+			OrderShortID: o.ShortID,
+			GrossTotal:   email.FormatPLN(o.GrossTotalGrosze, o.Locale),
+			StatusURL:    p.statusURL(o),
+		}
+		for _, it := range items {
+			orderData.Items = append(orderData.Items, email.OrderItemData{
+				FileName:  it.FileName,
+				Quantity:  it.Quantity,
+				LineTotal: email.FormatPLN(it.LineTotalGrosze, o.Locale),
+			})
+		}
+		data = orderData
+	}
+	if err := p.Email.SendTransactional(ctx, email.Input{
+		To: o.Email, Template: tmpl, Locale: o.Locale,
+		DedupeKey: dedupeKey, OrderID: &o.ID, UserID: o.UserID, Data: data,
+	}); err != nil {
+		p.Logger.Error("order email failed",
+			"orderId", o.ShortID, "template", tmpl, "err", err)
 	}
 }
 

@@ -69,8 +69,9 @@ func NewService(st *store.Store, mailer email.Sender, logger *slog.Logger, codeT
 // RequestCode mints and emails a fresh login code, invalidating any prior
 // codes for the email. Throttled requests (resend < 30s, > 5/hour) are
 // silently skipped — the HTTP layer answers 204 regardless, so the endpoint
-// never reveals which emails exist or whether a send happened.
-func (s *Service) RequestCode(ctx context.Context, addr string) error {
+// never reveals which emails exist or whether a send happened. The locale
+// selects the email template language (plan 06).
+func (s *Service) RequestCode(ctx context.Context, addr, locale string) error {
 	// Opportunistic sweep (plan 03's job runner gets the real schedule).
 	if err := s.Store.DeleteExpiredLoginCodes(ctx); err != nil {
 		s.Logger.Warn("auth: sweep login codes failed", "err", err)
@@ -112,7 +113,7 @@ func (s *Service) RequestCode(ctx context.Context, addr string) error {
 	}); err != nil {
 		return fmt.Errorf("auth: create code: %w", err)
 	}
-	if err := s.Mailer.SendLoginCode(ctx, addr, code); err != nil {
+	if err := s.Mailer.SendLoginCode(ctx, addr, code, locale); err != nil {
 		return fmt.Errorf("auth: send code: %w", err)
 	}
 	return nil

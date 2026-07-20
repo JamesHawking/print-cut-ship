@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { useStrings } from '@/lib/i18n'
+import { useLocale, useStrings } from '@/lib/i18n'
 import { api } from '@/lib/api/client'
 import { ApiRequestError, apiErrorMessage } from '@/lib/api/errors'
 import { track } from '@/lib/funnel'
@@ -13,6 +13,7 @@ import type { Part } from '@/hooks/useParts'
 
 export function StepManualCard({ part }: { part: Part }) {
   const strings = useStrings()
+  const locale = useLocale()
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
@@ -25,7 +26,12 @@ export function StepManualCard({ part }: { part: Part }) {
     setSubmitting(true)
     try {
       const res = await api.POST('/api/v1/step-quotes', {
-        body: { email, fileName: part.fileName, fileSize: part.fileSize },
+        body: {
+          email,
+          fileName: part.fileName,
+          fileSize: part.fileSize,
+          locale,
+        },
       })
       if (!res.data) throw new ApiRequestError(res.error)
       track('step_quote_requested', { requestId: res.data.requestId })

@@ -1,0 +1,1 @@
+Przyjęliśmy {{.FileName}} do ręcznej wyceny

@@ -918,6 +918,12 @@ export interface components {
       email: string
       fileName: string
       fileSize: number
+      /**
+       * @description UI locale at submit time; the acknowledgement email (plan 06) renders in it. Absent → pl.
+       * @default pl
+       * @enum {string}
+       */
+      locale: 'pl' | 'en'
     }
     StepQuoteResponse: {
       /** @description e.g. "STEP-1A2B3C4D" */
@@ -962,6 +968,12 @@ export interface components {
     RequestCodeRequest: {
       /** Format: email */
       email: string
+      /**
+       * @description UI locale for the login-code email (plan 06). Absent → pl.
+       * @default pl
+       * @enum {string}
+       */
+      locale: 'pl' | 'en'
     }
     VerifyCodeRequest: {
       /** Format: email */

@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/auth"
+	"github.com/JamesHawking/print-cut-ship/backend/internal/email"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/payments"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/pricing"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/storage"
@@ -30,6 +31,9 @@ type Config struct {
 	Storage *storage.Store
 	// Auth runs the OTP login flow (plan 04). Nil in unit tests without a DB.
 	Auth *auth.Service
+	// Email sends transactional mail (plan 06). Nil in unit tests — triggers
+	// skip silently, commerce flows never fail on absent mail.
+	Email *email.Service
 	// Payments moves money through the provider port (plan 05). The stub
 	// provider is the interim implementation; Stripe lands in plan 18.
 	// Nil disables checkout/refund (500s on those endpoints).

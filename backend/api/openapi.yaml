@@ -1426,6 +1426,13 @@ components:
         fileSize:
           type: integer
           minimum: 0
+        locale:
+          type: string
+          enum: [pl, en]
+          default: pl
+          description: >-
+            UI locale at submit time; the acknowledgement email (plan 06)
+            renders in it. Absent → pl.
 
     StepQuoteResponse:
       type: object
@@ -1507,6 +1514,12 @@ components:
         email:
           type: string
           format: email
+        locale:
+          type: string
+          enum: [pl, en]
+          default: pl
+          description: >-
+            UI locale for the login-code email (plan 06). Absent → pl.
 
     VerifyCodeRequest:
       type: object

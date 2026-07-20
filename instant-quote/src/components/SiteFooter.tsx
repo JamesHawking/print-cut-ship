@@ -72,6 +72,17 @@ export function SiteFooter({
                   {strings.nav.trackOrder}
                 </Link>
               </li>
+              <li>
+                {/* Plan 06: contact lives outside NAV_SECTIONS (no header
+                    nav slot), so the sitemap links it explicitly. */}
+                <Link
+                  to="/$locale/$section"
+                  params={{ locale, section: SECTIONS.contact[locale] }}
+                  className="hover:text-foreground transition-colors"
+                >
+                  {strings.footer.contactLabel}
+                </Link>
+              </li>
             </ul>
           </nav>
         </div>

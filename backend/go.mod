@@ -9,6 +9,7 @@ require (
 	github.com/minio/minio-go/v7 v7.2.1
 	github.com/oapi-codegen/runtime v1.5.0
 	github.com/pressly/goose/v3 v3.27.2
+	github.com/resend/resend-go/v2 v2.28.0
 )
 
 require (

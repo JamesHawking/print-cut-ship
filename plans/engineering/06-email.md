@@ -1,8 +1,10 @@
 # Plan 06 — Transactional email (+ customer support channel)
 
-> **Status: ⬜ Not started** (as of 2026-07-16).
+> **Status: 🟨 Code done, DNS/inbox deferred** (as of 2026-07-20). All send machinery, templates (7 × locale), triggers, `email_log`, and the `/kontakt · /contact` page are implemented and tested; mail runs through `LogTransport` until `RESEND_API_KEY` is set. Domain authentication (SPF/DKIM/DMARC), the monitored support inbox, and the deliverability gate are deferred to [`runbooks/email-dns.md`](runbooks/email-dns.md) (blocked on plan 03 / no domain). The abandoned-quote email is deferred entirely (its trigger is plan 03's job runner; launch-set + consent question open in §6).
 
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`): all sending happens from the Go service. Templates are authored with React Email but **pre-rendered to Go-templated HTML at build time** — see the topic-local decision below (the DECISIONS.md email row's "React Email" phrasing is amended accordingly).
+
+> **Amendment 2026-07-20 (implementation notes):** auth is OTP, so `AuthVerify`/`AuthReset` collapsed to one `login_code` template and the `Sender` port gained a `locale` param (locale added to `RequestCodeRequest`/`StepQuoteRequest` in the OpenAPI spec). `email_log.dedupe_key` uses a partial unique index `WHERE status='sent'` instead of a plain UNIQUE, so a failed send can be retried under the same key. Payment receipts link the tokenized status page (Fakturownia invoice links are plan 18). No CI exists yet — the `emails:build` drift guard is a local gate, same convention as the codegen-sync gate.
 
 ## 1. Context
 

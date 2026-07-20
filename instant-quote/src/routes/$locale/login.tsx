@@ -63,7 +63,7 @@ function Login() {
 
   async function requestCode(): Promise<boolean> {
     const res = await api.POST('/api/v1/auth/request-code', {
-      body: { email },
+      body: { email, locale },
     })
     return res.response.ok
   }

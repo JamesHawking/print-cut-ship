@@ -15,7 +15,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "check-strings": "bun scripts/check-strings.ts"
+    "check-strings": "bun scripts/check-strings.ts",
+    "emails:build": "bun scripts/build-emails.ts",
+    "emails:dev": "email dev --dir src/emails --port 3030"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.2.8",
@@ -50,6 +52,8 @@
   },
   "devDependencies": {
     "@mdx-js/rollup": "^3.1.1",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
     "@stefanprobst/rehype-extract-toc": "^3.0.0",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/router-cli": "^1.132.0",
@@ -64,6 +68,7 @@
     "oxlint-tsgolint": "^0.24.0",
     "prettier": "^3.9.5",
     "prettier-plugin-tailwindcss": "^0.8.0",
+    "react-email": "^6.9.0",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-slug": "^6.0.0",
     "remark-frontmatter": "^5.0.0",
