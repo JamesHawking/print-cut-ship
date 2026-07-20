@@ -1,0 +1,9 @@
+{
+  "setup": [
+    "docker compose -f \"$SUPERSET_ROOT_PATH/docker-compose.yml\" --project-directory \"$SUPERSET_ROOT_PATH\" up -d --wait postgres minio",
+    "cd instant-quote && bun install",
+    "[ -f \"$SUPERSET_ROOT_PATH/instant-quote/.env\" ] && cp \"$SUPERSET_ROOT_PATH/instant-quote/.env\" instant-quote/.env || true",
+    "make -C backend migrate seed"
+  ],
+  "run": ["make dev"]
+}
