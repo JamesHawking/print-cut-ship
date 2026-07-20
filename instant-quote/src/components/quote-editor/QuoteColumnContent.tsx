@@ -74,7 +74,7 @@ export function QuoteColumnContent({
           <StepManualCard part={selectedPart} />
         ) : (
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <p className="text-destructive text-sm">
                 {selectedPart.error?.message ?? strings.errors.parseFailed}
               </p>
@@ -83,7 +83,7 @@ export function QuoteColumnContent({
         )
       ) : selectedPart && !selectedQuote && priceQueryIsError ? (
         <Card>
-          <CardContent className="space-y-3 pt-6">
+          <CardContent className="space-y-3">
             <p className="text-destructive text-sm">
               {apiErrorMessage(
                 priceQueryError,

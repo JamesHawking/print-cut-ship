@@ -157,7 +157,12 @@ export function EditorShell({
   const canAddMore = parts.length < MAX_PARTS && parts.length > 0
 
   return (
-    <section className={cn('bg-background h-dvh flex-col', className)}>
+    // leading-[normal]: the workbench design sets no line-height anywhere in
+    // the editor chrome — font-metric leading, not the body's 1.5, is what
+    // makes it read tight. Sized text utilities still override locally.
+    <section
+      className={cn('bg-background h-dvh flex-col leading-[normal]', className)}
+    >
       <EditorTopBar
         summary={summary}
         totals={totals}

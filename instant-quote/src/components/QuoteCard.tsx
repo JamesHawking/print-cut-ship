@@ -55,7 +55,7 @@ export function QuoteCard({
     // Mounts when the skeleton hands over — settle in instead of snapping
     // (fade only under reduced motion).
     <Card className="animate-in fade-in zoom-in-[0.98] motion-reduce:zoom-in-100 duration-200 ease-out">
-      <CardHeader>
+      <CardHeader className="leading-[normal]">
         {/* min-w-0: CardHeader is a grid — without it the filename's nowrap
           truncation sets the column's min-content and blows out the card.
           No wrap: the price stays top-right and the filename truncates,
@@ -102,7 +102,7 @@ export function QuoteCard({
           </div>
           <div
             className={cn(
-              'shrink-0 text-right transition-opacity duration-200',
+              'flex shrink-0 flex-col items-end gap-1 text-right transition-opacity duration-200',
               recalculating && 'opacity-60',
             )}
             aria-live="polite"
@@ -115,7 +115,7 @@ export function QuoteCard({
               <>
                 <div
                   key={priceEpoch}
-                  className="text-primary-text motion-safe:animate-price-flash-accent font-mono text-[clamp(1.375rem,3.5vw,1.625rem)] font-bold tracking-tight whitespace-nowrap tabular-nums"
+                  className="text-primary-text motion-safe:animate-price-flash-accent font-mono text-[clamp(1.375rem,3.5vw,1.625rem)] leading-[1.15] font-bold tracking-tight whitespace-nowrap tabular-nums"
                 >
                   {formatPln(quote.unitPricePln, locale)}
                 </div>
@@ -150,7 +150,9 @@ export function QuoteCard({
           <button
             type="button"
             onClick={() => onConfigChange({ quantity: nudge.quantity })}
-            className="border-signal/60 bg-signal/[0.07] hover:border-signal hover:bg-signal/[0.14] mt-3 flex w-full min-w-0 cursor-pointer items-center justify-between gap-2.5 rounded-md border border-dashed px-2.5 py-2 text-left font-mono text-[0.59375rem] font-bold tracking-wider uppercase transition-colors"
+            // mt-1: CardHeader's grid gap-2 already adds 8px — together the
+            // 12px offset from the workbench design.
+            className="border-signal/60 bg-signal/[0.07] hover:border-signal hover:bg-signal/[0.14] mt-1 flex w-full min-w-0 cursor-pointer items-center justify-between gap-2.5 rounded-md border border-dashed px-2.5 py-2 text-left font-mono text-[0.59375rem] font-bold tracking-wider uppercase transition-colors"
           >
             <span className="inline-flex items-center gap-[7px]">
               <span
@@ -173,7 +175,10 @@ export function QuoteCard({
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-5 border-t pt-5">
+      {/* leading-[normal]: the workbench design never sets a line-height in
+        the config section, so text sits at font-metric height (~1.2), not
+        the body's 1.5 — this is most of its tighter vertical rhythm. */}
+      <CardContent className="space-y-5 border-t pt-5 leading-[normal]">
         <ConfigPanel
           config={part.config}
           onChange={onConfigChange}

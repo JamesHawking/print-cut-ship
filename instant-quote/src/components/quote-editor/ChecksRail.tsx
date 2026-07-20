@@ -46,7 +46,7 @@ export function ChecksRail({
         </div>
       )}
       {flags.length === 0 && quote ? (
-        <span className="border-border bg-card/90 inline-flex items-center gap-1.5 rounded border px-2.5 py-1.5 font-mono text-[0.59375rem] font-bold tracking-wider uppercase backdrop-blur">
+        <span className="border-border bg-card/90 inline-flex items-center gap-[7px] rounded border px-2.5 py-1.5 font-mono text-[0.59375rem] font-bold tracking-wider uppercase backdrop-blur">
           <span
             aria-hidden
             className="bg-signal motion-safe:animate-led inline-block size-1.5 rounded-full"
@@ -66,7 +66,7 @@ export function ChecksRail({
               onMouseLeave={() => onHover(null)}
               onClick={() => onTogglePin(flag.code)}
               className={cn(
-                'inline-flex cursor-pointer items-center gap-1.5 rounded border px-2.5 py-1.5 font-mono text-[0.59375rem] font-bold tracking-wider uppercase backdrop-blur transition-colors',
+                'inline-flex cursor-pointer items-center gap-[7px] rounded border px-2.5 py-1.5 font-mono text-[0.59375rem] font-bold tracking-wider uppercase backdrop-blur transition-colors',
                 !active && 'border-border bg-card/90',
               )}
               style={
