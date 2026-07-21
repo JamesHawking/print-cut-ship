@@ -1,5 +1,10 @@
 # Public funding survey — Poland & EU
 
+> Companion strategy: [`funding-strategy-pl-eu.md`](funding-strategy-pl-eu.md)
+> (2026-07-21) — non-dilutive-first playbook; re-verifies several ESTIMATEs
+> below (SMART timing, DIANA second wave, PFR, SOI, Kredyt technologiczny) —
+> see its §8 for deltas.
+
 Snapshot taken **2026-07-20**. Facts vs. estimates labeled (`FACT` = verified on
 the cited page that day; `ESTIMATE` = inference or secondary source). Built for
 the company profile in `business/product.md` plus the dual-use angle verified in
