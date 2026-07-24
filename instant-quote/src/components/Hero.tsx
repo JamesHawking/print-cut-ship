@@ -1,489 +1,305 @@
-import { useEffect, useRef } from 'react'
-import type { RefObject } from 'react'
-import { cn } from '@/lib/utils'
-import { useStrings } from '@/lib/i18n'
-import { LEAD_TIME_DAYS, MATERIALS, VAT_RATE } from '@/lib/catalog-static'
+import { useState } from 'react'
+import { useDemoPrice, useShipDates } from '@/hooks/useApi'
+import { useHeroLiveQuote } from '@/hooks/useHeroLiveQuote'
+import type { PartQuote } from '@/lib/api/client'
+import { MATERIALS, VAT_RATE } from '@/lib/catalog-static'
+import {
+  formatDecimal,
+  formatInt,
+  formatPln,
+  formatShipWeekday,
+} from '@/lib/format'
+import { track } from '@/lib/funnel'
+import { useLocale, useStrings } from '@/lib/i18n'
 import { DropZone } from './DropZone'
+import { RateTicker } from './RateTicker'
+import {
+  DEMO_CONFIG,
+  FALLBACK_BREAKDOWN,
+  FALLBACK_QUOTE,
+  SAMPLE_FILE,
+} from './how-it-works/demo'
 
-// Capability figures from the static marketing catalog, zipped with the
-// labels in strings.hero.specs (same order).
-const SPEC_VALUES = [
-  String(MATERIALS.length).padStart(2, '0'),
-  `${LEAD_TIME_DAYS.min}–${LEAD_TIME_DAYS.max}`,
-  'D+1',
-  `${Math.round(VAT_RATE * 100)}%`,
-]
-
+/**
+ * Hero as the page's opening dark block (design direction 17b): utility bar
+ * and nav sit on dark surfaces above, the rate ticker fuses to the bottom
+ * edge as a baseplate, and the fused console is the hero's only object. The
+ * light intake chamber is the one bright surface — exactly where the file
+ * goes. The dark chamber quotes the demo bracket by default and switches to
+ * the user's own part when a file lands (then the editor opens itself).
+ */
 export function Hero({
   onFiles,
   onUrl,
   urlPending,
-  onSample,
+  livePartId,
+  onLiveQuoteDone,
+  onLiveQuoteFailed,
 }: {
   onFiles: (files: File[]) => void
   onUrl?: (url: string) => void
   urlPending?: boolean
-  onSample?: () => void
+  /** Part id to quote inline in the dark chamber (single-file drops). */
+  livePartId: string | null
+  onLiveQuoteDone: () => void
+  onLiveQuoteFailed: () => void
 }) {
   const strings = useStrings()
-  const specs = strings.hero.specs.map((label, i) => ({
-    label,
-    value: SPEC_VALUES[i],
-  }))
+  const locale = useLocale()
+  const c = strings.hero.console
+
+  // Replaying the demo remounts the dark chamber, re-running its
+  // motion-safe CSS animations (no-op under prefers-reduced-motion).
+  const [runId, setRunId] = useState(0)
+
+  // Client-mounted only (React Query never fetches during prerender), so
+  // static HTML carries the fallback numbers and hydration never mismatches.
+  const demoPart = useDemoPrice()
+  const express = useShipDates()?.find((s) => s.leadTime === 'express')
+  const expressWeekday = express
+    ? formatShipWeekday(express.date, locale)
+    : undefined
+
+  const live = useHeroLiveQuote({
+    livePartId,
+    onDone: onLiveQuoteDone,
+    onFailed: onLiveQuoteFailed,
+  })
+
+  // The chamber's displayed quote: the user's live part when it has landed,
+  // the demo bracket otherwise (with engine-captured fallbacks pre-fetch).
+  const shown: PartQuote | undefined =
+    live.kind === 'quoted' ? live.quote : demoPart
+  const isLive = live.kind === 'quoted'
+  const total = shown?.lineTotalPln ?? FALLBACK_QUOTE.lineTotalPln
+  const weightG = shown?.weightG ?? FALLBACK_QUOTE.weightG
+  const printHours = shown?.printHours ?? FALLBACK_QUOTE.printHours
+  const materialPln =
+    shown?.breakdown.find((l) => l.key === 'material')?.amountPln ??
+    FALLBACK_BREAKDOWN.materialPln
+  const machinePln =
+    shown?.breakdown.find((l) => l.key === 'machine')?.amountPln ??
+    FALLBACK_BREAKDOWN.machinePln
+  // Any further engine lines a real part can carry (extra plates etc.) —
+  // rendered generically so the rows always sum to the displayed total.
+  const extraLines =
+    shown?.breakdown.filter(
+      (l) => l.key !== 'material' && l.key !== 'machine' && l.amountPln !== 0,
+    ) ?? []
+  // Gross prices — VAT is extracted ("w tym"), never added on top.
+  const vatIncluded = (total * VAT_RATE) / (1 + VAT_RATE)
+  const blocked = shown?.blocked ?? false
+  const processId = isLive ? live.process : DEMO_CONFIG.process
+  const materialLabel = MATERIALS.find((m) => m.id === processId)?.label ?? ''
+
+  const statusLabel =
+    live.kind === 'demo'
+      ? c.status(SAMPLE_FILE.name)
+      : c.statusLive(live.fileName)
 
   return (
-    <section id="top" className="relative overflow-hidden border-b">
-      <Drone className="top-[11%]" />
+    <section id="top" className="dark bg-background text-foreground border-b">
+      {/* full-bleed ghost grid; the content column sits on top of it */}
+      <div className="blueprint-grid-ghost">
+        <div className="mx-auto max-w-6xl px-4 pt-12 pb-14 sm:px-6 md:pt-[60px] md:pb-16">
+          {/* eyebrow row: kicker left, engine LED right */}
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+            <p className="text-muted-foreground flex items-center gap-3 font-mono text-[0.66rem] tracking-[0.2em] uppercase">
+              <span className="bg-primary text-primary-foreground px-1.5 py-1 font-bold tracking-[0.14em]">
+                {strings.hero.kickerBadge}
+              </span>
+              {strings.hero.kicker}
+            </p>
+            <span className="text-muted-foreground flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] uppercase">
+              <span
+                aria-hidden
+                className="bg-signal motion-safe:animate-led size-[7px] rounded-full"
+              />
+              {strings.hero.engineLive}
+            </span>
+          </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 pt-10 sm:px-6 md:pt-[72px]">
-        <p className="text-muted-foreground flex items-center gap-3.5 font-mono text-[0.7rem] tracking-[0.24em] uppercase">
-          <span className="bg-primary text-primary-foreground px-1.5 py-1 font-bold tracking-[0.14em]">
-            {strings.hero.kickerBadge}
-          </span>
-          {strings.hero.kicker}
-        </p>
-        <h1 className="mt-[22px] text-[clamp(2.1rem,12vw,3rem)] leading-[0.92] font-black tracking-[-0.035em] uppercase min-[421px]:text-[clamp(2.5rem,13vw,3.8rem)] md:mt-7 md:text-[clamp(3rem,8.6vw,7.25rem)] md:leading-[0.88]">
-          {strings.hero.headline1}
-          <br />
-          <span className="text-stroke-ink">{strings.hero.headline2}</span>
-        </h1>
-      </div>
+          {/* Each phrase is an unbreakable unit: EN fits one line at desktop
+            (6.9rem cap — 7rem left it 2px short), PL breaks between the
+            phrases, never inside one. */}
+          <h1 className="mt-5 text-[clamp(2.4rem,8.5vw,6.9rem)] leading-[0.88] font-black tracking-[-0.035em] uppercase">
+            <span className="whitespace-nowrap">{strings.hero.headline1}</span>{' '}
+            <span className="text-stroke-ink whitespace-nowrap [-webkit-text-stroke-width:2.5px]">
+              {strings.hero.headline2}
+            </span>
+          </h1>
 
-      <div className="mx-auto max-w-6xl px-4 pt-9 pb-14 sm:px-6 md:pt-12 md:pb-[72px]">
-        <div className="grid gap-9 md:gap-12 lg:grid-cols-2 lg:items-stretch">
-          <div className="flex flex-col justify-between gap-8">
-            <div>
-              <p className="text-muted-foreground max-w-md text-[17px] leading-relaxed text-pretty lg:text-lg">
-                {strings.hero.sub}
-              </p>
-              {onSample && (
-                <button
-                  type="button"
-                  onClick={onSample}
-                  className="hover:text-primary-text focus-visible:ring-ring mt-6 cursor-pointer font-mono text-[0.65rem] tracking-[0.14em] uppercase underline underline-offset-4 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                >
-                  {strings.hero.sample}
-                </button>
-              )}
+          <p className="text-muted-foreground mt-5 max-w-[540px] text-base leading-relaxed text-pretty">
+            {strings.hero.sub}
+          </p>
+
+          {/* ============ fused console ============ */}
+          <div className="border-foreground/20 mt-9 border">
+            <div className="bg-card flex items-center justify-between gap-4 border-b px-4 py-2.5 sm:px-6">
+              <span className="font-mono text-[10px] font-bold tracking-[0.18em] uppercase">
+                {c.title}
+              </span>
+              <span className="text-muted-foreground flex items-center gap-2 text-right font-mono text-[10px] tracking-[0.18em] uppercase">
+                <span
+                  aria-hidden
+                  className="bg-signal motion-safe:animate-led size-[7px] shrink-0 rounded-full"
+                />
+                {statusLabel}
+              </span>
             </div>
 
-            <dl className="grid grid-cols-2 border-t">
-              {specs.map((s, i) => (
-                <div
-                  key={s.label}
-                  className={cn(
-                    i % 2 === 0 ? 'border-r pr-5' : 'pl-5',
-                    i < 2 ? 'border-b py-5' : 'pt-5',
-                  )}
-                >
-                  <dt className="font-mono text-[clamp(22px,2.4vw,30px)] leading-none font-bold whitespace-nowrap tabular-nums">
-                    {s.value}
-                  </dt>
-                  <dd className="text-muted-foreground mt-2.5 font-mono text-[0.6rem] tracking-[0.16em] uppercase">
-                    {s.label}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+            <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+              {/* intake chamber — the hero's only bright surface (.light island;
+                semantic tokens only in here, no dark: variants) */}
+              <div className="light bg-card text-foreground border-b p-5 sm:p-6 lg:border-r lg:border-b-0">
+                <p className="mb-4 text-[19px] font-extrabold tracking-[-0.015em]">
+                  {c.intakeHeading}
+                </p>
+                <DropZone
+                  variant="console"
+                  onFiles={onFiles}
+                  onUrl={onUrl}
+                  urlPending={urlPending}
+                />
+                <p className="text-muted-foreground/80 mt-3.5 font-mono text-[0.6rem] tracking-[0.1em] uppercase">
+                  {c.finePrint}
+                </p>
+              </div>
 
-          <div className="flex flex-col">
-            <DropZone
-              onFiles={onFiles}
-              variant="hero"
-              onUrl={onUrl}
-              urlPending={urlPending}
-            />
-            <p className="text-muted-foreground mt-3.5 text-center font-mono text-[0.7rem] tracking-widest uppercase">
-              {strings.hero.privacy}
-            </p>
+              {/* quote chamber — demo bracket, or the user's part live */}
+              <div
+                key={`${runId}-${live.kind === 'measuring' ? 'measuring' : isLive ? `live-${live.fileName}` : 'demo'}`}
+                aria-live="polite"
+                className="bg-background flex flex-col font-mono lg:min-h-[280px]"
+              >
+                {live.kind === 'measuring' ? (
+                  <div className="flex flex-1 flex-col px-5 pt-5 pb-4 sm:px-6">
+                    <p className="text-muted-foreground text-[9px] tracking-[0.16em] uppercase">
+                      {c.liveCaption}
+                    </p>
+                    <p className="mt-2.5 text-sm font-bold break-all">
+                      {live.fileName}
+                    </p>
+                    <p className="text-muted-foreground mt-3 text-[10.5px] motion-safe:animate-pulse">
+                      {c.measuring}
+                    </p>
+                    <div className="border-foreground/15 mt-auto flex items-center justify-end border-t pt-3">
+                      <span className="text-muted-foreground text-right text-[9px] tracking-[0.12em] uppercase">
+                        {c.locked}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-5 pt-5 sm:px-6">
+                      <p className="text-muted-foreground text-[9px] tracking-[0.16em] uppercase">
+                        {isLive ? c.liveCaption : c.demoCaption}
+                      </p>
+                      <div className="mt-2.5 flex items-baseline justify-between gap-4">
+                        <span className="text-primary-text motion-safe:animate-price-flash-accent text-3xl leading-none font-bold tabular-nums">
+                          {formatPln(total, locale)}
+                        </span>
+                        {blocked ? (
+                          <span className="text-destructive flex items-center gap-2 text-[11px] font-bold">
+                            <span
+                              aria-hidden
+                              className="bg-destructive size-[7px] rounded-full"
+                            />
+                            {c.blocked}
+                          </span>
+                        ) : (
+                          <span className="text-signal flex items-center gap-2 text-[11px] font-bold">
+                            <span
+                              aria-hidden
+                              className="bg-signal size-[7px] rounded-full"
+                            />
+                            {c.printable}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-muted-foreground mt-1.5 text-[10.5px]">
+                        {expressWeekday
+                          ? c.metaShip(expressWeekday)
+                          : c.metaShipFallback}
+                      </p>
+                    </div>
+
+                    <div
+                      aria-hidden
+                      className="border-foreground/15 mx-5 mt-4 border-t sm:mx-6"
+                    />
+
+                    <div className="text-muted-foreground grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 px-5 pt-3.5 pb-4 text-[10.5px] sm:px-6">
+                      <span>
+                        {c.rowMaterial(
+                          formatInt(Math.round(weightG), locale),
+                          materialLabel,
+                        )}
+                      </span>
+                      <span className="text-right tabular-nums">
+                        {formatPln(materialPln, locale)}
+                      </span>
+                      <span>
+                        {c.rowMachine(formatDecimal(printHours, locale, 1))}
+                      </span>
+                      <span className="text-right tabular-nums">
+                        {formatPln(machinePln, locale)}
+                      </span>
+                      {extraLines.map((l) => (
+                        <span key={l.key} className="contents">
+                          <span>
+                            {l.key === 'plates'
+                              ? strings.breakdown.plates(l.count ?? 0)
+                              : strings.breakdown[
+                                  l.key as 'material' | 'machine' | 'finishing'
+                                ]}
+                          </span>
+                          <span className="text-right tabular-nums">
+                            {formatPln(l.amountPln, locale)}
+                          </span>
+                        </span>
+                      ))}
+                      <span
+                        aria-hidden
+                        className="border-foreground/10 col-span-2 mt-1 border-t"
+                      />
+                      <span>{c.rowVat}</span>
+                      <span className="text-right tabular-nums">
+                        {formatPln(vatIncluded, locale)}
+                      </span>
+                    </div>
+
+                    <div className="border-foreground/15 mt-auto flex items-center justify-between gap-4 border-t px-5 py-3 sm:px-6">
+                      {isLive ? (
+                        <span className="text-primary-text text-[10px] font-bold tracking-[0.14em] uppercase">
+                          {c.redirecting}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            track('demo_replayed')
+                            setRunId((n) => n + 1)
+                          }}
+                          className="text-primary-text focus-visible:ring-ring cursor-pointer text-[10px] font-bold tracking-[0.14em] uppercase focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                        >
+                          {c.replay} <span aria-hidden>↻</span>
+                        </button>
+                      )}
+                      <span className="text-muted-foreground text-right text-[9px] tracking-[0.12em] uppercase">
+                        {c.locked}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* rate ticker fused to the hero's bottom edge as its baseplate */}
+      <RateTicker className="bg-card border-t" />
     </section>
-  )
-}
-
-/**
- * Courier drone crossing the hero — pure decoration. Position, banking,
- * parcel swing, and the ground shadow all come from one damped-spring
- * simulation (rAF), so the motion reads as physics, not keyframes: the
- * drone pitches to accelerate, flares to brake into its hover above the
- * dropzone, and the parcel trails its actual acceleration. The loop
- * sleeps off-screen. Disabled entirely under prefers-reduced-motion.
- */
-function Drone({
-  className,
-  svgClassName = 'text-foreground/45',
-}: {
-  className?: string
-  svgClassName?: string
-}) {
-  const rootRef = useRef<HTMLDivElement>(null)
-  const bankRef = useRef<HTMLDivElement>(null)
-  const parcelRef = useRef<SVGGElement>(null)
-  const shadowRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const root = rootRef.current
-    const bank = bankRef.current
-    const parcel = parcelRef.current
-    const shadow = shadowRef.current
-    if (!root || !bank || !parcel || !shadow) return
-
-    const LOOP_S = 52
-    const HOVER_UNTIL_S = 21
-    const OFFSCREEN_S = 30
-    const OMEGA = 0.9
-    const ZETA = 0.85
-
-    let w = root.parentElement?.clientWidth ?? window.innerWidth
-    const onResize = () => {
-      w = root.parentElement?.clientWidth ?? window.innerWidth
-    }
-    window.addEventListener('resize', onResize)
-
-    const start = performance.now()
-    let last = start
-    let x = -180
-    let y = 0
-    let vx = 0
-    let vy = 0
-    let pitch = 0
-    let swing = 0
-    let swingV = 0
-    let raf = 0
-    let dwellTimer: ReturnType<typeof setTimeout> | undefined
-
-    const step = (now: number) => {
-      const t = ((now - start) / 1000) % LOOP_S
-      const dt = Math.min((now - last) / 1000, 0.05)
-      last = now
-
-      if (t >= OFFSCREEN_S) {
-        // Dwell off-screen: park the drone at the entry point and sleep
-        // until the next loop begins.
-        root.style.transform = 'translate(-180px, 0px)'
-        shadow.style.opacity = '0'
-        dwellTimer = setTimeout(
-          () => {
-            x = -180
-            y = 0
-            vx = 0
-            vy = 0
-            swing = 0
-            swingV = 0
-            last = performance.now()
-            raf = requestAnimationFrame(step)
-          },
-          (LOOP_S - t) * 1000,
-        )
-        return
-      }
-
-      const hovering = t < HOVER_UNTIL_S
-      const tx = hovering ? w * 0.6 : w + 220
-      const bob =
-        Math.sin(t * ((2 * Math.PI) / 5.5)) * 7 +
-        Math.sin(t * ((2 * Math.PI) / 2.3) + 1.7) * 3
-      const ty = (hovering ? 8 : -12) + bob
-
-      const ax = OMEGA * OMEGA * (tx - x) - 2 * ZETA * OMEGA * vx
-      const ay = OMEGA * OMEGA * (ty - y) - 2 * ZETA * OMEGA * vy
-      vx += ax * dt
-      vy += ay * dt
-      x += vx * dt
-      y += vy * dt
-
-      // Pitch into acceleration (smoothed): nose-down to speed up,
-      // nose-up flare to brake.
-      const targetPitch = Math.max(-11, Math.min(11, ax * 0.02))
-      pitch += (targetPitch - pitch) * Math.min(1, dt * 6)
-
-      // Parcel pendulum: lightly damped, chasing the drone's lateral
-      // acceleration, so it trails and overswings naturally.
-      const swingTarget = Math.max(-16, Math.min(16, -ax * 0.03))
-      const SWING_OMEGA = 4
-      const SWING_ZETA = 0.22
-      const swingA =
-        SWING_OMEGA * SWING_OMEGA * (swingTarget - swing) -
-        2 * SWING_ZETA * SWING_OMEGA * swingV
-      swingV += swingA * dt
-      swing += swingV * dt
-
-      root.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
-      bank.style.transform = `rotate(${pitch.toFixed(2)}deg)`
-      parcel.setAttribute('transform', `rotate(${swing.toFixed(2)} 0 6)`)
-
-      // Ground shadow: fades in from the leading edge, tracks x, and
-      // squashes slightly as the drone climbs.
-      const fade = Math.max(0, Math.min(1, Math.min(x, w - x) / 160))
-      const squash = 1 + Math.max(-0.06, Math.min(0.06, -vy * 0.01))
-      shadow.style.opacity = (0.18 * fade).toFixed(3)
-      shadow.style.transform = `translate(${(x + 20).toFixed(1)}px, 0px) scale(${squash.toFixed(3)})`
-
-      raf = requestAnimationFrame(step)
-    }
-
-    raf = requestAnimationFrame(step)
-    return () => {
-      cancelAnimationFrame(raf)
-      if (dwellTimer) clearTimeout(dwellTimer)
-      window.removeEventListener('resize', onResize)
-    }
-  }, [])
-
-  return (
-    <>
-      <div
-        ref={shadowRef}
-        aria-hidden
-        className="bg-foreground pointer-events-none absolute top-[24%] left-0 z-0 h-3 w-24 rounded-full opacity-0 blur-md motion-reduce:hidden"
-      />
-      <div
-        ref={rootRef}
-        aria-hidden
-        className={cn(
-          'pointer-events-none absolute left-0 z-0 motion-reduce:hidden',
-          className,
-        )}
-        style={{ transform: 'translate(-180px, 0px)' }}
-      >
-        <div ref={bankRef}>
-          <DroneSvg className={svgClassName} parcelRef={parcelRef} />
-        </div>
-      </div>
-    </>
-  )
-}
-
-function DroneSvg({
-  className,
-  parcelRef,
-}: {
-  className?: string
-  parcelRef?: RefObject<SVGGElement | null>
-}) {
-  return (
-    <svg width="104" height="56" viewBox="-52 -24 104 56" className={className}>
-      {/* far-side arm pair, dimmed for depth */}
-      <g opacity="0.35">
-        <line
-          x1="-4"
-          y1="-5"
-          x2="-22"
-          y2="-17"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <line
-          x1="6"
-          y1="-5"
-          x2="26"
-          y2="-19"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <Rotor x={-22} y={-19} r={11} />
-        <Rotor x={26} y={-21} r={11} />
-      </g>
-
-      {/* hull */}
-      <rect
-        x="-18"
-        y="-9"
-        width="38"
-        height="15"
-        rx="7"
-        fill="currentColor"
-        fillOpacity="0.12"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      {/* battery pack */}
-      <rect
-        x="-9"
-        y="-14"
-        width="20"
-        height="6"
-        rx="3"
-        fill="currentColor"
-        fillOpacity="0.18"
-        stroke="currentColor"
-        strokeWidth="1.2"
-      />
-      {/* windshield */}
-      <rect
-        x="8"
-        y="-7"
-        width="10"
-        height="8"
-        rx="3.5"
-        fill="currentColor"
-        fillOpacity="0.3"
-      />
-      {/* panel seam + vents */}
-      <line
-        x1="2"
-        y1="-8"
-        x2="2"
-        y2="5"
-        stroke="currentColor"
-        strokeWidth="1"
-        opacity="0.4"
-      />
-      <g stroke="currentColor" strokeWidth="1" opacity="0.5">
-        <line x1="-15" y1="-4" x2="-11" y2="-4" />
-        <line x1="-15" y1="-1" x2="-11" y2="-1" />
-        <line x1="-15" y1="2" x2="-11" y2="2" />
-      </g>
-
-      {/* near-side arm pair */}
-      <line
-        x1="-4"
-        y1="-3"
-        x2="-30"
-        y2="-8"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-      <line
-        x1="6"
-        y1="-3"
-        x2="34"
-        y2="-6"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-      <Rotor x={-30} y={-10} r={14} />
-      <Rotor x={34} y={-8} r={14} />
-
-      {/* camera gimbal */}
-      <circle
-        cx="13"
-        cy="9"
-        r="3.2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <circle cx="13" cy="9" r="1.3" className="fill-primary/80" />
-
-      {/* front nav light + rear strobe */}
-      <circle cx="19" cy="-3" r="1.4" className="fill-primary">
-        <animate
-          attributeName="opacity"
-          values="1;0.15;1"
-          dur="2.4s"
-          repeatCount="indefinite"
-        />
-      </circle>
-      <circle cx="-17" cy="-11" r="1.2" fill="currentColor">
-        <animate
-          attributeName="opacity"
-          values="0;0;1;0"
-          keyTimes="0;0.85;0.92;1"
-          dur="1.8s"
-          repeatCount="indefinite"
-        />
-      </circle>
-
-      {/* suspended parcel: rotation driven by the flight simulation
-          around the attach point (0, 6) */}
-      <g ref={parcelRef}>
-        <line
-          x1="0"
-          y1="6"
-          x2="0"
-          y2="14"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        />
-        <rect
-          x="-9"
-          y="14"
-          width="18"
-          height="12"
-          rx="2"
-          className="fill-primary/75"
-          stroke="currentColor"
-          strokeOpacity="0.3"
-        />
-        <line
-          x1="0"
-          y1="14"
-          x2="0"
-          y2="26"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          opacity="0.25"
-        />
-      </g>
-    </svg>
-  )
-}
-
-/** Motor pod + spinning prop: faint blur disc with two counter-phased
-    flickering blades. */
-function Rotor({ x, y, r }: { x: number; y: number; r: number }) {
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <rect
-        x="-3.5"
-        y="-2.5"
-        width="7"
-        height="5"
-        rx="2"
-        fill="currentColor"
-        fillOpacity="0.2"
-        stroke="currentColor"
-        strokeWidth="1.2"
-      />
-      <ellipse
-        cx="0"
-        cy={-4}
-        rx={r}
-        ry={r * 0.17}
-        fill="currentColor"
-        opacity="0.08"
-      />
-      <ellipse
-        cx="0"
-        cy={-4}
-        rx={r}
-        ry={r * 0.17}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      >
-        <animate
-          attributeName="rx"
-          values={`${r};${r * 0.28};${r}`}
-          dur="0.18s"
-          repeatCount="indefinite"
-        />
-      </ellipse>
-      <ellipse
-        cx="0"
-        cy={-4}
-        rx={r * 0.28}
-        ry={r * 0.17}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      >
-        <animate
-          attributeName="rx"
-          values={`${r * 0.28};${r};${r * 0.28}`}
-          dur="0.18s"
-          repeatCount="indefinite"
-        />
-      </ellipse>
-    </g>
   )
 }

@@ -50,7 +50,7 @@ function slugFor(id: string): MaterialSlug | undefined {
 /**
  * The materials specimen grid: each material as a blunt instrument card, and
  * the hero number is the one no rate table can give — the actual engine price
- * of the demo bracket (the HowItWorks part) in this material, fetched live
+ * of the demo bracket (the hero's part) in this material, fetched live
  * with checked-in engine-captured fallbacks. The meter under each card plots
  * that price against the section max, so the grid reads as a cost ladder.
  */
@@ -192,8 +192,8 @@ function MaterialCard({
   const dimmed = spotlight !== null && m.family !== spotlight
 
   const cardClassName = cn(
-    'group/card border-foreground/15 hover:bg-card relative flex h-full flex-col border p-5',
-    'transition-[opacity,background-color] duration-300',
+    'group/card border-foreground/15 bg-card relative flex h-full flex-col border p-5',
+    'transition-opacity duration-300',
     dimmed && 'opacity-40',
   )
   const cells = (

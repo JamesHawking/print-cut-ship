@@ -52,22 +52,45 @@ export const en = {
   hero: {
     wordmark: 'MICRO_FACTORY',
     status: 'EU · FDM · PLN',
-    ready: 'Ready',
     kickerBadge: 'EU',
     kicker: 'On-demand 3D printing · Poland · PLN',
-    headline1: 'Upload a file.',
-    headline2: 'See your price.',
-    sub: 'An itemized price and a real ship date, in seconds. No account, no quote forms, no waiting on a sales rep.',
-    sample: 'No file handy? Try a sample part →',
-    privacy:
-      'Your file is used only to prepare the quote — if you don’t order, it’s deleted automatically',
-    // Zipped with computed values in Hero.tsx (same order).
-    specs: [
-      'FDM materials',
-      'business-day lead',
-      'shipping PL/DE',
-      'VAT always included',
-    ],
+    // 17b eyebrow: right-aligned LED chip; distinct from console.status.
+    engineLive: 'Engine live',
+    // The headline literally labels the console's two chambers below it:
+    // file goes in the left side, the price comes out the right.
+    headline1: 'File in.',
+    headline2: 'Price out.',
+    sub: 'One machine below: your file goes in on the left, the itemized price comes out on the right. VAT included, and a ship date it will keep.',
+    console: {
+      title: 'Instant quote',
+      status: (file: string) => `engine live · showing ${file}`,
+      intakeHeading: 'What do you want to print?',
+      ownTitle: 'My own design',
+      ownHint: 'Drop it anywhere here — STL · 3MF · OBJ · STEP',
+      linkTitle: 'Something I found online',
+      linkHint: 'Paste a MakerWorld model link',
+      linkButton: 'Paste link',
+      finePrint:
+        'Up to 100 MB · used only for the quote — deleted automatically if you don’t order',
+      demoCaption: 'Your quote appears here — this one is the demo bracket',
+      printable: 'printable',
+      metaShip: (weekday: string) => `incl. VAT · ships ${weekday} · D+1 PL/DE`,
+      metaShipFallback: 'incl. VAT · ships D+1 PL/DE',
+      rowMaterial: (weight: string, material: string) =>
+        `Material · ${weight} g ${material}`,
+      rowMachine: (hours: string) => `Machine time · ${hours} h`,
+      // Informational, not additive: gross prices, VAT extracted.
+      rowVat: 'incl. VAT 23%',
+      replay: 'Replay demo',
+      locked: 'price locked 14 days',
+      // Inline live quote — a single file dropped on the landing is quoted
+      // right in the chamber, then the editor opens automatically.
+      statusLive: (file: string) => `engine live · ${file}`,
+      liveCaption: 'Your part · live quote',
+      measuring: 'Measuring geometry…',
+      blocked: 'exceeds build area',
+      redirecting: 'Opening your quote…',
+    },
   },
   nav: {
     howItWorks: 'How it works',
@@ -97,59 +120,39 @@ export const en = {
   },
   ticker: [
     'Ships D+1 PL/DE',
-    'Free shipping ≥ 500 zł',
+    'Free shipping ≥ 300 zł',
     'No account',
     'Made in the EU',
   ],
   process: {
-    n: '01',
-    heading: 'File to ship date in three steps',
-    intro:
-      'From upload to ship date in under a minute: we measure your file, price it, and lock the date. Below is a real run on the live quoting engine.',
-    steps: [
-      { n: '01', kicker: 'UPLOAD', title: 'Drop the file' },
-      { n: '02', kicker: 'PRICE', title: 'Read the numbers' },
-      { n: '03', kicker: 'ORDER', title: 'Lock the date' },
-    ],
+    // "SHIPS" chip — shared by the header quote sub-bar and quote editor.
     ships: 'SHIPS',
-    // "D+1" is the courier-transit claim from the ticker; the weekday is the
-    // engine's real express ship date (GET /api/v1/ship-dates).
-    shipsDate: (weekday: string) => `${weekday} · D+1`,
-    shipsDateFallback: 'D+1',
-    shipsCutoff: 'PL / DE · 14:00 cutoff',
-    // The live demo run's machine log (buildScript in how-it-works/demo.ts).
-    // Every number arrives pre-formatted per locale; the PRICE line is the
-    // real engine answer. Log tags stay untranslated — it's a machine log.
-    demo: {
-      cmd: (file: string) => `$ quote ${file}`,
-      tags: {
-        recv: 'RECV',
-        measure: 'MEASURE',
-        price: 'PRICE',
-        order: 'ORDER',
-        ship: 'SHIP',
-        done: 'DONE',
-      },
-      recv: (file: string, size: string) => `${file} · ${size}`,
-      measureMesh: (triangles: string) =>
-        `${triangles} triangles · watertight OK`,
-      measureDims: (volume: string, dims: string) => `${volume} · ${dims}`,
-      priceConfig: 'PETG · 1 pc · standard',
-      priceResult: (total: string, weight: string, hours: string) =>
-        `${total} incl. VAT · ${weight} g · ${hours} h print`,
-      order1: 'no account · no sales call',
-      order2: 'ship date locks at checkout',
-      ship: (weekday: string) => `${weekday} · D+1 · PL/DE · 14:00 cutoff`,
-      shipFallback: 'D+1 · PL/DE · 14:00 cutoff',
-      done: 'quote complete',
-      replay: 'Replay',
-      engineLabel: 'quote-engine v1',
-      panelTag: 'Live quote run',
-      meshLabel: (triangles: string) => `mesh · ${triangles} triangles`,
-      cta: 'Now run yours →',
-      srSummary: (total: string, weekday: string) =>
-        `A sample bracket measured in the browser and priced by the live engine at ${total} incl. VAT, shipping ${weekday}, D+1 to PL/DE.`,
-    },
+  },
+  // Section 01 — price ladder (PriceLadder.tsx). The demo bracket from the
+  // hero, re-quoted in every material via POST /api/v1/price/compare. The
+  // section owns the `how-it-works` anchor the nav points at.
+  ladder: {
+    n: '01',
+    heading: 'Same part, seven prices',
+    intro: (hours: string) =>
+      `The bracket you just saw quoted above, re-run in every material we print. Material is the only line that moves — machine time stays ${hours} h, ship date stays D+1.`,
+    tableLabel: 'Demo bracket priced in seven materials',
+    tableHead: (file: string, weight: string, hours: string) =>
+      `${file} · ${weight} g · ${hours} h`,
+    tableGross: 'gross incl. 23% VAT',
+    quotedAbove: 'quoted above ↑',
+    // One-line use cases, keyed by material id (shorter than the 02 cards).
+    useCases: {
+      pla: 'Crisp detail — prototypes, display models, indoor parts',
+      petg: 'Tough all-rounder — the default when in doubt',
+      pctg: 'Impact-resistant, near-clear — guards and covers',
+      asa: 'UV-stable — lives outdoors without chalking',
+      petg_fr: 'V0 flame-rated — enclosures near electronics',
+      pa12_cf: 'Carbon-stiff, heat-tolerant — brackets that work for a living',
+      iglidur: 'Self-lubricating — bushings and wear parts, no grease',
+    } as Record<ProcessId, string>,
+    specLink: 'Full spec & rate card ↓ 02',
+    requote: 'Your part re-quotes the same way — instantly',
   },
   materialsSection: {
     n: '02',
@@ -226,7 +229,7 @@ export const en = {
       },
       {
         title: 'No hidden fees',
-        body: '1 zł order fee, 30 zł minimum order, 20 zł flat shipping — free above 500 zł. That’s the whole list.',
+        body: '1 zł order fee, 30 zł minimum order, 20 zł flat shipping — free above 300 zł. That’s the whole list.',
       },
       {
         title: 'Itemized, always',
@@ -261,7 +264,7 @@ export const en = {
       },
       {
         q: 'What does shipping cost?',
-        a: 'A flat 20 zł EU-wide, free on orders of 500 zł or more. Minimum order is 30 zł — every price is gross, incl. 23% VAT.',
+        a: 'A flat 20 zł EU-wide, free on orders of 300 zł or more. Minimum order is 30 zł — every price is gross, incl. 23% VAT.',
       },
     ],
   },

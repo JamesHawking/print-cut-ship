@@ -64,22 +64,45 @@ export const pl = {
   hero: {
     wordmark: 'MICRO_FACTORY',
     status: 'EU · FDM · PLN',
-    ready: 'Gotowe',
     kickerBadge: 'UE',
     kicker: 'Druk 3D na żądanie · Polska · PLN',
-    headline1: 'Wgraj plik.',
-    headline2: 'Zobacz cenę.',
-    sub: 'Pełne rozbicie ceny i realna data wysyłki w kilka sekund. Bez konta, bez formularza zapytania, bez czekania na handlowca.',
-    sample: 'Nie masz pliku pod ręką? Wypróbuj przykładową część →',
-    privacy:
-      'Plik służy wyłącznie do przygotowania wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
-    // Zipped with computed values in Hero.tsx (same order).
-    specs: [
-      'materiałów FDM',
-      'dni roboczych realizacji',
-      'wysyłka PL/DE',
-      'VAT zawsze wliczony',
-    ],
+    // 17b eyebrow: right-aligned LED chip; distinct from console.status.
+    engineLive: 'Silnik online',
+    // The headline literally labels the console's two chambers below it:
+    // file goes in the left side, the price comes out the right.
+    headline1: 'Wchodzi plik.',
+    headline2: 'Wychodzi cena.',
+    sub: 'Poniżej stoi cała maszyna: z lewej wchodzi twój plik, z prawej wychodzi cena rozbita na pozycje — z VAT i z datą wysyłki, której dotrzymujemy.',
+    console: {
+      title: 'Wycena od ręki',
+      status: (file: string) => `silnik online · demo: ${file}`,
+      intakeHeading: 'Co chcesz wydrukować?',
+      ownTitle: 'Mam własny projekt',
+      ownHint: 'Upuść plik gdziekolwiek tutaj — STL · 3MF · OBJ · STEP',
+      linkTitle: 'Znalazłem model w sieci',
+      linkHint: 'Wklej link do modelu z MakerWorld',
+      linkButton: 'Wklej link',
+      finePrint:
+        'Do 100 MB · plik służy tylko do wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
+      demoCaption: 'Tu pojawi się twoja wycena — to demo wspornika',
+      printable: 'w zakresie druku',
+      metaShip: (weekday: string) => `z VAT · wysyłka ${weekday} · D+1 PL/DE`,
+      metaShipFallback: 'z VAT · wysyłka D+1 PL/DE',
+      rowMaterial: (weight: string, material: string) =>
+        `Materiał · ${weight} g ${material}`,
+      rowMachine: (hours: string) => `Czas maszynowy · ${hours} h`,
+      // Informational, not additive: gross prices, VAT extracted ("w tym").
+      rowVat: 'w tym VAT 23%',
+      replay: 'Odtwórz demo',
+      locked: 'cena ważna 14 dni',
+      // Inline live quote — a single file dropped on the landing is quoted
+      // right in the chamber, then the editor opens automatically.
+      statusLive: (file: string) => `silnik online · ${file}`,
+      liveCaption: 'Twoja część · wycena na żywo',
+      measuring: 'Mierzymy geometrię…',
+      blocked: 'poza polem roboczym',
+      redirecting: 'Otwieramy edytor wyceny…',
+    },
   },
   nav: {
     howItWorks: 'Jak to działa',
@@ -107,62 +130,42 @@ export const pl = {
     newQuoteConfirmAction: 'Nowa wycena',
     newQuoteConfirmCancel: 'Anuluj',
   },
+  // Utility-bar promises; index 3 renders as the right-aligned aside.
   ticker: [
     'Wysyłka D+1 PL/DE',
-    'Darmowa dostawa ≥ 500 zł',
+    'Darmowa dostawa ≥ 300 zł',
     'Bez konta',
     'Wyprodukowano w UE',
   ],
   process: {
-    n: '01',
-    heading: 'Od pliku do daty wysyłki w trzech krokach',
-    intro:
-      'Od wgrania do daty wysyłki mija niecała minuta: mierzymy plik, liczymy cenę i blokujemy termin. Poniżej prawdziwy przebieg na żywym silniku wyceny.',
-    steps: [
-      { n: '01', kicker: 'WGRAJ', title: 'Upuść plik' },
-      { n: '02', kicker: 'WYCEŃ', title: 'Zobacz liczby' },
-      { n: '03', kicker: 'ZAMÓW', title: 'Zablokuj termin' },
-    ],
+    // "WYSYŁKA" chip — shared by the header quote sub-bar and quote editor.
     ships: 'WYSYŁKA',
-    // "D+1" is the courier-transit claim from the ticker; the weekday is the
-    // engine's real express ship date (GET /api/v1/ship-dates).
-    shipsDate: (weekday: string) => `${weekday} · D+1`,
-    shipsDateFallback: 'D+1',
-    shipsCutoff: 'PL / DE · zamówienia do 14:00',
-    // The live demo run's machine log (buildScript in how-it-works/demo.ts).
-    // Every number arrives pre-formatted per locale; the PRICE line is the
-    // real engine answer. Log tags stay untranslated — it's a machine log.
-    demo: {
-      cmd: (file: string) => `$ wycena ${file}`,
-      tags: {
-        recv: 'RECV',
-        measure: 'MEASURE',
-        price: 'PRICE',
-        order: 'ORDER',
-        ship: 'SHIP',
-        done: 'DONE',
-      },
-      recv: (file: string, size: string) => `${file} · ${size}`,
-      measureMesh: (triangles: string) =>
-        `${triangles} trójkątów · szczelność OK`,
-      measureDims: (volume: string, dims: string) => `${volume} · ${dims}`,
-      priceConfig: 'PETG · 1 szt. · standard',
-      priceResult: (total: string, weight: string, hours: string) =>
-        `${total} z VAT · ${weight} g · ${hours} h druku`,
-      order1: 'bez konta · bez telefonu od handlowca',
-      order2: 'termin blokuje się przy zamówieniu',
-      ship: (weekday: string) =>
-        `${weekday} · D+1 · PL/DE · zamówienia do 14:00`,
-      shipFallback: 'D+1 · PL/DE · zamówienia do 14:00',
-      done: 'wycena gotowa',
-      replay: 'Odtwórz ponownie',
-      engineLabel: 'quote-engine v1',
-      panelTag: 'Przebieg wyceny na żywo',
-      meshLabel: (triangles: string) => `siatka · ${triangles} trójkątów`,
-      cta: 'Wyceń swoją część →',
-      srSummary: (total: string, weekday: string) =>
-        `Przykładowy wspornik zmierzony w przeglądarce i wyceniony przez silnik na ${total} z VAT, wysyłka ${weekday}, D+1 do PL/DE.`,
-    },
+  },
+  // Section 01 — price ladder (PriceLadder.tsx). The demo bracket from the
+  // hero, re-quoted in every material via POST /api/v1/price/compare. The
+  // section owns the `how-it-works` anchor the nav points at.
+  ladder: {
+    n: '01',
+    heading: 'Ta sama część, siedem cen',
+    intro: (hours: string) =>
+      `Wspornik z wyceny powyżej, przeliczony w każdym materiale, który drukujemy. Rusza się tylko pozycja „materiał” — czas maszynowy to wciąż ${hours} h, a wysyłka wciąż D+1.`,
+    tableLabel: 'Cena wspornika demo w siedmiu materiałach',
+    tableHead: (file: string, weight: string, hours: string) =>
+      `${file} · ${weight} g · ${hours} h`,
+    tableGross: 'brutto z 23% VAT',
+    quotedAbove: 'wyceniony wyżej ↑',
+    // One-line use cases, keyed by material id (shorter than the 02 cards).
+    useCases: {
+      pla: 'Ostre detale — prototypy, modele pokazowe, części do wnętrz',
+      petg: 'Wytrzymały uniwersał — domyślny wybór, gdy nie masz pewności',
+      pctg: 'Udarny, niemal przezroczysty — osłony i pokrywy',
+      asa: 'Odporny na UV — mieszka na dworze i nie płowieje',
+      petg_fr: 'Trudnopalny V0 — obudowy przy elektronice',
+      pa12_cf: 'Sztywny od węgla, odporny na ciepło — wsporniki do pracy',
+      iglidur: 'Samosmarujący — tuleje i części ślizgowe bez smaru',
+    } as Record<ProcessId, string>,
+    specLink: 'Pełna specyfikacja i cennik ↓ 02',
+    requote: 'Twoja część liczy się tak samo — od ręki',
   },
   materialsSection: {
     n: '02',
@@ -240,7 +243,7 @@ export const pl = {
       },
       {
         title: 'Bez ukrytych opłat',
-        body: '1 zł opłaty za zamówienie, 30 zł minimum, 20 zł stała wysyłka — darmowa powyżej 500 zł. To cała lista.',
+        body: '1 zł opłaty za zamówienie, 30 zł minimum, 20 zł stała wysyłka — darmowa powyżej 300 zł. To cała lista.',
       },
       {
         title: 'Zawsze z rozbiciem',
@@ -276,7 +279,7 @@ export const pl = {
       },
       {
         q: 'Ile kosztuje wysyłka?',
-        a: 'Stałe 20 zł do całej UE, gratis przy zamówieniu od 500 zł. Minimalna wartość zamówienia to 30 zł — wszystkie ceny brutto, z 23% VAT.',
+        a: 'Stałe 20 zł do całej UE, gratis przy zamówieniu od 300 zł. Minimalna wartość zamówienia to 30 zł — wszystkie ceny brutto, z 23% VAT.',
       },
     ],
   },

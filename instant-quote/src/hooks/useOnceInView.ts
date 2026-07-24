@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 /**
  * One-shot "came into view" flag for entrance choreography. SSR/hydration-safe
- * by construction (same pattern as useDemoRun): the initial state is REVEALED,
+ * by construction: the initial state is REVEALED,
  * so prerendered HTML ships the settled state and hydration never mismatches;
  * the hide-then-replay divergence happens in an effect, on the client only.
  * Reduced-motion visitors (and no-IO environments) keep the revealed state.

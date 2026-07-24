@@ -1,5 +1,5 @@
 // The "demo bracket in this material" data for the Materials specimen grid:
-// the SAME sample bracket the HowItWorks demo quotes (SAMPLE_METRICS),
+// the SAME sample bracket the hero console quotes (SAMPLE_METRICS),
 // priced live by the engine in every process. One POST takes max 5 parts, so
 // the 7 processes go out as two parallel requests and merge in order.
 //

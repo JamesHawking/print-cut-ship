@@ -21,9 +21,10 @@ export type FunnelEvent =
   | 'file_upload_started'
   | 'file_upload_succeeded'
   | 'file_upload_failed'
-  // Landing how-it-works live demo run (plays once per visit / manual replay).
-  | 'demo_played'
+  // Hero fused-console demo: manual replay of the demo bracket, and the
+  // inline live quote shown for a real dropped file (carries {fileName}).
   | 'demo_replayed'
+  | 'hero_live_quote_shown'
 
 let sessionId: string | null = null
 

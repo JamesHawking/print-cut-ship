@@ -122,7 +122,7 @@ var Default = Config{
 	MinPartPricePln:          1.5,
 	OrderFeePln:              1,
 	ShippingFlatPln:          20,
-	FreeShippingThresholdPln: 500,
+	FreeShippingThresholdPln: 300,
 	VatRate:                  0.23,
 	MinBillableVolumeCm3:     1,
 	MinFeatureMm:             1,

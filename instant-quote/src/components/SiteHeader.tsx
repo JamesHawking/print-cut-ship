@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useLocation, useParams } from '@tanstack/react-router'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { Menu, PackageSearch, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { formatPln } from '@/lib/format'
 import { track } from '@/lib/funnel'
 import { useParts } from '@/hooks/useParts'
@@ -81,7 +82,38 @@ export function SiteHeader({
           {strings.nav.skipToContent}
         </a>
       )}
-      <header className="bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
+      {variant === 'landing' && (
+        // Utility bar (design 17b): three service promises left, the origin
+        // claim right — a raised dark band above the sticky header, sourced
+        // from strings.ticker (this bar is the promises' primary carrier;
+        // RateTicker is rates-only and decorative). Scrolls away; only the
+        // 56px bar below stays sticky.
+        <div className="dark bg-card text-muted-foreground border-b">
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-2 font-mono text-[0.6rem] tracking-[0.14em] uppercase sm:px-6">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 sm:gap-x-4">
+              {strings.ticker.slice(0, 3).map((t, i) => (
+                <span key={i} className="flex items-center gap-x-3 sm:gap-x-4">
+                  {i > 0 && (
+                    <span aria-hidden className="text-muted-foreground/50">
+                      ·
+                    </span>
+                  )}
+                  {t}
+                </span>
+              ))}
+            </span>
+            <span className="shrink-0 max-sm:hidden">{strings.ticker[3]}</span>
+          </div>
+        </div>
+      )}
+      <header
+        className={cn(
+          'bg-background/90 sticky top-0 z-40 border-b backdrop-blur',
+          // The landing is the dark bookend page — its header stays dark all
+          // the way down (the quote workspace keeps the light header).
+          variant === 'landing' && 'dark',
+        )}
+      >
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 font-mono text-xs tracking-widest uppercase sm:px-6">
           {/* exact: fuzzy matching would mark the home link current on every
             page under /$locale (Link force-sets aria-current when active). */}
@@ -185,10 +217,13 @@ export function SiteHeader({
                     </button>
                   </DialogPrimitive.Trigger>
                   <DialogPrimitive.Portal>
-                    <DialogPrimitive.Overlay className="motion-safe:animate-in motion-safe:fade-in bg-background/60 fixed inset-0 top-14 z-40 backdrop-blur-sm duration-[180ms] lg:hidden" />
+                    {/* `dark`: the portal mounts on <body>, outside the
+                      header's dark scope — restate it or the menu flashes
+                      light on the dark landing. */}
+                    <DialogPrimitive.Overlay className="dark motion-safe:animate-in motion-safe:fade-in bg-background/60 fixed inset-0 top-14 z-40 backdrop-blur-sm duration-[180ms] lg:hidden" />
                     <DialogPrimitive.Content
                       aria-describedby={undefined}
-                      className="motion-safe:animate-in fade-in slide-in-from-top-1.5 bg-background fixed inset-x-0 top-14 z-50 max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out lg:hidden"
+                      className="dark motion-safe:animate-in fade-in slide-in-from-top-1.5 bg-background text-foreground fixed inset-x-0 top-14 z-50 max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain border-t px-4 pt-1.5 pb-[18px] font-mono text-xs tracking-[0.12em] uppercase duration-[180ms] ease-out lg:hidden"
                     >
                       <DialogPrimitive.Title className="sr-only">
                         {strings.nav.menuLabel}
@@ -214,26 +249,6 @@ export function SiteHeader({
           )}
         </div>
       </header>
-      {variant === 'landing' && (
-        // Trust strip (Site Header - Faceplate.dc.html): the four service
-        // promises, sourced from strings.ticker — this bar is their primary
-        // carrier (RateTicker is rates-only and decorative). Scrolls away;
-        // only the 56px bar above stays sticky.
-        <div className="bg-secondary text-muted-foreground border-b">
-          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2 font-mono text-[0.6rem] tracking-[0.14em] uppercase sm:gap-x-4 sm:px-6">
-            {strings.ticker.map((t, i) => (
-              <span key={i} className="flex items-center gap-x-3 sm:gap-x-4">
-                {i > 0 && (
-                  <span aria-hidden className="text-muted-foreground/50">
-                    ·
-                  </span>
-                )}
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
       {variant === 'quote' && summary && (
         <div className="bg-secondary border-b">
           <div className="mx-auto flex w-full max-w-6xl items-center gap-3.5 px-4 py-2.5 font-mono text-[0.65rem] tracking-widest uppercase sm:px-6">
