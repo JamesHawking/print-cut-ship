@@ -9,7 +9,6 @@ import { plPlural } from './plural'
 
 describe('dictionary parity', () => {
   test('zipped arrays have equal lengths across locales', () => {
-    expect(en.hero.specs.length).toBe(pl.hero.specs.length)
     expect(en.ticker.length).toBe(pl.ticker.length)
     expect(en.process.steps.length).toBe(pl.process.steps.length)
     expect(en.pricing.terms.length).toBe(pl.pricing.terms.length)
@@ -79,6 +78,19 @@ describe('dfm and api-error rendering', () => {
       for (const text of rendered) expect(text.length).toBeGreaterThan(2)
       for (const tag of Object.values(d.tags))
         expect(tag.length).toBeGreaterThan(2)
+    }
+  })
+
+  test('every hero console key renders in both locales', () => {
+    for (const dict of [pl, en]) {
+      const c = dict.hero.console
+      const rendered = [
+        c.status('bracket_v2.stl'),
+        c.metaShip('CZW'),
+        c.rowMaterial('29', 'PETG'),
+        c.rowMachine('2,7'),
+      ]
+      for (const text of rendered) expect(text.length).toBeGreaterThan(2)
     }
   })
 

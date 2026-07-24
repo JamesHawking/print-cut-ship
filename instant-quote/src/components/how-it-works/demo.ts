@@ -103,6 +103,14 @@ export const FALLBACK_QUOTE: DemoQuote = {
   printHours: 2.68,
 }
 
+// Same capture (2026-07-24), engine breakdown for the hero console's itemized
+// rows. Lines are scaled server-side to sum exactly to lineTotalPln
+// (demo.spec.ts pins the sum); the zero-amount finishing line is omitted.
+export const FALLBACK_BREAKDOWN = {
+  materialPln: 1.75,
+  machinePln: 6.03,
+}
+
 /**
  * The full machine log for one demo run. Pure: prerender and hydration call
  * it with `quote`/`expressWeekday` undefined (fallbacks bake in), and the

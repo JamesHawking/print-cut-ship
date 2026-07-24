@@ -52,22 +52,36 @@ export const en = {
   hero: {
     wordmark: 'MICRO_FACTORY',
     status: 'EU · FDM · PLN',
-    ready: 'Ready',
     kickerBadge: 'EU',
     kicker: 'On-demand 3D printing · Poland · PLN',
-    headline1: 'Upload a file.',
-    headline2: 'See your price.',
-    sub: 'An itemized price and a real ship date, in seconds. No account, no quote forms, no waiting on a sales rep.',
-    sample: 'No file handy? Try a sample part →',
-    privacy:
-      'Your file is used only to prepare the quote — if you don’t order, it’s deleted automatically',
-    // Zipped with computed values in Hero.tsx (same order).
-    specs: [
-      'FDM materials',
-      'business-day lead',
-      'shipping PL/DE',
-      'VAT always included',
-    ],
+    // The headline literally labels the console's two chambers below it:
+    // file goes in the left side, the price comes out the right.
+    headline1: 'File in.',
+    headline2: 'Price out.',
+    sub: 'One machine below: your file goes in on the left, the itemized price comes out on the right. VAT included, and a ship date it will keep.',
+    console: {
+      title: 'Instant quote',
+      status: (file: string) => `engine live · showing ${file}`,
+      intakeHeading: 'What do you want to print?',
+      ownTitle: 'My own design',
+      ownHint: 'Drop it anywhere here — STL · 3MF · OBJ · STEP',
+      linkTitle: 'Something I found online',
+      linkHint: 'Paste a MakerWorld model link',
+      linkButton: 'Paste link',
+      finePrint:
+        'Up to 100 MB · used only for the quote — deleted automatically if you don’t order',
+      demoCaption: 'Your quote appears here — this one is the demo bracket',
+      printable: 'printable',
+      metaShip: (weekday: string) => `incl. VAT · ships ${weekday} · D+1 PL/DE`,
+      metaShipFallback: 'incl. VAT · ships D+1 PL/DE',
+      rowMaterial: (weight: string, material: string) =>
+        `Material · ${weight} g ${material}`,
+      rowMachine: (hours: string) => `Machine time · ${hours} h`,
+      // Informational, not additive: gross prices, VAT extracted.
+      rowVat: 'incl. VAT 23%',
+      replay: 'Replay demo',
+      locked: 'price locked 14 days',
+    },
   },
   nav: {
     howItWorks: 'How it works',

@@ -350,6 +350,21 @@
   background-size: 28px 28px;
 }
 
+/* Lighter grid for the hero's light surface — same cell, quieter ink. */
+@utility blueprint-grid-faint {
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--color-foreground) 6%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-foreground) 6%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 28px 28px;
+}
+
 /* Outlined display type (hero second line). */
 @utility text-stroke-ink {
   color: transparent;

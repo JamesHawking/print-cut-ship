@@ -5,6 +5,7 @@ import { pl } from '@/lib/i18n/pl'
 import { en } from '@/lib/i18n/en'
 import { bracketBinaryStl } from '../../../tests/fixtures/generate'
 import {
+  FALLBACK_BREAKDOWN,
   FALLBACK_QUOTE,
   SAMPLE_FILE,
   SAMPLE_METRICS,
@@ -37,6 +38,14 @@ describe('sample part drift', () => {
 
   test('SAMPLE_FILE size matches the generated buffer', () => {
     expect(buf.byteLength).toBe(SAMPLE_FILE.bytes)
+  })
+
+  // The engine scales breakdown lines to sum exactly to the line total; the
+  // hero console's fallback rows must keep that property.
+  test('FALLBACK_BREAKDOWN sums to FALLBACK_QUOTE.lineTotalPln', () => {
+    expect(
+      FALLBACK_BREAKDOWN.materialPln + FALLBACK_BREAKDOWN.machinePln,
+    ).toBeCloseTo(FALLBACK_QUOTE.lineTotalPln, 6)
   })
 })
 

@@ -64,22 +64,36 @@ export const pl = {
   hero: {
     wordmark: 'MICRO_FACTORY',
     status: 'EU · FDM · PLN',
-    ready: 'Gotowe',
     kickerBadge: 'UE',
     kicker: 'Druk 3D na żądanie · Polska · PLN',
-    headline1: 'Wgraj plik.',
-    headline2: 'Zobacz cenę.',
-    sub: 'Pełne rozbicie ceny i realna data wysyłki w kilka sekund. Bez konta, bez formularza zapytania, bez czekania na handlowca.',
-    sample: 'Nie masz pliku pod ręką? Wypróbuj przykładową część →',
-    privacy:
-      'Plik służy wyłącznie do przygotowania wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
-    // Zipped with computed values in Hero.tsx (same order).
-    specs: [
-      'materiałów FDM',
-      'dni roboczych realizacji',
-      'wysyłka PL/DE',
-      'VAT zawsze wliczony',
-    ],
+    // The headline literally labels the console's two chambers below it:
+    // file goes in the left side, the price comes out the right.
+    headline1: 'Wchodzi plik.',
+    headline2: 'Wychodzi cena.',
+    sub: 'Poniżej stoi cała maszyna: z lewej wchodzi twój plik, z prawej wychodzi cena rozbita na pozycje — z VAT i z datą wysyłki, której dotrzymujemy.',
+    console: {
+      title: 'Wycena od ręki',
+      status: (file: string) => `silnik online · demo: ${file}`,
+      intakeHeading: 'Co chcesz wydrukować?',
+      ownTitle: 'Mam własny projekt',
+      ownHint: 'Upuść plik gdziekolwiek tutaj — STL · 3MF · OBJ · STEP',
+      linkTitle: 'Znalazłem model w sieci',
+      linkHint: 'Wklej link do modelu z MakerWorld',
+      linkButton: 'Wklej link',
+      finePrint:
+        'Do 100 MB · plik służy tylko do wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
+      demoCaption: 'Tu pojawi się twoja wycena — to demo wspornika',
+      printable: 'w zakresie druku',
+      metaShip: (weekday: string) => `z VAT · wysyłka ${weekday} · D+1 PL/DE`,
+      metaShipFallback: 'z VAT · wysyłka D+1 PL/DE',
+      rowMaterial: (weight: string, material: string) =>
+        `Materiał · ${weight} g ${material}`,
+      rowMachine: (hours: string) => `Czas maszynowy · ${hours} h`,
+      // Informational, not additive: gross prices, VAT extracted ("w tym").
+      rowVat: 'w tym VAT 23%',
+      replay: 'Odtwórz demo',
+      locked: 'cena ważna 14 dni',
+    },
   },
   nav: {
     howItWorks: 'Jak to działa',

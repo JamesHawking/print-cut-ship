@@ -1,17 +1,13 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
 
-import { useShipDates } from '@/hooks/useApi'
+import { useDemoPrice, useShipDates } from '@/hooks/useApi'
 import { useFilePicker } from '@/hooks/useFilePicker'
-import { api, toApiMetrics } from '@/lib/api/client'
 import { formatPln, formatShipWeekday } from '@/lib/format'
 import { track } from '@/lib/funnel'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { SectionHeading } from './SectionHeading'
 import {
-  DEMO_CONFIG,
   FALLBACK_QUOTE,
-  SAMPLE_METRICS,
   STAGE_ANCHOR,
   buildScript,
   buildStationReadouts,
@@ -41,25 +37,10 @@ export function HowItWorks() {
     ? formatShipWeekday(express.date, locale)
     : undefined
 
-  // The demo's real engine call — same request the quote page would send for
-  // this part. Fired on mount (client-only by construction): by the time the
-  // user scrolls here, the PRICE line answers with live numbers.
-  const priceQuery = useQuery({
-    queryKey: ['demo-price'],
-    queryFn: async () => {
-      const res = await api.POST('/api/v1/price', {
-        body: {
-          parts: [{ metrics: toApiMetrics(SAMPLE_METRICS), ...DEMO_CONFIG }],
-        },
-      })
-      if (!res.data) throw new Error('demo price fetch failed')
-      return res.data
-    },
-    staleTime: Infinity,
-    gcTime: Infinity,
-    retry: 1,
-  })
-  const part = priceQuery.data?.parts[0]
+  // The demo's real engine call — shared with the hero console via one cache
+  // key. Fired on mount (client-only by construction): by the time the user
+  // scrolls here, the PRICE line answers with live numbers.
+  const part = useDemoPrice()
 
   const script = useMemo(
     () => buildScript(demo, locale, part, expressWeekday),
