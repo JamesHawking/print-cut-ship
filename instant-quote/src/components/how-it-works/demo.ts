@@ -1,43 +1,9 @@
-// Pure data + script logic for the "How it works" live demo run. No React —
-// everything here is unit-testable (demo.spec.ts) and shared between the
-// animated playback and the SSR done-state.
+// The demo bracket's canonical data: the sample part the hero's fused
+// console quotes live (and the price ladder re-quotes in every material).
+// No React — everything here is unit-testable (demo.spec.ts) and shared
+// between the hero, the ladder, and the Materials specimen grid.
 
-import type { Dictionary, Locale } from '@/lib/i18n'
-import { formatDecimal, formatDims, formatInt, formatPln } from '@/lib/format'
 import type { MeshMetrics } from '@/lib/mesh/types'
-
-export type Stage = 'recv' | 'measure' | 'price' | 'order' | 'ship' | 'done'
-
-/** Playback order of stages — BracketPanel keys its draw-in off this. */
-export const STAGE_ORDER: readonly Stage[] = [
-  'recv',
-  'measure',
-  'price',
-  'order',
-  'ship',
-  'done',
-]
-
-export interface LogLine {
-  stage: Stage
-  /** Mono log tag (RECV/MEASURE/…); absent on the `$ quote …` command line. */
-  tag?: string
-  text: string
-  /** Delay before this line appears, ms. */
-  delayMs: number
-  /** Emphasized line (the engine's answer, the DONE line). */
-  strong?: boolean
-}
-
-/** Which rail anchor each stage parks the dot on: stations 0-2, SHIPS chip 3. */
-export const STAGE_ANCHOR: Record<Stage, 0 | 1 | 2 | 3> = {
-  recv: 0,
-  measure: 0,
-  price: 1,
-  order: 2,
-  ship: 3,
-  done: 3,
-}
 
 /** The demo's sample part persona. `bytes` matches the generated fixture. */
 export const SAMPLE_FILE = { name: 'bracket_v2.stl', bytes: 1484 }
@@ -56,41 +22,18 @@ export const SAMPLE_METRICS: MeshMetrics = {
   usedHullFallback: false,
 }
 
-/** The exact config the demo's POST /api/v1/price sends (and the PRICE line shows). */
+/** The exact config the demo's POST /api/v1/price sends (and the hero shows). */
 export const DEMO_CONFIG = {
   process: 'petg',
   quantity: 1,
   leadTime: 'standard',
 } as const
 
-/** The slice of the engine's PartQuote the log consumes. */
+/** The slice of the engine's PartQuote the fallbacks cover. */
 export interface DemoQuote {
   lineTotalPln: number
   weightG: number
   printHours: number
-}
-
-/** Terse committed values the rail stations reveal once their stage passes:
- *  [file, price, ship date] — same numbers as the log, shorter phrasing. */
-export type StationReadouts = [string, string, string]
-
-export function buildStationReadouts(
-  demo: Dictionary['process']['demo'],
-  locale: Locale,
-  quote: DemoQuote | undefined,
-  shipsDateLabel: string,
-): StationReadouts {
-  const q = quote ?? FALLBACK_QUOTE
-  const sizeKb = formatDecimal(
-    Math.round(SAMPLE_FILE.bytes / 100) / 10,
-    locale,
-    1,
-  )
-  return [
-    demo.recv(SAMPLE_FILE.name, `${sizeKb} KB`),
-    formatPln(q.lineTotalPln, locale),
-    shipsDateLabel,
-  ]
 }
 
 // Captured from a real engine response for SAMPLE_METRICS + DEMO_CONFIG
@@ -109,81 +52,4 @@ export const FALLBACK_QUOTE: DemoQuote = {
 export const FALLBACK_BREAKDOWN = {
   materialPln: 1.75,
   machinePln: 6.03,
-}
-
-/**
- * The full machine log for one demo run. Pure: prerender and hydration call
- * it with `quote`/`expressWeekday` undefined (fallbacks bake in), and the
- * script self-upgrades to live numbers when the queries resolve.
- */
-export function buildScript(
-  demo: Dictionary['process']['demo'],
-  locale: Locale,
-  quote: DemoQuote | undefined,
-  expressWeekday: string | undefined,
-): LogLine[] {
-  const q = quote ?? FALLBACK_QUOTE
-  const m = SAMPLE_METRICS
-  const sizeKb = formatDecimal(
-    Math.round(SAMPLE_FILE.bytes / 100) / 10,
-    locale,
-    1,
-  )
-  const dims = formatDims(m.bboxMm, locale)
-  return [
-    { stage: 'recv', text: demo.cmd(SAMPLE_FILE.name), delayMs: 300 },
-    {
-      stage: 'recv',
-      tag: demo.tags.recv,
-      text: demo.recv(SAMPLE_FILE.name, `${sizeKb} KB`),
-      delayMs: 500,
-    },
-    {
-      stage: 'measure',
-      tag: demo.tags.measure,
-      text: demo.measureMesh(formatInt(m.triangleCount, locale)),
-      delayMs: 700,
-    },
-    {
-      stage: 'measure',
-      tag: demo.tags.measure,
-      text: demo.measureDims(
-        `${formatDecimal(m.volumeCm3, locale, 1)} cm³`,
-        dims,
-      ),
-      delayMs: 550,
-    },
-    {
-      stage: 'price',
-      tag: demo.tags.price,
-      text: demo.priceConfig,
-      delayMs: 600,
-    },
-    {
-      stage: 'price',
-      tag: demo.tags.price,
-      text: demo.priceResult(
-        formatPln(q.lineTotalPln, locale),
-        formatInt(Math.round(q.weightG), locale),
-        formatDecimal(q.printHours, locale, 1),
-      ),
-      delayMs: 900,
-      strong: true,
-    },
-    { stage: 'order', tag: demo.tags.order, text: demo.order1, delayMs: 650 },
-    { stage: 'order', tag: demo.tags.order, text: demo.order2, delayMs: 550 },
-    {
-      stage: 'ship',
-      tag: demo.tags.ship,
-      text: expressWeekday ? demo.ship(expressWeekday) : demo.shipFallback,
-      delayMs: 800,
-    },
-    {
-      stage: 'done',
-      tag: demo.tags.done,
-      text: demo.done,
-      delayMs: 700,
-      strong: true,
-    },
-  ]
 }

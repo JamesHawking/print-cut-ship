@@ -191,7 +191,7 @@
       "minOrderPln": 30,
       "orderFeePln": 1,
       "shippingFlatPln": 20,
-      "freeShippingThresholdPln": 500,
+      "freeShippingThresholdPln": 300,
       "vatRate": 0.23
     },
     "sameDayCutoffHour": 14

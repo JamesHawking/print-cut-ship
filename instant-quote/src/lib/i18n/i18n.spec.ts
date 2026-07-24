@@ -10,7 +10,6 @@ import { plPlural } from './plural'
 describe('dictionary parity', () => {
   test('zipped arrays have equal lengths across locales', () => {
     expect(en.ticker.length).toBe(pl.ticker.length)
-    expect(en.process.steps.length).toBe(pl.process.steps.length)
     expect(en.pricing.terms.length).toBe(pl.pricing.terms.length)
     expect(en.pricing.cards.length).toBe(pl.pricing.cards.length)
   })
@@ -55,42 +54,38 @@ describe('dfm and api-error rendering', () => {
     ).toContain('piece')
   })
 
-  test('every demo log key renders in both locales', () => {
-    for (const dict of [pl, en]) {
-      const d = dict.process.demo
-      const rendered = [
-        d.cmd('bracket_v2.stl'),
-        d.recv('bracket_v2.stl', '1,5 KB'),
-        d.measureMesh('28'),
-        d.measureDims('67,2 cm³', '96 × 64 × 24 mm'),
-        d.priceConfig,
-        d.priceResult('7,78 zł', '29', '2,7'),
-        d.order1,
-        d.order2,
-        d.ship('CZW'),
-        d.shipFallback,
-        d.done,
-        d.replay,
-        d.engineLabel,
-        d.cta,
-        d.srSummary('7,78 zł', 'CZW'),
-      ]
-      for (const text of rendered) expect(text.length).toBeGreaterThan(2)
-      for (const tag of Object.values(d.tags))
-        expect(tag.length).toBeGreaterThan(2)
-    }
-  })
-
   test('every hero console key renders in both locales', () => {
     for (const dict of [pl, en]) {
       const c = dict.hero.console
       const rendered = [
         c.status('bracket_v2.stl'),
+        c.statusLive('part.stl'),
         c.metaShip('CZW'),
         c.rowMaterial('29', 'PETG'),
         c.rowMachine('2,7'),
+        c.liveCaption,
+        c.measuring,
+        c.blocked,
+        c.redirecting,
       ]
       for (const text of rendered) expect(text.length).toBeGreaterThan(2)
+    }
+  })
+
+  test('ladder block renders in both locales', () => {
+    for (const dict of [pl, en]) {
+      const l = dict.ladder
+      expect(l.intro('2,7')).toContain('2,7')
+      expect(l.tableHead('bracket_v2.stl', '29', '2,7')).toContain(
+        'bracket_v2.stl',
+      )
+      const ids = Object.keys(l.useCases)
+      expect(ids.length).toBe(7)
+      for (const id of ids) {
+        expect(
+          l.useCases[id as keyof typeof l.useCases].length,
+        ).toBeGreaterThan(10)
+      }
     }
   })
 

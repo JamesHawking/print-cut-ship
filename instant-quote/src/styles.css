@@ -10,7 +10,12 @@
  * white. Green = ready/success, red = blocked/error, yellow = highlight, blue =
  * info. Neutrals sit at near-zero chroma (aluminum, not cream). OKLCH throughout.
  */
-:root {
+/* .light re-anchors every semantic token back to light values for its
+   subtree — the hero's intake chamber sits as a light island inside the
+   dark bookend. Rule: semantic tokens only inside the island (dark:
+   variants would still match there). */
+:root,
+.light {
   --radius: 0.5rem;
 
   /* Neutrals — aluminum & paper, not cream (chroma ≈ 0) */
@@ -236,18 +241,11 @@
   }
 }
 
-/* Process demo band (live demo run, components/how-it-works/): ambient
-   dashed-track crawl, the SHIPS pulse, the terminal caret blink, and the
-   per-line log reveal. The traveling dot and station states are JS-driven
-   (measured anchors + CSS transitions in ConveyorRail.tsx) — no positional
-   keyframes here. All applied behind motion-safe variants. */
+/* Settle animations — one deliberate beat, then rest. All applied behind
+   motion-safe variants. */
 @theme {
-  --animate-conveyor: conveyor 1.2s linear infinite;
-  --animate-ship-pulse: ship-pulse 2s infinite;
-  --animate-caret: caret 1s step-end infinite;
-  --animate-log-line: log-line 240ms ease-out both;
   /* One-shot emphasis when the engine's PRICE answer lands: text-orange
-     settling to plain ink. Applied to strong log lines when revealed. */
+     settling to plain ink. */
   --animate-price-flash: price-flash 900ms ease-out 250ms both;
   /* Same beat for elements whose resting color IS the accent (the /quote
      unit price): bright primary settling to AA-safe primary-text. */
@@ -255,33 +253,6 @@
   /* Part status flip (PARSING → READY): signal green settling to muted. */
   --animate-status-settle: status-settle 900ms ease-out both;
 
-  @keyframes conveyor {
-    from {
-      background-position: 0 0;
-    }
-    to {
-      background-position: 32px 0;
-    }
-  }
-  @keyframes caret {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0;
-    }
-  }
-  @keyframes log-line {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
   @keyframes price-flash {
     from {
       color: var(--primary-text);
@@ -306,67 +277,46 @@
       color: var(--muted-foreground);
     }
   }
-  @keyframes ship-pulse {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 color-mix(in oklab, var(--signal) 50%, transparent);
-    }
-    50% {
-      box-shadow: 0 0 0 6px transparent;
-    }
-  }
 }
 
-/* Dashed conveyor line, colored by the current scope's muted foreground. */
-@utility conveyor-track {
-  background: repeating-linear-gradient(
-    90deg,
-    var(--color-muted-foreground) 0 16px,
-    transparent 16px 32px
-  );
-}
+/* Scope note: these utilities read var(--foreground) DIRECTLY, not
+   var(--color-foreground) — the theme-level alias computes its var() at
+   :root and freezes to light ink, so a .dark subtree would never re-color
+   it. The raw token resolves per element: ink on light, white on dark. */
 
-/* Vertical variant for the mobile rail. */
-@utility conveyor-track-y {
-  background: repeating-linear-gradient(
-    180deg,
-    var(--color-muted-foreground) 0 16px,
-    transparent 16px 32px
-  );
-}
-
-/* Faint engineering grid for the demo band — graph paper under the machine. */
+/* Faint engineering grid — graph paper under the instrument panels. */
 @utility blueprint-grid {
   background-image:
     linear-gradient(
-      color-mix(in oklab, var(--color-foreground) 12%, transparent) 1px,
+      color-mix(in oklab, var(--foreground) 12%, transparent) 1px,
       transparent 1px
     ),
     linear-gradient(
       90deg,
-      color-mix(in oklab, var(--color-foreground) 12%, transparent) 1px,
+      color-mix(in oklab, var(--foreground) 12%, transparent) 1px,
       transparent 1px
     );
   background-size: 28px 28px;
 }
 
-/* Lighter grid for the hero's light surface — same cell, quieter ink. */
-@utility blueprint-grid-faint {
+/* Ghost grid for dark surfaces — faint white lines (hero 17b). */
+@utility blueprint-grid-ghost {
   background-image:
     linear-gradient(
-      color-mix(in oklab, var(--color-foreground) 6%, transparent) 1px,
+      color-mix(in oklab, var(--foreground) 5%, transparent) 1px,
       transparent 1px
     ),
     linear-gradient(
       90deg,
-      color-mix(in oklab, var(--color-foreground) 6%, transparent) 1px,
+      color-mix(in oklab, var(--foreground) 5%, transparent) 1px,
       transparent 1px
     );
   background-size: 28px 28px;
 }
 
-/* Outlined display type (hero second line). */
+/* Outlined display type (hero second line): ink outline on light surfaces,
+   white outline inside the dark hero. */
 @utility text-stroke-ink {
   color: transparent;
-  -webkit-text-stroke: 2px var(--color-foreground);
+  -webkit-text-stroke: 2px var(--foreground);
 }
