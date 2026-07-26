@@ -54,8 +54,6 @@ export const en = {
     status: 'EU · FDM · PLN',
     kickerBadge: 'EU',
     kicker: 'On-demand 3D printing · Poland · PLN',
-    // 17b eyebrow: right-aligned LED chip; distinct from console.status.
-    engineLive: 'Engine live',
     // The headline literally labels the console's two chambers below it:
     // file goes in the left side, the price comes out the right.
     headline1: 'File in.',
@@ -67,11 +65,18 @@ export const en = {
       intakeHeading: 'What do you want to print?',
       ownTitle: 'My own design',
       ownHint: 'Drop it anywhere here — STL · 3MF · OBJ · STEP',
+      // Mobile intake: ≤sm the drop row is the single tap target with the
+      // dropzone.button verb as its title; hints stay one line at 360px and
+      // avoid drag-and-drop vocabulary (touch).
+      ownHintShort: 'STL · 3MF · OBJ · STEP',
       linkTitle: 'Something I found online',
       linkHint: 'Paste a MakerWorld model link',
       linkButton: 'Paste link',
       finePrint:
         'Up to 100 MB · used only for the quote — deleted automatically if you don’t order',
+      finePrintShort: 'Up to 100 MB · deleted if you don’t order',
+      // Mobile-only collapsed demo quote: one-line strip, tap to expand.
+      demoStrip: (file: string) => `Demo · ${file}`,
       demoCaption: 'Your quote appears here — this one is the demo bracket',
       printable: 'printable',
       metaShip: (weekday: string) => `incl. VAT · ships ${weekday} · D+1 PL/DE`,
@@ -84,12 +89,23 @@ export const en = {
       replay: 'Replay demo',
       locked: 'price locked 14 days',
       // Inline live quote — a single file dropped on the landing is quoted
-      // right in the chamber, then the editor opens automatically.
+      // right in the chamber; the quoted state is terminal and the button
+      // below is the only route into the editor (no auto-navigation).
       statusLive: (file: string) => `engine live · ${file}`,
       liveCaption: 'Your part · live quote',
       measuring: 'Measuring geometry…',
       blocked: 'exceeds build area',
-      redirecting: 'Opening your quote…',
+      assumptions: (material: string) =>
+        `${material} · qty 1 · standard — change anything in the editor`,
+      openQuote: 'Open full quote',
+      staysPut: 'stays put · price locked 14 days',
+      // Quoted-state intake island: single dimmed row + received-file line.
+      // Short form is the ≤sm (touch) variant — no drop-language.
+      ownHintAdd: 'Drop another file to add it to this quote',
+      ownHintAddShort: 'Add another file to this quote',
+      received: (file: string, sizeMb: string) =>
+        `${file} received · ${sizeMb} MB`,
+      watertightOk: 'watertight ✓',
     },
   },
   nav: {
@@ -124,6 +140,10 @@ export const en = {
     'No account',
     'Made in the EU',
   ],
+  // ≤sm the utility bar condenses to this one centered line (design 1e).
+  // Must fit one line at 360px (~35 mono chars with px-4) — measure before
+  // lengthening.
+  tickerCompact: 'D+1 PL/DE · free ≥ 300 zł · EU-made',
   process: {
     // "SHIPS" chip — shared by the header quote sub-bar and quote editor.
     ships: 'SHIPS',
@@ -139,8 +159,14 @@ export const en = {
     tableLabel: 'Demo bracket priced in seven materials',
     tableHead: (file: string, weight: string, hours: string) =>
       `${file} · ${weight} g · ${hours} h`,
-    tableGross: 'gross incl. 23% VAT',
+    // Header over the price column (110px) — longer forms wrap there.
+    tableGross: 'incl. 23% VAT',
+    vsCheapest: 'vs cheapest',
+    // Multiplier column: the cheapest row's caption; others render ×N.NN.
+    cheapest: '— cheapest',
+    // Mobile tag (name cell) vs desktop tag (end of the PETG bar).
     quotedAbove: 'quoted above ↑',
+    quotedAboveBar: '▲ quoted above',
     // One-line use cases, keyed by material id (shorter than the 02 cards).
     useCases: {
       pla: 'Crisp detail — prototypes, display models, indoor parts',
@@ -239,7 +265,6 @@ export const en = {
   },
   // Landing FAQ (section 04) — mirror of pl.ts.
   landingFaq: {
-    n: '04',
     heading: 'Frequently asked questions',
     items: [
       {

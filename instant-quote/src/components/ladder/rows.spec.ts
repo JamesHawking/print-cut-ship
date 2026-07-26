@@ -20,6 +20,10 @@ describe('buildLadderRows', () => {
     expect(rows[rows.length - 1].pct).toBe(100)
     expect(rows[0].pct).toBeGreaterThan(0)
     expect(rows[0].pct).toBeLessThan(rows[1].pct)
+    // Multiplier: cheapest row carries null; the rest scale off it.
+    expect(rows[0].mult).toBeNull()
+    expect(rows[1].mult).toBeCloseTo(rows[1].pricePln / rows[0].pricePln)
+    expect(rows[rows.length - 1].mult).toBeGreaterThan(4)
   })
 
   test('live rows override the fallback and blocked rows carry no bar', () => {
@@ -34,6 +38,9 @@ describe('buildLadderRows', () => {
     expect(rows[1].pct).toBe(100)
     expect(rows[2].blocked).toBe(true)
     expect(rows[2].pct).toBe(0)
+    expect(rows[0].mult).toBeNull()
+    expect(rows[1].mult).toBe(2)
+    expect(rows[2].mult).toBeNull()
   })
 
   test('fallback covers every catalog material', () => {

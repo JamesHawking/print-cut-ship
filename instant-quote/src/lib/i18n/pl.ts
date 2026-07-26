@@ -66,8 +66,6 @@ export const pl = {
     status: 'EU · FDM · PLN',
     kickerBadge: 'UE',
     kicker: 'Druk 3D na żądanie · Polska · PLN',
-    // 17b eyebrow: right-aligned LED chip; distinct from console.status.
-    engineLive: 'Silnik online',
     // The headline literally labels the console's two chambers below it:
     // file goes in the left side, the price comes out the right.
     headline1: 'Wchodzi plik.',
@@ -79,11 +77,18 @@ export const pl = {
       intakeHeading: 'Co chcesz wydrukować?',
       ownTitle: 'Mam własny projekt',
       ownHint: 'Upuść plik gdziekolwiek tutaj — STL · 3MF · OBJ · STEP',
+      // Mobile intake: ≤sm the drop row is the single tap target with the
+      // dropzone.button verb as its title; hints stay one line at 360px and
+      // avoid drag-and-drop vocabulary (touch).
+      ownHintShort: 'STL · 3MF · OBJ · STEP',
       linkTitle: 'Znalazłem model w sieci',
       linkHint: 'Wklej link do modelu z MakerWorld',
       linkButton: 'Wklej link',
       finePrint:
         'Do 100 MB · plik służy tylko do wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
+      finePrintShort: 'Do 100 MB · jeśli nie zamówisz, usuwamy plik',
+      // Mobile-only collapsed demo quote: one-line strip, tap to expand.
+      demoStrip: (file: string) => `Demo · ${file}`,
       demoCaption: 'Tu pojawi się twoja wycena — to demo wspornika',
       printable: 'w zakresie druku',
       metaShip: (weekday: string) => `z VAT · wysyłka ${weekday} · D+1 PL/DE`,
@@ -96,12 +101,23 @@ export const pl = {
       replay: 'Odtwórz demo',
       locked: 'cena ważna 14 dni',
       // Inline live quote — a single file dropped on the landing is quoted
-      // right in the chamber, then the editor opens automatically.
+      // right in the chamber; the quoted state is terminal and the button
+      // below is the only route into the editor (no auto-navigation).
       statusLive: (file: string) => `silnik online · ${file}`,
       liveCaption: 'Twoja część · wycena na żywo',
       measuring: 'Mierzymy geometrię…',
       blocked: 'poza polem roboczym',
-      redirecting: 'Otwieramy edytor wyceny…',
+      assumptions: (material: string) =>
+        `${material} · 1 szt. · termin standard — wszystko zmienisz w edytorze`,
+      openQuote: 'Otwórz pełną wycenę',
+      staysPut: 'zostaje na miejscu · cena ważna 14 dni',
+      // Quoted-state intake island: single dimmed row + received-file line.
+      // Short form is the ≤sm (touch) variant — no drop-language.
+      ownHintAdd: 'Upuść kolejny plik, aby dodać go do tej wyceny',
+      ownHintAddShort: 'Dodaj kolejny plik do tej wyceny',
+      received: (file: string, sizeMb: string) =>
+        `${file} przyjęty · ${sizeMb} MB`,
+      watertightOk: 'szczelny ✓',
     },
   },
   nav: {
@@ -137,6 +153,10 @@ export const pl = {
     'Bez konta',
     'Wyprodukowano w UE',
   ],
+  // ≤sm the utility bar condenses to this one centered line (design 1e).
+  // Must fit one line at 360px (~35 mono chars with px-4) — measure before
+  // lengthening.
+  tickerCompact: 'D+1 PL/DE · gratis ≥ 300 zł · z UE',
   process: {
     // "WYSYŁKA" chip — shared by the header quote sub-bar and quote editor.
     ships: 'WYSYŁKA',
@@ -152,8 +172,14 @@ export const pl = {
     tableLabel: 'Cena wspornika demo w siedmiu materiałach',
     tableHead: (file: string, weight: string, hours: string) =>
       `${file} · ${weight} g · ${hours} h`,
-    tableGross: 'brutto z 23% VAT',
+    // Header over the price column (110px) — longer forms wrap there.
+    tableGross: 'z VAT 23%',
+    vsCheapest: 'vs najtańszy',
+    // Multiplier column: the cheapest row's caption; others render ×N,NN.
+    cheapest: '— najtańszy',
+    // Mobile tag (name cell) vs desktop tag (end of the PETG bar).
     quotedAbove: 'wyceniony wyżej ↑',
+    quotedAboveBar: '▲ wyceniony wyżej',
     // One-line use cases, keyed by material id (shorter than the 02 cards).
     useCases: {
       pla: 'Ostre detale — prototypy, modele pokazowe, części do wnętrz',
@@ -251,10 +277,11 @@ export const pl = {
       },
     ],
   },
-  // Landing FAQ (section 04, LandingFaq.tsx) — also feeds the route's
-  // FAQPage JSON-LD, so items stay {q, a}-shaped.
+  // Landing FAQ (LandingFaq.tsx) — deliberately unnumbered: the landing
+  // numerals 01–03 mirror NAV_ORDER, whose 04 is Compare; the FAQ reads as
+  // a coda. Also feeds the route's FAQPage JSON-LD, so items stay
+  // {q, a}-shaped.
   landingFaq: {
-    n: '04',
     heading: 'Częste pytania',
     items: [
       {

@@ -15,6 +15,9 @@ export interface LadderRow {
   pricePln: number
   /** Bar width, % of the priciest printable material (0 while blocked). */
   pct: number
+  /** Price ÷ cheapest printable price; null for that cheapest row (and for
+      blocked rows) — it renders the "— cheapest" caption instead. */
+  mult: number | null
   blocked: boolean
 }
 
@@ -33,8 +36,13 @@ export function buildLadderRows(
       ).map(([id, pricePln]) => ({ id, pricePln, blocked: false }))
   const sorted = [...source].sort((a, b) => a.pricePln - b.pricePln)
   const prices = sorted.filter((r) => !r.blocked).map((r) => r.pricePln)
+  const cheapest = prices[0]
   return sorted.map((r) => ({
     ...r,
     pct: r.blocked ? 0 : shareOfMax(r.pricePln, prices),
+    mult:
+      r.blocked || !cheapest || r.pricePln === cheapest
+        ? null
+        : r.pricePln / cheapest,
   }))
 }

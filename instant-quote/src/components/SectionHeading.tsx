@@ -10,18 +10,22 @@ export function SectionHeading({
   title,
   className,
 }: {
-  n: string
+  /** Omitted for unnumbered codas (the landing FAQ) — the numbering
+      authority is NAV_ORDER, and not every section is a nav stop. */
+  n?: string
   title: string
   className?: string
 }) {
   return (
     <div className={cn('flex items-baseline gap-5 border-b pb-5', className)}>
-      <span
-        aria-hidden
-        className="text-primary-text font-mono text-[13px] font-bold tabular-nums"
-      >
-        {n}
-      </span>
+      {n && (
+        <span
+          aria-hidden
+          className="text-primary-text font-mono text-[13px] font-bold tabular-nums"
+        >
+          {n}
+        </span>
+      )}
       <h2 className="text-[clamp(2rem,4vw,3.25rem)] leading-none font-black tracking-[-0.03em] uppercase">
         {title}
       </h2>

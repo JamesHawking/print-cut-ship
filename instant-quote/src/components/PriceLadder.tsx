@@ -49,17 +49,28 @@ export function PriceLadder() {
           aria-label={l.tableLabel}
           className="border-foreground bg-card mt-8 border"
         >
-          {/* dark header strip — the terminal echo */}
+          {/* dark header strip — the terminal echo. Same grid template as
+            the rows so the column headers sit over what they describe:
+            "vs cheapest" over the bar, gross over the price. */}
           <div
             role="row"
-            className="bg-foreground text-background flex items-center justify-between gap-4 px-4 py-2.5 font-mono text-[10px] tracking-[0.18em] uppercase sm:px-5"
+            className="bg-foreground text-background grid grid-cols-[1fr_auto] items-center gap-x-4 px-4 py-2.5 font-mono text-[10px] tracking-[0.18em] uppercase sm:grid-cols-[150px_130px_1fr_90px] sm:px-5 lg:grid-cols-[150px_130px_1fr_240px_110px]"
           >
-            <span role="columnheader" className="font-bold">
+            <span
+              role="columnheader"
+              className="font-bold whitespace-nowrap sm:col-span-3"
+            >
               {l.tableHead(SAMPLE_FILE.name, weight, hours)}
             </span>
             <span
               role="columnheader"
-              className="text-background/70 max-sm:hidden"
+              className="text-background/70 max-lg:hidden"
+            >
+              {l.vsCheapest}
+            </span>
+            <span
+              role="columnheader"
+              className="text-background/70 text-right whitespace-nowrap max-sm:hidden"
             >
               {l.tableGross}
             </span>
@@ -73,7 +84,9 @@ export function PriceLadder() {
                 role="row"
                 key={row.id}
                 className={cn(
-                  'grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-0.5 border-b px-4 py-3.5 last:border-b-0 sm:grid-cols-[150px_110px_1fr_90px] sm:px-5 lg:grid-cols-[150px_110px_1fr_240px_90px]',
+                  // Family col 130px, not the mock's 110 — PL
+                  // "Specjalistyczne" needs 123px at the 10px type floor.
+                  'grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-0.5 border-b px-4 py-3.5 last:border-b-0 sm:grid-cols-[150px_130px_1fr_90px] sm:px-5 lg:grid-cols-[150px_130px_1fr_240px_110px]',
                   petg &&
                     'bg-primary/10 shadow-[inset_3px_0_0_0_var(--color-primary)]',
                 )}
@@ -81,16 +94,16 @@ export function PriceLadder() {
                 <span role="cell" className="text-[15px] font-bold">
                   {material?.label}
                   {petg && (
-                    // inline-block + nowrap: the tag drops below the name as
-                    // one unit instead of breaking mid-phrase in the 150px cell.
-                    <span className="text-primary-text ml-2 inline-block font-mono text-[8.5px] font-bold tracking-[0.1em] whitespace-nowrap uppercase">
+                    // ≤sm only — from sm up the tag sits at the end of the
+                    // bar, pointing at the thing it highlights (design 1d).
+                    <span className="text-primary-text ml-2 inline-block font-mono text-[10px] font-bold tracking-[0.1em] whitespace-nowrap uppercase sm:hidden">
                       {l.quotedAbove}
                     </span>
                   )}
                 </span>
                 <span
                   role="cell"
-                  className="text-muted-foreground font-mono text-[9px] tracking-[0.12em] uppercase max-sm:col-span-full max-sm:row-start-2 max-sm:-mt-0.5"
+                  className="text-muted-foreground font-mono text-[10px] tracking-[0.12em] uppercase max-sm:col-span-full max-sm:row-start-2 max-sm:-mt-0.5"
                 >
                   {strings.materialFamilies[family]}
                 </span>
@@ -102,28 +115,44 @@ export function PriceLadder() {
                 </span>
                 <span
                   role="cell"
-                  aria-hidden
-                  className="bg-secondary h-2.5 max-sm:hidden"
+                  className="flex items-center gap-2 max-sm:hidden"
                 >
+                  <span aria-hidden className="bg-secondary h-2.5 flex-1">
+                    <span
+                      className={cn(
+                        'block h-full motion-safe:transition-[width] motion-safe:duration-700 motion-safe:ease-out',
+                        petg ? 'bg-primary' : 'bg-foreground',
+                      )}
+                      style={{
+                        width: revealed ? `${row.pct}%` : '0%',
+                        transitionDelay: `${i * 60}ms`,
+                      }}
+                    />
+                  </span>
+                  {petg && (
+                    <span className="text-primary-text font-mono text-[10px] font-bold tracking-[0.08em] whitespace-nowrap uppercase">
+                      {l.quotedAboveBar}
+                    </span>
+                  )}
+                </span>
+                <span role="cell" className="text-right font-mono">
                   <span
                     className={cn(
-                      'block h-full motion-safe:transition-[width] motion-safe:duration-700 motion-safe:ease-out',
-                      petg ? 'bg-primary' : 'bg-foreground',
+                      'block text-[13px] font-bold tabular-nums',
+                      petg && 'text-primary-text',
                     )}
-                    style={{
-                      width: revealed ? `${row.pct}%` : '0%',
-                      transitionDelay: `${i * 60}ms`,
-                    }}
-                  />
-                </span>
-                <span
-                  role="cell"
-                  className={cn(
-                    'text-right font-mono text-[13px] font-bold tabular-nums',
-                    petg && 'text-primary-text',
+                  >
+                    {row.blocked ? '—' : formatPln(row.pricePln, locale)}
+                  </span>
+                  {/* ×-multiplier vs the cheapest row: the bars under-sell
+                    the 4× jump to PA12-CF; this names it. */}
+                  {!row.blocked && (
+                    <span className="text-muted-foreground mt-0.5 block text-[10px] tabular-nums">
+                      {row.mult === null
+                        ? l.cheapest
+                        : `×${formatDecimal(row.mult, locale, 2, 2)}`}
+                    </span>
                   )}
-                >
-                  {row.blocked ? '—' : formatPln(row.pricePln, locale)}
                 </span>
               </div>
             )
@@ -139,7 +168,7 @@ export function PriceLadder() {
           >
             {l.specLink}
           </Link>
-          <span className="text-muted-foreground font-mono text-[9.5px] tracking-[0.12em] uppercase">
+          <span className="text-muted-foreground font-mono text-[10px] tracking-[0.12em] uppercase">
             {l.requote}
           </span>
         </div>

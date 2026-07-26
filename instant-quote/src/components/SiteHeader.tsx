@@ -89,8 +89,13 @@ export function SiteHeader({
         // RateTicker is rates-only and decorative). Scrolls away; only the
         // 56px bar below stays sticky.
         <div className="dark bg-card text-muted-foreground border-b">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-2 font-mono text-[0.6rem] tracking-[0.14em] uppercase sm:px-6">
-            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 sm:gap-x-4">
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-2 font-mono text-[0.6rem] tracking-[0.14em] uppercase max-sm:justify-center sm:px-6">
+            {/* ≤sm: one centered line (design 1e) — the full promises wrap
+              to two ragged rows in a 360px column. */}
+            <span className="text-center sm:hidden">
+              {strings.tickerCompact}
+            </span>
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 max-sm:hidden sm:gap-x-4">
               {strings.ticker.slice(0, 3).map((t, i) => (
                 <span key={i} className="flex items-center gap-x-3 sm:gap-x-4">
                   {i > 0 && (
@@ -123,9 +128,11 @@ export function SiteHeader({
             activeOptions={{ exact: true }}
             className="text-foreground hover:text-foreground flex items-center gap-2 font-bold"
           >
+            {/* Static: the hero console's LED is the page's single animated
+              liveness carrier. */}
             <span
               aria-hidden
-              className="bg-signal motion-safe:animate-led size-2 shrink-0 rounded-full shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-signal)_22%,transparent)]"
+              className="bg-signal size-2 shrink-0 rounded-full shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-signal)_22%,transparent)]"
             />
             {strings.hero.wordmark}
           </Link>

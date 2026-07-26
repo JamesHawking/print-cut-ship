@@ -66,7 +66,15 @@ describe('dfm and api-error rendering', () => {
         c.liveCaption,
         c.measuring,
         c.blocked,
-        c.redirecting,
+        c.assumptions('PETG'),
+        c.openQuote,
+        c.staysPut,
+        c.ownHintAdd,
+        c.ownHintAddShort,
+        c.received('part.stl', '2,1'),
+        c.watertightOk,
+        c.finePrintShort,
+        c.demoStrip('bracket_v2.stl'),
       ]
       for (const text of rendered) expect(text.length).toBeGreaterThan(2)
     }
@@ -79,6 +87,9 @@ describe('dfm and api-error rendering', () => {
       expect(l.tableHead('bracket_v2.stl', '29', '2,7')).toContain(
         'bracket_v2.stl',
       )
+      expect(l.vsCheapest.length).toBeGreaterThan(2)
+      expect(l.cheapest.length).toBeGreaterThan(2)
+      expect(l.quotedAboveBar.length).toBeGreaterThan(2)
       const ids = Object.keys(l.useCases)
       expect(ids.length).toBe(7)
       for (const id of ids) {

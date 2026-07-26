@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import { useDemoPrice, useShipDates } from '@/hooks/useApi'
 import { useHeroLiveQuote } from '@/hooks/useHeroLiveQuote'
 import type { PartQuote } from '@/lib/api/client'
@@ -26,7 +27,8 @@ import {
  * edge as a baseplate, and the fused console is the hero's only object. The
  * light intake chamber is the one bright surface — exactly where the file
  * goes. The dark chamber quotes the demo bracket by default and switches to
- * the user's own part when a file lands (then the editor opens itself).
+ * the user's own part when a file lands; the quoted state then stays put —
+ * OPEN FULL QUOTE is the only route into the editor (handoff 1c).
  */
 export function Hero({
   onFiles,
@@ -41,6 +43,7 @@ export function Hero({
   urlPending?: boolean
   /** Part id to quote inline in the dark chamber (single-file drops). */
   livePartId: string | null
+  /** Opens the editor: the footer button, and price-API-error fallback. */
   onLiveQuoteDone: () => void
   onLiveQuoteFailed: () => void
 }) {
@@ -51,6 +54,9 @@ export function Hero({
   // Replaying the demo remounts the dark chamber, re-running its
   // motion-safe CSS animations (no-op under prefers-reduced-motion).
   const [runId, setRunId] = useState(0)
+  // ≤sm the demo quote collapses to a one-line strip (design 1e); tapping
+  // expands the full breakdown in place.
+  const [demoOpen, setDemoOpen] = useState(false)
 
   // Client-mounted only (React Query never fetches during prerender), so
   // static HTML carries the fallback numbers and hydration never mismatches.
@@ -86,6 +92,12 @@ export function Hero({
     shown?.breakdown.filter(
       (l) => l.key !== 'material' && l.key !== 'machine' && l.amountPln !== 0,
     ) ?? []
+  // Engine keys the dictionary doesn't know yet fall back to the raw code —
+  // never an empty label beside a live price.
+  function breakdownLabel(key: string): string {
+    const label = (strings.breakdown as Record<string, unknown>)[key]
+    return typeof label === 'string' ? label : key
+  }
   // Gross prices — VAT is extracted ("w tym"), never added on top.
   const vatIncluded = (total * VAT_RATE) / (1 + VAT_RATE)
   const blocked = shown?.blocked ?? false
@@ -102,29 +114,29 @@ export function Hero({
       {/* full-bleed ghost grid; the content column sits on top of it */}
       <div className="blueprint-grid-ghost">
         <div className="mx-auto max-w-6xl px-4 pt-12 pb-14 sm:px-6 md:pt-[60px] md:pb-16">
-          {/* eyebrow row: kicker left, engine LED right */}
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+          {/* eyebrow row: kicker left, static status dot right (the console
+            LED below is the page's single animated liveness carrier).
+            Dropped ≤sm so intake + CTA fit a 360×640 first screen. */}
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 max-sm:hidden">
             <p className="text-muted-foreground flex items-center gap-3 font-mono text-[0.66rem] tracking-[0.2em] uppercase">
               <span className="bg-primary text-primary-foreground px-1.5 py-1 font-bold tracking-[0.14em]">
                 {strings.hero.kickerBadge}
               </span>
               {strings.hero.kicker}
             </p>
-            <span className="text-muted-foreground flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] uppercase">
-              <span
-                aria-hidden
-                className="bg-signal motion-safe:animate-led size-[7px] rounded-full"
-              />
-              {strings.hero.engineLive}
-            </span>
+            <span aria-hidden className="bg-signal size-[7px] rounded-full" />
           </div>
 
           {/* Each phrase is an unbreakable unit: EN fits one line at desktop
             (6.9rem cap — 7rem left it 2px short), PL breaks between the
-            phrases, never inside one. */}
-          <h1 className="mt-5 text-[clamp(2.4rem,8.5vw,6.9rem)] leading-[0.88] font-black tracking-[-0.035em] uppercase">
+            phrases, never inside one. Preferred term 9.5vw with a 1.9rem
+            floor: the nowrap PL "Wychodzi cena." must fit vw−32px down to
+            320px screens (the old 2.4rem floor overflowed 360px by 10px).
+            Stroke width steps with the type size — 2.5px clogs the counters
+            at the ~34px mobile size. */}
+          <h1 className="mt-5 text-[clamp(1.9rem,9.5vw,6.9rem)] leading-[0.88] font-black tracking-[-0.035em] uppercase max-sm:mt-0">
             <span className="whitespace-nowrap">{strings.hero.headline1}</span>{' '}
-            <span className="text-stroke-ink whitespace-nowrap [-webkit-text-stroke-width:2.5px]">
+            <span className="text-stroke-ink whitespace-nowrap [-webkit-text-stroke-width:1.5px] sm:[-webkit-text-stroke-width:2px] lg:[-webkit-text-stroke-width:2.5px]">
               {strings.hero.headline2}
             </span>
           </h1>
@@ -148,22 +160,60 @@ export function Hero({
               </span>
             </div>
 
-            <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+            {/* Once a real quote lands the intake yields floor space to the
+              price: the shared chamber border slides left (grid-template-
+              columns interpolates in modern engines; snaps elsewhere and
+              under reduced motion). */}
+            <div
+              className={cn(
+                'grid motion-safe:transition-[grid-template-columns] motion-safe:duration-500 motion-safe:ease-out',
+                isLive
+                  ? 'lg:grid-cols-[0.7fr_1.3fr]'
+                  : 'lg:grid-cols-[1.1fr_0.9fr]',
+              )}
+            >
               {/* intake chamber — the hero's only bright surface (.light island;
                 semantic tokens only in here, no dark: variants) */}
-              <div className="light bg-card text-foreground border-b p-5 sm:p-6 lg:border-r lg:border-b-0">
+              <div className="light bg-card text-foreground flex flex-col border-b p-5 sm:p-6 lg:border-r lg:border-b-0">
                 <p className="mb-4 text-[19px] font-extrabold tracking-[-0.015em]">
                   {c.intakeHeading}
                 </p>
-                <DropZone
-                  variant="console"
-                  onFiles={onFiles}
-                  onUrl={onUrl}
-                  urlPending={urlPending}
-                />
-                <p className="text-muted-foreground/80 mt-3.5 font-mono text-[0.6rem] tracking-[0.1em] uppercase">
-                  {c.finePrint}
-                </p>
+                {/* Quoted: the taller quote chamber stretches this island, so
+                  the collapsed row + receipt center in the leftover height —
+                  deliberate calm, not a half-empty panel. */}
+                <div
+                  className={cn(
+                    isLive && 'flex flex-1 flex-col justify-center',
+                  )}
+                >
+                  <DropZone
+                    variant="console"
+                    onFiles={onFiles}
+                    onUrl={onUrl}
+                    urlPending={urlPending}
+                    quoted={isLive}
+                  />
+                  <p className="text-muted-foreground/80 mt-3.5 font-mono text-[0.6rem] tracking-[0.1em] uppercase">
+                    {live.kind === 'quoted' ? (
+                      // Received-file receipt: the intake's answer to the quote
+                      // on the right (design 1c). Floor at 0.1 so tiny files
+                      // don't read "0 MB".
+                      `${c.received(
+                        live.fileName,
+                        formatDecimal(
+                          Math.max(live.fileSize / 1e6, 0.1),
+                          locale,
+                          1,
+                        ),
+                      )}${live.watertight ? ` · ${c.watertightOk}` : ''}`
+                    ) : (
+                      <>
+                        <span className="max-sm:hidden">{c.finePrint}</span>
+                        <span className="sm:hidden">{c.finePrintShort}</span>
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
 
               {/* quote chamber — demo bracket, or the user's part live */}
@@ -191,104 +241,155 @@ export function Hero({
                   </div>
                 ) : (
                   <>
-                    <div className="px-5 pt-5 sm:px-6">
-                      <p className="text-muted-foreground text-[9px] tracking-[0.16em] uppercase">
-                        {isLive ? c.liveCaption : c.demoCaption}
-                      </p>
-                      <div className="mt-2.5 flex items-baseline justify-between gap-4">
-                        <span className="text-primary-text motion-safe:animate-price-flash-accent text-3xl leading-none font-bold tabular-nums">
-                          {formatPln(total, locale)}
+                    {/* ≤sm the demo collapses to this strip so the intake and
+                      its CTA fit the first screen (design 1e); the live quote
+                      always renders in full. */}
+                    {live.kind === 'demo' && (
+                      <button
+                        type="button"
+                        aria-expanded={demoOpen}
+                        onClick={() => setDemoOpen((o) => !o)}
+                        className="focus-visible:ring-ring flex cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left focus-visible:ring-2 focus-visible:outline-none sm:hidden"
+                      >
+                        <span className="text-muted-foreground text-[10px] tracking-[0.14em] uppercase">
+                          {c.demoStrip(SAMPLE_FILE.name)}
                         </span>
-                        {blocked ? (
-                          <span className="text-destructive flex items-center gap-2 text-[11px] font-bold">
-                            <span
-                              aria-hidden
-                              className="bg-destructive size-[7px] rounded-full"
-                            />
-                            {c.blocked}
+                        <span className="text-primary-text text-xs font-bold tabular-nums">
+                          {formatPln(total, locale)}{' '}
+                          <span aria-hidden>{demoOpen ? '▾' : '▸'}</span>
+                        </span>
+                      </button>
+                    )}
+                    <div
+                      className={cn(
+                        'flex flex-1 flex-col',
+                        live.kind === 'demo' && !demoOpen && 'max-sm:hidden',
+                      )}
+                    >
+                      <div className="px-5 pt-5 sm:px-6">
+                        <p className="text-muted-foreground text-[9px] tracking-[0.16em] uppercase">
+                          {isLive ? c.liveCaption : c.demoCaption}
+                        </p>
+                        <div className="mt-2.5 flex items-baseline justify-between gap-4">
+                          <span className="text-primary-text motion-safe:animate-price-flash-accent text-3xl leading-none font-bold tabular-nums">
+                            {formatPln(total, locale)}
                           </span>
-                        ) : (
-                          <span className="text-signal flex items-center gap-2 text-[11px] font-bold">
-                            <span
-                              aria-hidden
-                              className="bg-signal size-[7px] rounded-full"
-                            />
-                            {c.printable}
-                          </span>
+                          {blocked ? (
+                            <span className="text-destructive flex items-center gap-2 text-[11px] font-bold">
+                              <span
+                                aria-hidden
+                                className="bg-destructive size-[7px] rounded-full"
+                              />
+                              {c.blocked}
+                            </span>
+                          ) : (
+                            <span className="text-signal flex items-center gap-2 text-[11px] font-bold">
+                              <span
+                                aria-hidden
+                                className="bg-signal size-[7px] rounded-full"
+                              />
+                              {c.printable}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground mt-1.5 text-[10.5px]">
+                          {expressWeekday
+                            ? c.metaShip(expressWeekday)
+                            : c.metaShipFallback}
+                        </p>
+                        {isLive && (
+                          // The number carries assumptions — name them before
+                          // the user commits to the editor.
+                          <p className="text-muted-foreground mt-1 text-[10.5px]">
+                            {c.assumptions(materialLabel)}
+                          </p>
                         )}
                       </div>
-                      <p className="text-muted-foreground mt-1.5 text-[10.5px]">
-                        {expressWeekday
-                          ? c.metaShip(expressWeekday)
-                          : c.metaShipFallback}
-                      </p>
-                    </div>
 
-                    <div
-                      aria-hidden
-                      className="border-foreground/15 mx-5 mt-4 border-t sm:mx-6"
-                    />
-
-                    <div className="text-muted-foreground grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 px-5 pt-3.5 pb-4 text-[10.5px] sm:px-6">
-                      <span>
-                        {c.rowMaterial(
-                          formatInt(Math.round(weightG), locale),
-                          materialLabel,
-                        )}
-                      </span>
-                      <span className="text-right tabular-nums">
-                        {formatPln(materialPln, locale)}
-                      </span>
-                      <span>
-                        {c.rowMachine(formatDecimal(printHours, locale, 1))}
-                      </span>
-                      <span className="text-right tabular-nums">
-                        {formatPln(machinePln, locale)}
-                      </span>
-                      {extraLines.map((l) => (
-                        <span key={l.key} className="contents">
-                          <span>
-                            {l.key === 'plates'
-                              ? strings.breakdown.plates(l.count ?? 0)
-                              : strings.breakdown[
-                                  l.key as 'material' | 'machine' | 'finishing'
-                                ]}
-                          </span>
-                          <span className="text-right tabular-nums">
-                            {formatPln(l.amountPln, locale)}
-                          </span>
-                        </span>
-                      ))}
-                      <span
+                      <div
                         aria-hidden
-                        className="border-foreground/10 col-span-2 mt-1 border-t"
+                        className="border-foreground/15 mx-5 mt-4 border-t sm:mx-6"
                       />
-                      <span>{c.rowVat}</span>
-                      <span className="text-right tabular-nums">
-                        {formatPln(vatIncluded, locale)}
-                      </span>
-                    </div>
 
-                    <div className="border-foreground/15 mt-auto flex items-center justify-between gap-4 border-t px-5 py-3 sm:px-6">
-                      {isLive ? (
-                        <span className="text-primary-text text-[10px] font-bold tracking-[0.14em] uppercase">
-                          {c.redirecting}
+                      <div className="text-muted-foreground grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 px-5 pt-3.5 pb-4 text-[10.5px] sm:px-6">
+                        <span>
+                          {c.rowMaterial(
+                            formatInt(Math.round(weightG), locale),
+                            materialLabel,
+                          )}
                         </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            track('demo_replayed')
-                            setRunId((n) => n + 1)
-                          }}
-                          className="text-primary-text focus-visible:ring-ring cursor-pointer text-[10px] font-bold tracking-[0.14em] uppercase focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                        <span className="text-right tabular-nums">
+                          {formatPln(materialPln, locale)}
+                        </span>
+                        <span>
+                          {c.rowMachine(formatDecimal(printHours, locale, 1))}
+                        </span>
+                        <span className="text-right tabular-nums">
+                          {formatPln(machinePln, locale)}
+                        </span>
+                        {extraLines.map((l) => (
+                          <span key={l.key} className="contents">
+                            <span>
+                              {l.key === 'plates'
+                                ? strings.breakdown.plates(l.count ?? 0)
+                                : breakdownLabel(l.key)}
+                            </span>
+                            <span className="text-right tabular-nums">
+                              {formatPln(l.amountPln, locale)}
+                            </span>
+                          </span>
+                        ))}
+                        <span
+                          aria-hidden
+                          className="border-foreground/10 col-span-2 mt-1 border-t"
+                        />
+                        <span>{c.rowVat}</span>
+                        <span className="text-right tabular-nums">
+                          {formatPln(vatIncluded, locale)}
+                        </span>
+                      </div>
+
+                      <div
+                        className={cn(
+                          'border-foreground/15 mt-auto border-t px-5 py-3 sm:px-6',
+                          // Live: the primary CTA must never wrap — stack the
+                          // footer below sm instead of squeezing it.
+                          isLive
+                            ? 'flex gap-3 max-sm:flex-col sm:items-center sm:justify-between sm:gap-4'
+                            : 'flex items-center justify-between gap-4',
+                        )}
+                      >
+                        {isLive ? (
+                          // The explicit handoff: the quote stays put until
+                          // this button opens the editor (no timer).
+                          <button
+                            type="button"
+                            onClick={onLiveQuoteDone}
+                            className="bg-primary text-primary-foreground focus-visible:ring-ring cursor-pointer rounded-md px-5 py-3 text-center text-[11px] font-bold tracking-[0.1em] whitespace-nowrap uppercase focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none motion-safe:transition-transform motion-safe:hover:-translate-y-px max-sm:w-full"
+                          >
+                            {c.openQuote} <span aria-hidden>→</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              track('demo_replayed')
+                              setRunId((n) => n + 1)
+                            }}
+                            className="text-primary-text focus-visible:ring-ring cursor-pointer text-[10px] font-bold tracking-[0.14em] uppercase focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                          >
+                            {c.replay} <span aria-hidden>↻</span>
+                          </button>
+                        )}
+                        <span
+                          className={cn(
+                            'text-muted-foreground text-right text-[9px] tracking-[0.12em] uppercase',
+                            isLive && 'max-sm:text-center',
+                          )}
                         >
-                          {c.replay} <span aria-hidden>↻</span>
-                        </button>
-                      )}
-                      <span className="text-muted-foreground text-right text-[9px] tracking-[0.12em] uppercase">
-                        {c.locked}
-                      </span>
+                          {isLive ? c.staysPut : c.locked}
+                        </span>
+                      </div>
                     </div>
                   </>
                 )}

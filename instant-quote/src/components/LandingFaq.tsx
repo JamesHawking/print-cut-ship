@@ -8,16 +8,18 @@ import {
 } from '@/components/ui/accordion'
 
 /**
- * Landing FAQ (04) — objection-handling between the pricing section and the
- * footer CTA. Items also feed the route's FAQPage JSON-LD (they come from
- * the same dictionary array, so page and schema can never drift).
+ * Landing FAQ — objection-handling between the pricing section and the
+ * footer CTA. Deliberately unnumbered: the landing numerals mirror
+ * NAV_ORDER (whose 04 is Compare), so the FAQ reads as a coda. Items also
+ * feed the route's FAQPage JSON-LD (they come from the same dictionary
+ * array, so page and schema can never drift).
  */
 export function LandingFaq() {
-  const { n, heading, items } = useStrings().landingFaq
+  const { heading, items } = useStrings().landingFaq
   return (
     <section id="faq" className="scroll-mt-14 border-b">
       <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-        <SectionHeading n={n} title={heading} />
+        <SectionHeading title={heading} />
         <Accordion type="single" collapsible className="mt-8 max-w-3xl">
           {items.map((item) => (
             <AccordionItem key={item.q} value={item.q}>
