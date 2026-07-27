@@ -8,12 +8,15 @@ import { cn } from '@/lib/utils'
 export function SectionHeading({
   n,
   title,
+  titleShort,
   className,
 }: {
   /** Omitted for unnumbered codas (the landing FAQ) — the numbering
       authority is NAV_ORDER, and not every section is a nav stop. */
   n?: string
   title: string
+  /** Compact ≤sm title (Mobile Audit 1b) — same h2, swapped by breakpoint. */
+  titleShort?: string
   className?: string
 }) {
   return (
@@ -26,8 +29,15 @@ export function SectionHeading({
           {n}
         </span>
       )}
-      <h2 className="text-[clamp(2rem,4vw,3.25rem)] leading-none font-black tracking-[-0.03em] uppercase">
-        {title}
+      <h2 className="text-[clamp(2rem,4vw,3.25rem)] font-black tracking-[-0.03em] uppercase max-sm:text-[27px] max-sm:leading-[1.1] sm:leading-none">
+        {titleShort ? (
+          <>
+            <span className="max-sm:hidden">{title}</span>
+            <span className="sm:hidden">{titleShort}</span>
+          </>
+        ) : (
+          title
+        )}
       </h2>
     </div>
   )

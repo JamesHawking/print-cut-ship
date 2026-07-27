@@ -1,151 +1,20 @@
 import { Link } from '@tanstack/react-router'
+import { ChevronRight, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { track } from '@/lib/funnel'
 import { useFilePicker } from '@/hooks/useFilePicker'
 import { useLocale, useStrings } from '@/lib/i18n'
-import {
-  NAV_SECTIONS,
-  SECTIONS,
-  navNumeral,
-  type SectionKey,
-} from '@/content/sections'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
+import { NAV_SECTIONS, SECTIONS, type SectionKey } from '@/content/sections'
 import { LocaleSwitcher } from '../LocaleSwitcher'
-import {
-  FAMILY_DOT,
-  useNavPanelData,
-  type NavPanelKey,
-  type NavRowMeta,
-} from './nav-data'
 
 /**
- * The mobile (<lg) nav inside SiteHeader's Radix Dialog. Row 01 (how it
- * works) and pricing are flat numbered links; materials/compare/blog are
- * accordions over the same useNavPanelData the desktop mega menu renders —
- * tap toggles the sub-rows, the section index is the "all →" footer row.
- * Bottom order: primary quote CTA (opens the native file picker, same
- * funnel as QuoteCta), track-order demoted to a bordered chip, locale last.
+ * The mobile (<lg) nav inside SiteHeader's Radix Dialog — action-first
+ * (Mobile Audit 2b): the primary quote CTA leads, track-order and locale
+ * share a chip row, and the five sections are flat 56px rows that go
+ * straight to their page (the accordions' sub-rows were the sub-44px
+ * offenders; the real lists live on the section pages). Numerals become a
+ * right-hand index of counts (nav.menuMeta), not ranks.
  */
-
-const PANEL_KEYS = new Set<NavPanelKey>(['materials', 'compare', 'blog'])
-
-function isPanelKey(key: (typeof NAV_SECTIONS)[number]): key is NavPanelKey {
-  return PANEL_KEYS.has(key as NavPanelKey)
-}
-
-function RowMeta({ meta }: { meta?: NavRowMeta }) {
-  if (!meta) return null
-  if (meta.kind === 'family') {
-    return (
-      <span className="flex shrink-0 items-center gap-1.5 text-[9px] tracking-[0.12em]">
-        <span
-          aria-hidden
-          className={cn('size-[7px] rounded-full', FAMILY_DOT[meta.family])}
-        />
-        {meta.label}
-      </span>
-    )
-  }
-  if (meta.kind === 'soon') {
-    return (
-      <span className="border-foreground/15 shrink-0 border px-1.5 py-0.5 text-[9px] tracking-[0.12em]">
-        {meta.label}
-      </span>
-    )
-  }
-  return (
-    <span className="shrink-0 text-[9px] tracking-[0.12em] tabular-nums">
-      {meta.label}
-    </span>
-  )
-}
-
-const subRowClass =
-  'flex items-baseline justify-between gap-3 border-b border-foreground/10 px-1.5 py-3'
-
-function MobileAccordionSection({
-  panelKey,
-  active,
-  onNavigate,
-}: {
-  panelKey: NavPanelKey
-  active: boolean
-  onNavigate: () => void
-}) {
-  const locale = useLocale()
-  const data = useNavPanelData(panelKey)
-  return (
-    <AccordionItem value={panelKey}>
-      <AccordionTrigger
-        aria-current={active ? 'page' : undefined}
-        className="items-center rounded-none px-1.5 py-4 hover:no-underline"
-      >
-        <span className="flex flex-1 items-center justify-between">
-          <span
-            className={cn(
-              active ? 'text-primary-text font-bold' : 'text-foreground',
-            )}
-          >
-            {data.label}
-          </span>
-          <span aria-hidden className="text-primary-text">
-            {data.numeral}
-          </span>
-        </span>
-      </AccordionTrigger>
-      <AccordionContent className="pb-0 pl-4">
-        <ul>
-          {data.rows.map((row) => (
-            <li key={row.key}>
-              {row.to ? (
-                <Link
-                  to="/$locale/$section/$detail"
-                  params={{
-                    locale,
-                    section: row.to.section,
-                    detail: row.to.detail,
-                  }}
-                  onClick={onNavigate}
-                  className={cn(
-                    subRowClass,
-                    'text-muted-foreground hover:text-foreground transition-colors',
-                  )}
-                >
-                  <span>{row.label}</span>
-                  <RowMeta meta={row.meta} />
-                </Link>
-              ) : (
-                <span
-                  className={cn(
-                    subRowClass,
-                    'text-muted-foreground opacity-60',
-                  )}
-                >
-                  <span>{row.label}</span>
-                  <RowMeta meta={row.meta} />
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-        <Link
-          to="/$locale/$section"
-          params={{ locale, section: data.footer.section }}
-          onClick={onNavigate}
-          className="text-primary-text block px-1.5 py-3 font-bold"
-        >
-          {data.footer.label}
-        </Link>
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
-
 export function MobileNav({
   routeKey,
   onNavigate,
@@ -157,51 +26,16 @@ export function MobileNav({
   const locale = useLocale()
   const openFilePicker = useFilePicker()
 
+  const rowClass =
+    'flex min-h-14 items-center gap-3 border-b px-1.5 py-3 text-[15px]'
+  const metaClass =
+    'text-muted-foreground shrink-0 font-mono text-[9.5px] tracking-[0.1em] uppercase tabular-nums'
+  const chevron = (
+    <ChevronRight aria-hidden className="text-primary-text size-4 shrink-0" />
+  )
+
   return (
     <>
-      <Link
-        to="/$locale"
-        params={{ locale }}
-        hash="how-it-works"
-        onClick={onNavigate}
-        className="text-foreground flex items-center justify-between border-b px-1.5 py-4"
-      >
-        {strings.nav.howItWorks}
-        <span aria-hidden className="text-primary-text">
-          {navNumeral('howItWorks')}
-        </span>
-      </Link>
-      <Accordion type="single" collapsible>
-        {NAV_SECTIONS.map((key) =>
-          isPanelKey(key) ? (
-            <MobileAccordionSection
-              key={key}
-              panelKey={key}
-              active={routeKey === key}
-              onNavigate={onNavigate}
-            />
-          ) : (
-            <Link
-              key={key}
-              to="/$locale/$section"
-              params={{ locale, section: SECTIONS[key][locale] }}
-              onClick={onNavigate}
-              aria-current={routeKey === key ? 'page' : undefined}
-              className={cn(
-                'flex items-center justify-between border-b px-1.5 py-4',
-                routeKey === key
-                  ? 'text-primary-text font-bold'
-                  : 'text-foreground',
-              )}
-            >
-              {strings.nav[key]}
-              <span aria-hidden className="text-primary-text">
-                {navNumeral(key)}
-              </span>
-            </Link>
-          ),
-        )}
-      </Accordion>
       <button
         type="button"
         onClick={() => {
@@ -209,21 +43,63 @@ export function MobileNav({
           openFilePicker()
           onNavigate()
         }}
-        className="bg-primary text-primary-foreground mt-3.5 block w-full cursor-pointer rounded-[7px] px-2 py-[15px] text-center font-bold"
+        className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-14 w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg text-[15px] font-bold focus-visible:ring-2 focus-visible:outline-none"
       >
-        {strings.nav.getQuoteShort} →
+        <Plus aria-hidden className="size-5" strokeWidth={2.2} />
+        {strings.nav.getQuote}
       </button>
-      <Link
-        to="/$locale/login"
-        params={{ locale }}
-        onClick={onNavigate}
-        className="bg-card text-foreground hover:bg-secondary mt-2.5 block rounded-[7px] border px-2 py-[15px] text-center font-bold transition-colors"
-      >
-        {strings.nav.trackOrder}
-      </Link>
-      <div className="mt-3.5 flex justify-center">
-        <LocaleSwitcher />
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <Link
+          to="/$locale/login"
+          params={{ locale }}
+          onClick={onNavigate}
+          className="text-foreground hover:bg-secondary flex h-12 items-center justify-center rounded-lg border font-mono text-[10.5px] font-bold tracking-[0.12em] uppercase transition-colors"
+        >
+          {strings.nav.trackOrder}
+        </Link>
+        <div className="flex h-12 items-center justify-center rounded-lg border">
+          <LocaleSwitcher />
+        </div>
       </div>
+      <nav className="mt-4 border-t">
+        <Link
+          to="/$locale"
+          params={{ locale }}
+          hash="how-it-works"
+          onClick={onNavigate}
+          className={cn(rowClass, 'text-foreground')}
+        >
+          <span className="flex-1 font-bold">{strings.nav.howItWorks}</span>
+          <span aria-hidden className={metaClass}>
+            {strings.nav.menuMeta.howItWorks}
+          </span>
+          {chevron}
+        </Link>
+        {NAV_SECTIONS.map((key) => (
+          <Link
+            key={key}
+            to="/$locale/$section"
+            params={{ locale, section: SECTIONS[key][locale] }}
+            onClick={onNavigate}
+            aria-current={routeKey === key ? 'page' : undefined}
+            className={cn(
+              rowClass,
+              routeKey === key ? 'text-primary-text' : 'text-foreground',
+            )}
+          >
+            <span className="flex-1 font-bold">{strings.nav[key]}</span>
+            <span aria-hidden className={metaClass}>
+              {strings.nav.menuMeta[key]}
+            </span>
+            {chevron}
+          </Link>
+        ))}
+      </nav>
+      <p className="text-muted-foreground/80 mt-4 font-mono text-[0.6rem] leading-relaxed tracking-[0.1em] uppercase">
+        {strings.nav.menuTrust1}
+        <br />
+        {strings.nav.menuTrust2}
+      </p>
     </>
   )
 }

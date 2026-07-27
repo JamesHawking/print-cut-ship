@@ -15,15 +15,16 @@ import {
  * array, so page and schema can never drift).
  */
 export function LandingFaq() {
-  const { heading, items } = useStrings().landingFaq
+  const { heading, headingShort, items } = useStrings().landingFaq
   return (
     <section id="faq" className="scroll-mt-14 border-b">
-      <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
-        <SectionHeading title={heading} />
+      <div className="mx-auto max-w-6xl px-4 py-11 sm:px-6 sm:py-15 md:py-24">
+        <SectionHeading title={heading} titleShort={headingShort} />
         <Accordion type="single" collapsible className="mt-8 max-w-3xl">
           {items.map((item) => (
             <AccordionItem key={item.q} value={item.q}>
-              <AccordionTrigger className="text-left text-[15px] font-bold">
+              {/* ≤sm: 56px touch rows (finding 08 — raise, don't redesign). */}
+              <AccordionTrigger className="text-left text-[15px] font-bold max-sm:min-h-14 max-sm:items-center">
                 {item.q}
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed text-pretty">

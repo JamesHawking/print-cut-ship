@@ -59,25 +59,77 @@ export const en = {
     headline1: 'File in.',
     headline2: 'Price out.',
     sub: 'One machine below: your file goes in on the left, the itemized price comes out on the right. VAT included, and a ship date it will keep.',
+    // ≤sm variant (Mobile Audit 1b) — the desktop sub runs 4–5 lines at 360px.
+    subShort:
+      'Drop a file, see the itemized price. VAT in, ship date included.',
+    // ≤sm trust line under the console (finding 01) — carries the utility-bar
+    // promises after that bar is hidden on mobile.
+    trustChips: ['Ships D+1 PL/DE', 'Free ≥ 300 zł', 'No account'],
     console: {
       title: 'Instant quote',
       status: (file: string) => `engine live · showing ${file}`,
       intakeHeading: 'What do you want to print?',
-      ownTitle: 'My own design',
-      ownHint: 'Drop it anywhere here — STL · 3MF · OBJ · STEP',
-      // Mobile intake: ≤sm the drop row is the single tap target with the
-      // dropzone.button verb as its title; hints stay one line at 360px and
-      // avoid drag-and-drop vocabulary (touch).
-      ownHintShort: 'STL · 3MF · OBJ · STEP',
-      linkTitle: 'Something I found online',
-      linkHint: 'Paste a MakerWorld model link',
-      linkButton: 'Paste link',
+      // Tabbed intake (Mobile Audit Turn 4). Tab labels must stay short —
+      // three of them at 11px mono have to fit a 288px island at 360px
+      // (i18n.spec pins a 12-character budget; the icons drop below 430px).
+      tabsLabel: 'How to add your model',
+      tabUpload: 'Upload',
+      tabLink: 'Paste a link',
+      tabDemo: 'Demo',
+      // Upload panel. The drag line is sm+ only — on touch there is nothing
+      // to drag, so the filled button leads there.
+      uploadLead: 'Drag a file here, or',
+      formats: 'STL · 3MF · OBJ · STEP',
+      chooseFile: 'Choose a 3D file',
       finePrint:
-        'Up to 100 MB · used only for the quote — deleted automatically if you don’t order',
-      finePrintShort: 'Up to 100 MB · deleted if you don’t order',
-      // Mobile-only collapsed demo quote: one-line strip, tap to expand.
-      demoStrip: (file: string) => `Demo · ${file}`,
-      demoCaption: 'Your quote appears here — this one is the demo bracket',
+        'Up to 100 MB · measured in your browser · deleted if you don’t order',
+      // Link panel. MakerWorld is the only source the fetcher accepts
+      // (src/lib/makerworld.ts host allow-list) — do not advertise others.
+      pasteLink: 'Paste a MakerWorld link',
+      linkFetch: 'Fetch the model',
+      worksWithLabel: 'Works with',
+      worksWithBody:
+        'MakerWorld only for now — paste a model link (makerworld.com/models/…)',
+      // Multi-body models arrive as one mesh: we quote them as a single part
+      // and any extra-plate fee shows up as its own breakdown line.
+      finePrintLink:
+        'A model made of several bodies is quoted as one set — any extra-plate fee shows in the quote',
+      // Demo panel — three real sample parts, priced by the live engine.
+      demoIntro: 'No file to hand? Price one of ours — this quote is real.',
+      demoShowing: 'showing now',
+      demoMetaBracket: 'Bracket · PETG',
+      demoMetaBearing: 'Tight fits · Iglidur',
+      demoMetaLid: 'Large flat · warp risk',
+      finePrintDemo: 'Picking a demo swaps the quote shown',
+      // Drag face. The filename is unreadable until drop (getAsFile() returns
+      // null during dragover), so the count is all we can honestly show.
+      dropToPrice: 'Drop to price it',
+      dropCount: (n: number) => `${n} ${enPlural(n, 'file', 'files')}`,
+      finePrintDrag: 'Dropping anywhere on the page switches to Upload',
+      // Rejected file — the intake says why instead of a toast that vanishes.
+      rejectTitleType: (file: string) => `${file} isn’t a 3D file`,
+      rejectBodyType:
+        'We print from solid geometry. Export as STL or STEP from your CAD, or send it over and we’ll convert it.',
+      rejectTitleSize: (file: string) => `${file} is too large`,
+      rejectBodySize:
+        'The limit is 100 MB. Email it over and we’ll take a bigger one.',
+      chooseAnother: 'Choose another file',
+      finePrintReject: 'Or email it · reply within one working day',
+      // ≤sm measuring card (2a-02): the honesty beat while the engine runs.
+      // The facts render as a label/value grid, so these are labels only —
+      // values come from formatInt / formatDims.
+      pricing: 'Pricing…',
+      measuredLocal: 'Measured in your browser · nothing sent yet',
+      factsTriangles: 'Triangles',
+      factsBbox: 'Bounding box',
+      factsWatertight: 'Watertight',
+      factsYes: 'yes ✓',
+      // ≤sm quoted state (2a-03): the intake collapses to this one chip.
+      addFile: '+ add',
+      chipSize: (sizeMb: string) => `${sizeMb} MB`,
+      // ≤sm CTA under the demo quote — hands the flow back to the intake.
+      priceMine: 'Now price mine',
+      demoCaption: 'Your quote appears here — for now, our demo part',
       printable: 'printable',
       metaShip: (weekday: string) => `incl. VAT · ships ${weekday} · D+1 PL/DE`,
       metaShipFallback: 'incl. VAT · ships D+1 PL/DE',
@@ -100,7 +152,7 @@ export const en = {
       openQuote: 'Open full quote',
       staysPut: 'stays put · price locked 14 days',
       // Quoted-state intake island: single dimmed row + received-file line.
-      // Short form is the ≤sm (touch) variant — no drop-language.
+      ownTitle: 'My own design',
       ownHintAdd: 'Drop another file to add it to this quote',
       ownHintAddShort: 'Add another file to this quote',
       received: (file: string, sizeMb: string) =>
@@ -133,6 +185,24 @@ export const en = {
       `Continue? ${n} ${enPlural(n, 'part', 'parts')} will be discarded.`,
     newQuoteConfirmAction: 'New quote',
     newQuoteConfirmCancel: 'Cancel',
+    // Mobile menu (2b): right-hand index of counts, not ranks — update the
+    // counts when the catalogs grow (materials, comparisons, guides).
+    menuMeta: {
+      howItWorks: '01',
+      materials: '7',
+      pricing: 'rate card',
+      compare: '3',
+      blog: '2 guides',
+    },
+    menuTrust1: 'Ships D+1 PL/DE · free ≥ 300 zł',
+    menuTrust2: 'EU · FDM · PLN · 23% VAT',
+  },
+  // <lg sticky bottom bar (StickyQuoteBar.tsx) — default CTA reuses
+  // nav.getQuote; these are the quoted price-bar strings. openQuote mirrors
+  // the short PL form (2c) so both locales fit beside the price column.
+  stickyBar: {
+    openQuote: 'Open quote',
+    caption: 'incl. VAT · locked 14 days',
   },
   ticker: [
     'Ships D+1 PL/DE',
@@ -140,10 +210,6 @@ export const en = {
     'No account',
     'Made in the EU',
   ],
-  // ≤sm the utility bar condenses to this one centered line (design 1e).
-  // Must fit one line at 360px (~35 mono chars with px-4) — measure before
-  // lengthening.
-  tickerCompact: 'D+1 PL/DE · free ≥ 300 zł · EU-made',
   process: {
     // "SHIPS" chip — shared by the header quote sub-bar and quote editor.
     ships: 'SHIPS',
@@ -164,8 +230,13 @@ export const en = {
     vsCheapest: 'vs cheapest',
     // Multiplier column: the cheapest row's caption; others render ×N.NN.
     cheapest: '— cheapest',
-    // Mobile tag (name cell) vs desktop tag (end of the PETG bar).
-    quotedAbove: 'quoted above ↑',
+    // ≤sm bar-end chips (finding 04): short multiplier labels.
+    chipCheapest: 'cheapest',
+    chipQuoted: (mult: string) => `×${mult} · quoted above`,
+    // ≤sm expand toggle — 3 rows visible by default.
+    showAll: 'Show all seven',
+    showFewer: 'Show fewer',
+    // sm+ tag at the end of the PETG bar; ≤sm the bar chip carries it.
     quotedAboveBar: '▲ quoted above',
     // One-line use cases, keyed by material id (shorter than the 02 cards).
     useCases: {
@@ -203,36 +274,43 @@ export const en = {
   materials: {
     pla: {
       family: 'standard' as MaterialFamily,
+      oneLiner: 'Prototypes and display parts',
       tagline:
         'Cheapest and easiest to print. Prototypes, concept models, display parts.',
     },
     petg: {
       family: 'standard' as MaterialFamily,
+      oneLiner: 'The default when in doubt',
       tagline:
         'Tough, moisture-resistant workhorse. Enclosures, brackets, functional parts.',
     },
     pctg: {
       family: 'standard' as MaterialFamily,
+      oneLiner: 'Impact-resistant, near-clear',
       tagline:
         'Upgraded PETG with higher impact resistance. Housings and mechanical parts.',
     },
     asa: {
       family: 'engineering' as MaterialFamily,
+      oneLiner: 'Outdoors, UV-stable',
       tagline:
         'UV- and weather-stable. Outdoor, automotive and exterior parts.',
     },
     petg_fr: {
       family: 'specialty' as MaterialFamily,
+      oneLiner: 'V0 flame-rated',
       tagline:
         'Flame-retardant (UL94 V-0). Electronics enclosures and control cabinets.',
     },
     pa12_cf: {
       family: 'engineering' as MaterialFamily,
+      oneLiner: 'Carbon-stiff, to ~170 °C',
       tagline:
         'Carbon-filled nylon — peak strength, heat resistance to ~170°C. Jigs, gears, motorsport.',
     },
     iglidur: {
       family: 'specialty' as MaterialFamily,
+      oneLiner: 'Sliding bushings, no grease',
       tagline:
         'Self-lubricating Igus material. Bearings, bushings and sliding parts.',
     },
@@ -266,6 +344,8 @@ export const en = {
   // Landing FAQ (section 04) — mirror of pl.ts.
   landingFaq: {
     heading: 'Frequently asked questions',
+    // ≤sm heading (Mobile Audit 1b) — 27px display type, one word.
+    headingShort: 'Questions',
     items: [
       {
         q: 'What happens to my file?',

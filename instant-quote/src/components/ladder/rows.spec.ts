@@ -24,6 +24,9 @@ describe('buildLadderRows', () => {
     expect(rows[0].mult).toBeNull()
     expect(rows[1].mult).toBeCloseTo(rows[1].pricePln / rows[0].pricePln)
     expect(rows[rows.length - 1].mult).toBeGreaterThan(4)
+    // ≤sm the ladder collapses to the first 3 rows — the quoted PETG row
+    // must stay visible there (PriceLadder's mobile toggle).
+    expect(rows.findIndex((r) => r.id === 'petg')).toBeLessThan(3)
   })
 
   test('live rows override the fallback and blocked rows carry no bar', () => {

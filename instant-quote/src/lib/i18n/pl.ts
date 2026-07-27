@@ -71,26 +71,81 @@ export const pl = {
     headline1: 'Wchodzi plik.',
     headline2: 'Wychodzi cena.',
     sub: 'Poniżej stoi cała maszyna: z lewej wchodzi twój plik, z prawej wychodzi cena rozbita na pozycje — z VAT i z datą wysyłki, której dotrzymujemy.',
+    // ≤sm variant (Mobile Audit 1b) — the desktop sub runs 4–5 lines at 360px.
+    subShort:
+      'Upuść plik, zobacz cenę rozbitą na pozycje. Z VAT i z datą wysyłki.',
+    // ≤sm trust line under the console (finding 01) — carries the utility-bar
+    // promises after that bar is hidden on mobile.
+    trustChips: ['Wysyłka D+1 PL/DE', 'Gratis ≥ 300 zł', 'Bez konta'],
     console: {
       title: 'Wycena od ręki',
       status: (file: string) => `silnik online · demo: ${file}`,
       intakeHeading: 'Co chcesz wydrukować?',
-      ownTitle: 'Mam własny projekt',
-      ownHint: 'Upuść plik gdziekolwiek tutaj — STL · 3MF · OBJ · STEP',
-      // Mobile intake: ≤sm the drop row is the single tap target with the
-      // dropzone.button verb as its title; hints stay one line at 360px and
-      // avoid drag-and-drop vocabulary (touch).
-      ownHintShort: 'STL · 3MF · OBJ · STEP',
-      linkTitle: 'Znalazłem model w sieci',
-      linkHint: 'Wklej link do modelu z MakerWorld',
-      linkButton: 'Wklej link',
+      // Tabbed intake (Mobile Audit Turn 4). Tab labels must stay short —
+      // three of them at 11px mono have to fit a 288px island at 360px
+      // (i18n.spec pins a 12-character budget; the icons drop below 430px).
+      tabsLabel: 'Sposób dodania modelu',
+      tabUpload: 'Wgraj plik',
+      tabLink: 'Wklej link',
+      tabDemo: 'Demo',
+      // Upload panel. The drag line is sm+ only — on touch there is nothing
+      // to drag, so the filled button leads there.
+      uploadLead: 'Przeciągnij plik tutaj albo',
+      formats: 'STL · 3MF · OBJ · STEP',
+      chooseFile: 'Wybierz plik 3D',
       finePrint:
-        'Do 100 MB · plik służy tylko do wyceny — jeśli nie zamówisz, usuwamy go automatycznie',
-      finePrintShort: 'Do 100 MB · jeśli nie zamówisz, usuwamy plik',
-      // Mobile-only collapsed demo quote: one-line strip, tap to expand.
-      demoStrip: (file: string) => `Demo · ${file}`,
-      demoCaption: 'Tu pojawi się twoja wycena — to demo wspornika',
-      printable: 'w zakresie druku',
+        'Do 100 MB · mierzymy w przeglądarce · usuwamy, jeśli nie zamówisz',
+      // Link panel. MakerWorld is the only source the fetcher accepts
+      // (src/lib/makerworld.ts host allow-list) — do not advertise others.
+      pasteLink: 'Wklej link z MakerWorld',
+      linkFetch: 'Pobierz model',
+      worksWithLabel: 'Działa z',
+      worksWithBody:
+        'Na razie tylko MakerWorld — wklej link do modelu (makerworld.com/models/…)',
+      // Multi-body models arrive as one mesh: we quote them as a single part
+      // and any extra-plate fee shows up as its own breakdown line.
+      finePrintLink:
+        'Model z kilku brył wyceniamy jako jeden komplet — dopłatę za dodatkowe płyty widać w wycenie',
+      // Demo panel — three real sample parts, priced by the live engine.
+      demoIntro:
+        'Nie masz pliku pod ręką? Wyceń jedną z naszych części — ta wycena jest prawdziwa.',
+      demoShowing: 'pokazane',
+      demoMetaBracket: 'Wspornik · PETG',
+      demoMetaBearing: 'Ciasne pasowania · Iglidur',
+      demoMetaLid: 'Duża płaska · ryzyko wypaczeń',
+      finePrintDemo: 'Wybór demo podmienia pokazaną wycenę',
+      // Drag face. The filename is unreadable until drop (getAsFile() returns
+      // null during dragover), so the count is all we can honestly show.
+      dropToPrice: 'Upuść, żeby wycenić',
+      dropCount: (n: number) =>
+        `${n} ${plPlural(n, 'plik', 'pliki', 'plików')}`,
+      finePrintDrag:
+        'Upuszczenie pliku gdziekolwiek na stronie przełącza na „Wgraj plik”',
+      // Rejected file — the intake says why instead of a toast that vanishes.
+      rejectTitleType: (file: string) => `${file} to nie jest plik 3D`,
+      rejectBodyType:
+        'Drukujemy z bryły. Wyeksportuj STL albo STEP ze swojego CAD-a — albo przyślij plik, przekonwertujemy.',
+      rejectTitleSize: (file: string) => `${file} jest za duży`,
+      rejectBodySize:
+        'Limit to 100 MB. Wyślij plik mailem — przyjmiemy większy.',
+      chooseAnother: 'Wybierz inny plik',
+      finePrintReject: 'Albo wyślij mailem · odpowiadamy w 1 dzień roboczy',
+      // ≤sm measuring card (2a-02): the honesty beat while the engine runs.
+      // The facts render as a label/value grid, so these are labels only —
+      // values come from formatInt / formatDims.
+      pricing: 'Wyceniamy…',
+      measuredLocal: 'Mierzone w przeglądarce · nic jeszcze nie wysłano',
+      factsTriangles: 'Trójkąty',
+      factsBbox: 'Obrys',
+      factsWatertight: 'Szczelny',
+      factsYes: 'tak ✓',
+      // ≤sm quoted state (2a-03): the intake collapses to this one chip.
+      addFile: '+ dodaj',
+      chipSize: (sizeMb: string) => `${sizeMb} MB`,
+      // ≤sm CTA under the demo quote — hands the flow back to the intake.
+      priceMine: 'Teraz wyceń moją część',
+      demoCaption: 'Tu pojawi się twoja wycena — na razie nasza część demo',
+      printable: 'Zgodny',
       metaShip: (weekday: string) => `z VAT · wysyłka ${weekday} · D+1 PL/DE`,
       metaShipFallback: 'z VAT · wysyłka D+1 PL/DE',
       rowMaterial: (weight: string, material: string) =>
@@ -112,7 +167,7 @@ export const pl = {
       openQuote: 'Otwórz pełną wycenę',
       staysPut: 'zostaje na miejscu · cena ważna 14 dni',
       // Quoted-state intake island: single dimmed row + received-file line.
-      // Short form is the ≤sm (touch) variant — no drop-language.
+      ownTitle: 'Mam własny projekt',
       ownHintAdd: 'Upuść kolejny plik, aby dodać go do tej wyceny',
       ownHintAddShort: 'Dodaj kolejny plik do tej wyceny',
       received: (file: string, sizeMb: string) =>
@@ -145,6 +200,25 @@ export const pl = {
       `Kontynuować? ${plPlural(n, 'Jedna część zostanie odrzucona.', `${n} części zostaną odrzucone.`, `${n} części zostanie odrzuconych.`)}`,
     newQuoteConfirmAction: 'Nowa wycena',
     newQuoteConfirmCancel: 'Anuluj',
+    // Mobile menu (2b): right-hand index of counts, not ranks — update the
+    // counts when the catalogs grow (materials, comparisons, guides).
+    menuMeta: {
+      howItWorks: '01',
+      materials: '7',
+      pricing: 'stawki',
+      compare: '3',
+      blog: '2 przewodniki',
+    },
+    menuTrust1: 'Wysyłka D+1 PL/DE · gratis ≥ 300 zł',
+    menuTrust2: 'UE · FDM · PLN · 23% VAT',
+  },
+  // <lg sticky bottom bar (StickyQuoteBar.tsx) — default CTA reuses
+  // nav.getQuote; these are the quoted price-bar strings. openQuote is the
+  // SHORT form (2c): the full "Otwórz pełną wycenę" doesn't fit beside the
+  // price column at 360px.
+  stickyBar: {
+    openQuote: 'Otwórz wycenę',
+    caption: 'z VAT · cena ważna 14 dni',
   },
   // Utility-bar promises; index 3 renders as the right-aligned aside.
   ticker: [
@@ -153,10 +227,6 @@ export const pl = {
     'Bez konta',
     'Wyprodukowano w UE',
   ],
-  // ≤sm the utility bar condenses to this one centered line (design 1e).
-  // Must fit one line at 360px (~35 mono chars with px-4) — measure before
-  // lengthening.
-  tickerCompact: 'D+1 PL/DE · gratis ≥ 300 zł · z UE',
   process: {
     // "WYSYŁKA" chip — shared by the header quote sub-bar and quote editor.
     ships: 'WYSYŁKA',
@@ -177,9 +247,14 @@ export const pl = {
     vsCheapest: 'vs najtańszy',
     // Multiplier column: the cheapest row's caption; others render ×N,NN.
     cheapest: '— najtańszy',
-    // Mobile tag (name cell) vs desktop tag (end of the PETG bar).
-    quotedAbove: 'wyceniony wyżej ↑',
+    // sm+ tag at the end of the PETG bar; ≤sm the bar chip carries it.
     quotedAboveBar: '▲ wyceniony wyżej',
+    // ≤sm bar-end chips (finding 04): short multiplier labels.
+    chipCheapest: 'najtańszy',
+    chipQuoted: (mult: string) => `×${mult} · wyceniony wyżej`,
+    // ≤sm expand toggle — 3 rows visible by default.
+    showAll: 'Pokaż wszystkie siedem',
+    showFewer: 'Pokaż mniej',
     // One-line use cases, keyed by material id (shorter than the 02 cards).
     useCases: {
       pla: 'Ostre detale — prototypy, modele pokazowe, części do wnętrz',
@@ -217,36 +292,43 @@ export const pl = {
   materials: {
     pla: {
       family: 'standard' as MaterialFamily,
+      oneLiner: 'Prototypy i części pokazowe',
       tagline:
         'Najtańszy i najłatwiejszy w druku. Prototypy, modele koncepcyjne, części pokazowe.',
     },
     petg: {
       family: 'standard' as MaterialFamily,
+      oneLiner: 'Domyślny wybór, gdy nie masz pewności',
       tagline:
         'Wytrzymały, odporny na wilgoć, uniwersalny. Obudowy, uchwyty, części funkcjonalne.',
     },
     pctg: {
       family: 'standard' as MaterialFamily,
+      oneLiner: 'Udarny, niemal przezroczysty',
       tagline:
         'Ulepszony PETG o wyższej udarności. Obudowy i części mechaniczne.',
     },
     asa: {
       family: 'engineering' as MaterialFamily,
+      oneLiner: 'Na dwór, odporny na UV',
       tagline:
         'Odporny na UV i warunki atmosferyczne. Części zewnętrzne, motoryzacyjne i elewacyjne.',
     },
     petg_fr: {
       family: 'specialty' as MaterialFamily,
+      oneLiner: 'Trudnopalny V0',
       tagline:
         'Trudnopalny (UL94 V-0). Obudowy elektroniki i szafy sterownicze.',
     },
     pa12_cf: {
       family: 'engineering' as MaterialFamily,
+      oneLiner: 'Sztywny od węgla, do ~170 °C',
       tagline:
         'Nylon z włóknem węglowym — maksymalna wytrzymałość, odporność do ~170°C. Przyrządy, koła zębate, motorsport.',
     },
     iglidur: {
       family: 'specialty' as MaterialFamily,
+      oneLiner: 'Tuleje ślizgowe, bez smaru',
       tagline:
         'Samosmarujący materiał Igus. Łożyska, tuleje i części ślizgowe.',
     },
@@ -283,6 +365,8 @@ export const pl = {
   // {q, a}-shaped.
   landingFaq: {
     heading: 'Częste pytania',
+    // ≤sm heading (Mobile Audit 1b) — 27px display type, one word.
+    headingShort: 'Pytania',
     items: [
       {
         q: 'Co dzieje się z moim plikiem?',

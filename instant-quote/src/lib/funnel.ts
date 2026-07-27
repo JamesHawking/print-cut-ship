@@ -25,6 +25,11 @@ export type FunnelEvent =
   // inline live quote shown for a real dropped file (carries {fileName}).
   | 'demo_replayed'
   | 'hero_live_quote_shown'
+  // Tabbed intake (Turn 4): which route into a quote people reach for
+  // ({tab}), and which sample part they price when they have no file
+  // ({demo}).
+  | 'intake_tab_changed'
+  | 'demo_selected'
 
 let sessionId: string | null = null
 

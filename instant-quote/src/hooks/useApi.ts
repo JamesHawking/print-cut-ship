@@ -11,7 +11,7 @@ import {
 } from '@/lib/api/client'
 import { ApiRequestError } from '@/lib/api/errors'
 import type { components } from '@/lib/api/schema'
-import { DEMO_CONFIG, SAMPLE_METRICS } from '@/components/how-it-works/demo'
+import { DEMO_PARTS, SAMPLE_METRICS } from '@/components/how-it-works/demo'
 import type { Part } from '@/hooks/useParts'
 
 export type PriceCompareRow = components['schemas']['PriceCompareRow']
@@ -32,19 +32,23 @@ export function useCatalog(): Catalog | undefined {
 }
 
 /**
- * The landing demo's real engine call — same request the quote page would
- * send for the sample bracket. Shared by the hero and the price ladder via
- * one cache key, so the page fires a single request. Client-mounted only
- * (React Query never fetches during prerender): callers fall back to
- * FALLBACK_QUOTE.
+ * The landing demo's real engine call — the same request the quote page would
+ * send, for all three sample parts at once (the price contract caps 5). One
+ * cache key for the whole page, so hero, intake and ladder fire a single
+ * request. Per-part pricing is independent (order-level fees live on
+ * OrderTotals, not PartQuote), so parts[0] is byte-identical to what a
+ * bracket-only request returns — verified against the engine 2026-07-27.
  */
-export function useDemoPrice(): PartQuote | undefined {
-  const { data } = useQuery({
+function useDemoPriceQuery() {
+  return useQuery({
     queryKey: ['demo-price'],
     queryFn: async () => {
       const res = await api.POST('/api/v1/price', {
         body: {
-          parts: [{ metrics: toApiMetrics(SAMPLE_METRICS), ...DEMO_CONFIG }],
+          parts: DEMO_PARTS.map((d) => ({
+            metrics: toApiMetrics(d.metrics),
+            ...d.config,
+          })),
         },
       })
       if (!res.data) throw new Error('demo price fetch failed')
@@ -54,7 +58,20 @@ export function useDemoPrice(): PartQuote | undefined {
     gcTime: Infinity,
     retry: 1,
   })
-  return data?.parts[0]
+}
+
+/**
+ * The demo bracket's quote (DEMO_PARTS[0]) — the price ladder's header
+ * figures and the hero's default. Client-mounted only (React Query never
+ * fetches during prerender): callers fall back to FALLBACK_QUOTE.
+ */
+export function useDemoPrice(): PartQuote | undefined {
+  return useDemoPriceQuery().data?.parts[0]
+}
+
+/** All three demo quotes, in DEMO_PARTS order — the intake's Demo tab. */
+export function useDemoPrices(): PartQuote[] | undefined {
+  return useDemoPriceQuery().data?.parts
 }
 
 /**

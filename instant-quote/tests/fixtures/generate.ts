@@ -65,6 +65,43 @@ export function cubeTriangles(s: number, reversed = false): number[] {
   return out
 }
 
+/** Cuboid corners for [0,x]×[0,y]×[0,z] — cubeCorners generalized. */
+function boxCorners(x: number, y: number, z: number): V3[] {
+  return [
+    [0, 0, 0],
+    [x, 0, 0],
+    [x, y, 0],
+    [0, y, 0],
+    [0, 0, z],
+    [x, 0, z],
+    [x, y, z],
+    [0, y, z],
+  ]
+}
+
+/**
+ * Watertight cuboid, binary STL — the demo parts that aren't the bracket
+ * (DEMO_PARTS in src/components/how-it-works/demo.ts is drift-pinned to this
+ * geometry, same contract as bracketBinaryStl). 12 triangles.
+ */
+export function boxBinaryStl(x: number, y: number, z: number): ArrayBuffer {
+  const corners = boxCorners(x, y, z)
+  const center: V3 = [x / 2, y / 2, z / 2]
+  const tris: number[] = []
+  const push = (a: V3, b: V3, c: V3) => {
+    // Same outward-winding guarantee as cubeTriangles.
+    const n = cross(sub(b, a), sub(c, a))
+    const tri: [V3, V3, V3] =
+      dot(n, sub(a, center)) >= 0 ? [a, b, c] : [a, c, b]
+    for (const v of tri) tris.push(v[0], v[1], v[2])
+  }
+  for (const [i0, i1, i2, i3] of CUBE_FACES) {
+    push(corners[i0], corners[i1], corners[i2])
+    push(corners[i0], corners[i2], corners[i3])
+  }
+  return packBinaryStl(tris)
+}
+
 /** Binary STL ArrayBuffer for a cube of side s. */
 export function cubeBinaryStl(s: number, reversed = false): ArrayBuffer {
   const tris = cubeTriangles(s, reversed)

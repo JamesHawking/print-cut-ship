@@ -6,17 +6,18 @@ import { ACCEPT_ATTR } from '@/lib/upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+// The landing hero does NOT use this component — its intake is the tabbed
+// island in hero/IntakeTabs.tsx (Mobile Audit Turn 4). What is left here
+// serves the quote editor and the content pages.
+
 interface DropZoneProps {
   onFiles: (files: File[]) => void
-  variant?: 'default' | 'compact' | 'hero' | 'tile' | 'console'
+  variant?: 'default' | 'compact' | 'hero' | 'tile'
   disabled?: boolean
   onUrl?: (url: string) => void
   urlPending?: boolean
   /** tile variant only: mono hint line under the label (e.g. slots left). */
   tileHint?: string
-  /** console variant only: a live quote is showing — dim and collapse the
-      intake to the single drop row ("add another file"), design 1c. */
-  quoted?: boolean
 }
 
 export function DropZone({
@@ -26,14 +27,11 @@ export function DropZone({
   onUrl,
   urlPending,
   tileHint,
-  quoted,
 }: DropZoneProps) {
   const strings = useStrings()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [urlValue, setUrlValue] = useState('')
-  // console variant: link row collapsed → expanded MakerWorld form.
-  const [linkOpen, setLinkOpen] = useState(false)
   const compact = variant === 'compact'
   const hero = variant === 'hero'
 
@@ -169,162 +167,6 @@ export function DropZone({
             {tileHint}
           </p>
         )}
-        {input}
-      </div>
-    )
-  }
-
-  if (variant === 'console') {
-    // Hero fused-console intake: two stacked rows inside one drag surface —
-    // "drop it anywhere here" holds for the whole chamber. Row 1 is the
-    // role="button" file picker; row 2 discloses the MakerWorld form (a real
-    // input the static mock didn't need).
-    const c = strings.hero.console
-    return (
-      <div
-        {...dropHandlers}
-        className={cn(
-          'flex flex-col gap-2.5 transition-opacity duration-300',
-          quoted && 'opacity-55',
-        )}
-      >
-        {/* The row is the ONE tap target ≤sm (mobile-first: no separate CTA
-          bar, no drag vocabulary on touch — the verb title + orange accents
-          carry the affordance; accessible name = visible text content). */}
-        <div
-          {...pickerButton}
-          aria-label={undefined}
-          className={cn(
-            'group flex cursor-pointer items-center gap-4 rounded-md border-[1.5px] border-dashed px-4 py-3.5 transition-colors',
-            'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-            dragging
-              ? 'border-primary bg-primary-tint'
-              : 'border-muted-foreground/45 hover:border-primary/60',
-            disabled && 'pointer-events-none opacity-50',
-          )}
-        >
-          {/* plus glyph — file intake (orange ≤sm, it shares the CTA role) */}
-          <span
-            aria-hidden
-            className="border-foreground max-sm:border-primary relative size-[34px] shrink-0 rounded-[5px] border-[1.5px]"
-          >
-            <span className="bg-foreground max-sm:bg-primary absolute top-1/2 left-1/2 h-[1.5px] w-3 -translate-x-1/2 -translate-y-1/2" />
-            <span className="bg-foreground max-sm:bg-primary absolute top-1/2 left-1/2 h-3 w-[1.5px] -translate-x-1/2 -translate-y-1/2" />
-          </span>
-          <span className="min-w-0 flex-1">
-            {/* ≤sm the persona title gives way to the verb. */}
-            <span className="block text-[15px] font-bold max-sm:hidden">
-              {c.ownTitle}
-            </span>
-            <span className="text-primary-text block text-[15px] font-bold uppercase sm:hidden">
-              {strings.dropzone.button}
-            </span>
-            <span className="text-muted-foreground mt-0.5 block text-xs">
-              {dragging ? (
-                strings.dropzone.dragActive
-              ) : quoted ? (
-                <>
-                  <span className="max-sm:hidden">{c.ownHintAdd}</span>
-                  <span className="sm:hidden">{c.ownHintAddShort}</span>
-                </>
-              ) : (
-                // ≤sm: formats only — the full hint is drop-language and
-                // wraps to three lines there.
-                <>
-                  <span className="max-sm:hidden">{c.ownHint}</span>
-                  <span className="sm:hidden">{c.ownHintShort}</span>
-                </>
-              )}
-            </span>
-          </span>
-          {/* Chip hidden while quoted: dimmed orange reads as disabled and
-            competes with OPEN FULL QUOTE (the row itself stays clickable). */}
-          <span
-            className={cn(
-              'bg-primary text-primary-foreground hidden shrink-0 rounded-md px-5 py-3 font-mono text-[11px] font-bold tracking-[0.1em] whitespace-nowrap uppercase transition-transform group-hover:-translate-y-px',
-              !quoted && 'sm:inline-flex',
-            )}
-          >
-            {strings.dropzone.button}
-          </span>
-        </div>
-
-        {!quoted &&
-          onUrl &&
-          (linkOpen ? (
-            <form
-              className="flex items-center gap-2 rounded-md border px-4 py-3"
-              onSubmit={handleUrlSubmit}
-            >
-              <Input
-                autoFocus
-                type="text"
-                inputMode="url"
-                value={urlValue}
-                disabled={urlPending}
-                placeholder={strings.dropzone.mwPlaceholder}
-                aria-label={c.linkHint}
-                className="h-9 font-mono text-xs"
-                onChange={(e) => setUrlValue(e.target.value)}
-              />
-              <Button
-                type="submit"
-                variant="outline"
-                size="sm"
-                className="h-9 shrink-0 font-bold"
-                disabled={urlPending || !urlValue.trim()}
-              >
-                {urlPending ? (
-                  <>
-                    <Loader2 className="animate-spin" />
-                    {strings.dropzone.mwFetching}
-                  </>
-                ) : (
-                  strings.dropzone.mwButton
-                )}
-              </Button>
-            </form>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setLinkOpen(true)}
-              className={cn(
-                'hover:border-primary/60 flex w-full cursor-pointer items-center gap-4 rounded-md border px-4 py-3.5 text-left transition-colors',
-                'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-                disabled && 'pointer-events-none opacity-50',
-              )}
-            >
-              {/* link glyph — model fetched from the outside */}
-              <span
-                aria-hidden
-                className="border-foreground relative size-[34px] shrink-0 rounded-full border-[1.5px] max-sm:hidden"
-              >
-                <span className="border-foreground absolute top-1/2 left-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[3px] border-[1.5px]" />
-              </span>
-              {/* ≤sm the two-line card collapses to one line: the hint IS
-                the label, with a → affordance (design 1e). */}
-              <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-bold max-sm:hidden">
-                  {c.linkTitle}
-                </span>
-                <span className="text-muted-foreground mt-0.5 block text-xs max-sm:hidden">
-                  {c.linkHint}
-                </span>
-                <span className="block text-[13px] font-bold sm:hidden">
-                  {c.linkHint}
-                </span>
-              </span>
-              <span
-                aria-hidden
-                className="text-primary-text shrink-0 font-mono text-[11px] font-bold sm:hidden"
-              >
-                →
-              </span>
-              <span className="border-foreground text-foreground hidden shrink-0 rounded-md border-[1.5px] px-5 py-[11px] font-mono text-[11px] font-bold tracking-[0.1em] whitespace-nowrap uppercase sm:inline-flex">
-                {c.linkButton}
-              </span>
-            </button>
-          ))}
         {input}
       </div>
     )

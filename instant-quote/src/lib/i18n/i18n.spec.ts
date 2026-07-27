@@ -73,10 +73,100 @@ describe('dfm and api-error rendering', () => {
         c.ownHintAddShort,
         c.received('part.stl', '2,1'),
         c.watertightOk,
-        c.finePrintShort,
-        c.demoStrip('bracket_v2.stl'),
+        c.ownTitle,
+        c.chooseFile,
+        c.pasteLink,
+        c.pricing,
+        c.measuredLocal,
+        c.factsTriangles,
+        c.factsBbox,
+        c.factsWatertight,
+        c.factsYes,
+        c.addFile,
+        c.chipSize('1,2'),
+        c.priceMine,
+        c.demoCaption,
+        // Tabbed intake (Turn 4)
+        c.tabsLabel,
+        c.tabUpload,
+        c.tabLink,
+        c.tabDemo,
+        c.uploadLead,
+        c.formats,
+        c.finePrint,
+        c.linkFetch,
+        c.worksWithLabel,
+        c.worksWithBody,
+        c.finePrintLink,
+        c.demoIntro,
+        c.demoShowing,
+        c.demoMetaBracket,
+        c.demoMetaBearing,
+        c.demoMetaLid,
+        c.finePrintDemo,
+        c.dropToPrice,
+        c.dropCount(1),
+        c.dropCount(3),
+        c.finePrintDrag,
+        c.rejectTitleType('sketch.dwg'),
+        c.rejectBodyType,
+        c.rejectTitleSize('huge.stl'),
+        c.rejectBodySize,
+        c.chooseAnother,
+        c.finePrintReject,
       ]
       for (const text of rendered) expect(text.length).toBeGreaterThan(2)
+    }
+  })
+
+  // Build note 6: three tabs at 11px mono have to fit the island — 288px of
+  // it at 360px, where the icons are already hidden. Measured slack is ~19px,
+  // so a longer label is a layout regression, not a copy choice.
+  test('intake tab labels fit the mobile island', () => {
+    for (const dict of [pl, en]) {
+      for (const key of ['tabUpload', 'tabLink', 'tabDemo'] as const) {
+        expect(dict.hero.console[key].length).toBeLessThanOrEqual(12)
+      }
+    }
+    // The rejected-file titles quote the filename — they must not swallow it.
+    expect(pl.hero.console.rejectTitleType('sketch.dwg')).toContain(
+      'sketch.dwg',
+    )
+    expect(en.hero.console.rejectTitleSize('huge.stl')).toContain('huge.stl')
+  })
+
+  test('mobile hero/sticky-bar strings render in both locales', () => {
+    for (const dict of [pl, en]) {
+      expect(dict.hero.subShort.length).toBeGreaterThan(10)
+      expect(dict.hero.trustChips.length).toBe(3)
+      for (const chip of dict.hero.trustChips) {
+        expect(chip.length).toBeGreaterThan(2)
+      }
+      expect(dict.stickyBar.openQuote.length).toBeGreaterThan(2)
+      expect(dict.stickyBar.caption.length).toBeGreaterThan(2)
+    }
+  })
+
+  test('mobile menu/materials/faq strings render in both locales', () => {
+    const menuKeys = [
+      'howItWorks',
+      'materials',
+      'pricing',
+      'compare',
+      'blog',
+    ] as const
+    for (const dict of [pl, en]) {
+      for (const key of menuKeys) {
+        expect(dict.nav.menuMeta[key].length).toBeGreaterThan(0)
+      }
+      expect(dict.nav.menuTrust1.length).toBeGreaterThan(5)
+      expect(dict.nav.menuTrust2.length).toBeGreaterThan(5)
+      expect(dict.landingFaq.headingShort.length).toBeGreaterThan(2)
+      for (const id of Object.keys(dict.materials) as Array<
+        keyof typeof dict.materials
+      >) {
+        expect(dict.materials[id].oneLiner.length).toBeGreaterThan(5)
+      }
     }
   })
 
@@ -90,6 +180,10 @@ describe('dfm and api-error rendering', () => {
       expect(l.vsCheapest.length).toBeGreaterThan(2)
       expect(l.cheapest.length).toBeGreaterThan(2)
       expect(l.quotedAboveBar.length).toBeGreaterThan(2)
+      expect(l.chipCheapest.length).toBeGreaterThan(2)
+      expect(l.chipQuoted('1,26')).toContain('1,26')
+      expect(l.showAll.length).toBeGreaterThan(2)
+      expect(l.showFewer.length).toBeGreaterThan(2)
       const ids = Object.keys(l.useCases)
       expect(ids.length).toBe(7)
       for (const id of ids) {

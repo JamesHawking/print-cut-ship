@@ -10,6 +10,8 @@ import { PricingFormula } from '@/components/PricingFormula'
 import { RateTicker } from '@/components/RateTicker'
 import { SiteFooter } from '@/components/SiteFooter'
 import { SiteHeader } from '@/components/SiteHeader'
+import { StickyQuoteBar } from '@/components/StickyQuoteBar'
+import { useHeroLiveQuote } from '@/hooks/useHeroLiveQuote'
 import { useParts } from '@/hooks/useParts'
 import { DEFAULT_LOCALE, getStrings, isLocale, useLocale } from '@/lib/i18n'
 import { faqPageJsonLd, jsonLd, seoHead } from '@/lib/seo'
@@ -44,10 +46,21 @@ function Landing() {
   // Single-file drops are quoted inline in the hero's dark chamber before the
   // editor opens; multi-file drops and returning carts go straight to /quote.
   const [livePartId, setLivePartId] = useState<string | null>(null)
+  // Sticky-bar link button → scrolls to the hero and opens the MakerWorld
+  // form; a counter so repeated taps re-open it after a manual close.
+  const [linkOpenSignal, setLinkOpenSignal] = useState(0)
 
   function goToQuote() {
     void navigate({ to: '/$locale/quote', params: { locale } })
   }
+
+  // Called once here (not in Hero) so the sticky bar can mirror the quoted
+  // state without double-firing the hero_live_quote_shown funnel event.
+  const live = useHeroLiveQuote({
+    livePartId,
+    onDone: goToQuote,
+    onFailed: () => setLivePartId(null),
+  })
 
   function handleLandingFiles(files: File[]) {
     if (files.length > 1 || parts.length > 0) {
@@ -80,18 +93,35 @@ function Landing() {
           onFiles={handleLandingFiles}
           onUrl={handleLandingUrl}
           urlPending={mwPending}
-          livePartId={livePartId}
-          onLiveQuoteDone={goToQuote}
-          onLiveQuoteFailed={() => setLivePartId(null)}
+          live={live}
+          onOpenQuote={goToQuote}
+          linkOpenSignal={linkOpenSignal}
         />
         <PriceLadder />
         <Materials />
-        <RateTicker reverse className="border-y" />
+        {/* One tape ≤sm (Mobile Audit finding 08) — the hero baseplate keeps it. */}
+        <RateTicker reverse className="border-y max-sm:hidden" />
         <PricingFormula />
         <LandingFaq />
         <GuidesTeaser />
       </main>
       <SiteFooter />
+      {/* <lg conversion exit for every section (Mobile Audit finding 06):
+        appears when the hero leaves the viewport, becomes the price bar
+        once a live quote lands, yields to the footer CTA. */}
+      <StickyQuoteBar
+        live={live}
+        onOpenQuote={goToQuote}
+        onLinkIntake={() => {
+          setLinkOpenSignal((n) => n + 1)
+          document.getElementById('top')?.scrollIntoView({
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
+              .matches
+              ? 'auto'
+              : 'smooth',
+          })
+        }}
+      />
     </>
   )
 }

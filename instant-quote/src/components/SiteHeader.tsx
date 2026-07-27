@@ -87,15 +87,12 @@ export function SiteHeader({
         // claim right — a raised dark band above the sticky header, sourced
         // from strings.ticker (this bar is the promises' primary carrier;
         // RateTicker is rates-only and decorative). Scrolls away; only the
-        // 56px bar below stays sticky.
-        <div className="dark bg-card text-muted-foreground border-b">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-2 font-mono text-[0.6rem] tracking-[0.14em] uppercase max-sm:justify-center sm:px-6">
-            {/* ≤sm: one centered line (design 1e) — the full promises wrap
-              to two ragged rows in a 360px column. */}
-            <span className="text-center sm:hidden">
-              {strings.tickerCompact}
-            </span>
-            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 max-sm:hidden sm:gap-x-4">
+        // 56px bar below stays sticky. Hidden ≤sm (Mobile Audit finding 01) —
+        // the promises move into the hero's trust line so mobile doesn't pay
+        // 33px of chrome before the headline.
+        <div className="dark bg-card text-muted-foreground border-b max-sm:hidden">
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-2 font-mono text-[0.6rem] tracking-[0.14em] uppercase sm:px-6">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 sm:gap-x-4">
               {strings.ticker.slice(0, 3).map((t, i) => (
                 <span key={i} className="flex items-center gap-x-3 sm:gap-x-4">
                   {i > 0 && (
@@ -107,7 +104,7 @@ export function SiteHeader({
                 </span>
               ))}
             </span>
-            <span className="shrink-0 max-sm:hidden">{strings.ticker[3]}</span>
+            <span className="shrink-0">{strings.ticker[3]}</span>
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { ChevronRight } from 'lucide-react'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { SECTIONS } from '@/content/sections'
 import { BLOG_SECTION } from '@/content/blog/paths'
@@ -25,7 +26,7 @@ export function GuidesTeaser() {
 
   return (
     <section className="border-b">
-      <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-11 sm:px-6 sm:py-15 md:py-24">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3">
           <h2 className="text-muted-foreground font-mono text-[0.7rem] font-bold tracking-[0.2em] uppercase">
             {strings.blogPages.teaserLabel}
@@ -39,7 +40,55 @@ export function GuidesTeaser() {
           </Link>
         </div>
 
-        <div className="bg-border mt-8 grid gap-px overflow-hidden rounded-lg border sm:grid-cols-3">
+        {/* ≤sm: compact rows instead of cards (Mobile Audit 1b) — title,
+          meta, chevron; the compare row keeps the hub reachable on mobile. */}
+        <div className="mt-4 border-t sm:hidden">
+          {posts.map((post) => (
+            <Link
+              key={post.slug}
+              to="/$locale/$section/$detail"
+              params={{
+                locale,
+                section: BLOG_SECTION[locale],
+                detail: post.slug,
+              }}
+              className="flex min-h-14 items-center gap-3 border-b py-3"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] leading-snug font-extrabold tracking-[-0.01em] text-pretty">
+                  {post.fm.title}
+                </span>
+                <span className="text-muted-foreground mt-1 block font-mono text-[0.6rem] tracking-[0.12em] uppercase tabular-nums">
+                  {strings.blogPages.readingTime(post.readingTimeMinutes)}
+                </span>
+              </span>
+              <ChevronRight
+                aria-hidden
+                className="text-primary-text size-4 shrink-0"
+              />
+            </Link>
+          ))}
+          <Link
+            to="/$locale/$section"
+            params={{ locale, section: SECTIONS.compare[locale] }}
+            className="flex min-h-14 items-center gap-3 border-b py-3"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] leading-snug font-extrabold tracking-[-0.01em] text-pretty">
+                {strings.comparePages.teaserTitle}
+              </span>
+              <span className="text-muted-foreground mt-1 block font-mono text-[0.6rem] tracking-[0.12em] uppercase">
+                {strings.nav.compare}
+              </span>
+            </span>
+            <ChevronRight
+              aria-hidden
+              className="text-primary-text size-4 shrink-0"
+            />
+          </Link>
+        </div>
+
+        <div className="bg-border mt-8 grid gap-px overflow-hidden rounded-lg border max-sm:hidden sm:grid-cols-3">
           {posts.map((post) => (
             <Link
               key={post.slug}

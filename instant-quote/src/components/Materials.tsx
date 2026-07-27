@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api/client'
 import { formatDecimal, formatPln } from '@/lib/format'
@@ -86,12 +87,86 @@ export function Materials() {
 
   return (
     <section id="materials" className="scroll-mt-14">
-      <div className="mx-auto max-w-6xl px-4 py-15 sm:px-6 md:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-11 sm:px-6 sm:py-15 md:py-24">
         <SectionHeading n={n} title={heading} />
+
+        {/* ≤sm: one compact list instead of seven specimen cards
+          (Mobile Audit finding 05) — dot, name, one-liner, price, chevron;
+          rows with a published guide link straight into it. */}
+        <div className="border-foreground/15 bg-card mt-8 border sm:hidden">
+          {MATERIALS.map((m, i) => {
+            const dict = strings.materials[m.id as MaterialId]
+            const slug = slugFor(m.id)
+            const row = (
+              <>
+                <span
+                  aria-hidden
+                  className={cn(
+                    'size-2 shrink-0 rounded-full',
+                    FAMILY_DOT[dict.family],
+                  )}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-extrabold tracking-tight">
+                    {m.label}
+                  </span>
+                  <span className="text-muted-foreground block text-xs leading-snug">
+                    {dict.oneLiner}
+                  </span>
+                </span>
+                <span className="shrink-0 text-right font-mono">
+                  <span className="block text-[13px] font-bold tabular-nums">
+                    {formatPln(bracketPrices[i], locale)}
+                  </span>
+                  <span className="text-muted-foreground block text-[9px] tracking-[0.1em] uppercase tabular-nums">
+                    {m.plnPerKg} zł/kg
+                  </span>
+                </span>
+                {slug && (
+                  <ChevronRight
+                    aria-hidden
+                    className="text-primary-text size-4 shrink-0"
+                  />
+                )}
+              </>
+            )
+            const rowClass =
+              'flex min-h-14 items-center gap-3 border-b px-3.5 py-2.5'
+            return slug ? (
+              <Link
+                key={m.id}
+                to="/$locale/$section/$detail"
+                params={{
+                  locale,
+                  section: MATERIALS_SECTION[locale],
+                  detail: slug,
+                }}
+                className={rowClass}
+              >
+                {row}
+              </Link>
+            ) : (
+              <div key={m.id} className={rowClass}>
+                {row}
+              </div>
+            )
+          })}
+          <Link
+            to="/$locale/$section"
+            params={{ locale, section: MATERIALS_SECTION[locale] }}
+            className="text-primary-text flex min-h-12 items-center justify-between px-3.5 font-mono text-[10.5px] font-bold tracking-[0.14em] uppercase"
+          >
+            {strings.materialsPages.allMaterialsLink}
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
+        <p className="text-muted-foreground mt-3 font-mono text-[0.6rem] tracking-[0.12em] uppercase sm:hidden">
+          {strings.materialsSection.bracketLabel} · {footnote}
+        </p>
 
         <div
           ref={ref}
-          className="mt-12 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+          className="mt-12 grid gap-4 max-sm:hidden sm:grid-cols-2 xl:grid-cols-4"
         >
           {MATERIALS.map((m, i) => (
             <div
@@ -140,7 +215,7 @@ export function Materials() {
 
         {/* Family legend as spotlight chips — bordered so they read as
             controls; hovering one dims the other families' cards. */}
-        <div className="text-muted-foreground flex flex-wrap items-center gap-x-[18px] gap-y-2.5 pt-6 font-mono text-[10px] tracking-[0.14em] uppercase md:gap-x-6 md:gap-y-2">
+        <div className="text-muted-foreground flex flex-wrap items-center gap-x-[18px] gap-y-2.5 pt-6 font-mono text-[10px] tracking-[0.14em] uppercase max-sm:hidden md:gap-x-6 md:gap-y-2">
           {FAMILY_ORDER.map((family, i) => (
             <span
               key={family}
