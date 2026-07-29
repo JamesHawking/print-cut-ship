@@ -63,10 +63,11 @@ if ! /usr/local/bin/node --version 2>/dev/null | grep -q "v$NODE_VERSION"; then
   rm /tmp/node.txz
 fi
 
-command -v rclone >/dev/null || {
-  say "installing rclone"
-  apt-get install -y -q rclone
-}
+if ! command -v rclone >/dev/null || ! command -v unzip >/dev/null; then
+  say "installing rclone + unzip (bun installer needs unzip)"
+  apt-get update -qq
+  apt-get install -y -q rclone unzip
+fi
 
 cat >/etc/profile.d/iq-toolchains.sh <<'EOF'
 export PATH=/usr/local/go/bin:/srv/iq/.bun/bin:$PATH
