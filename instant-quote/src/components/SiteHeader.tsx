@@ -86,7 +86,7 @@ export function SiteHeader({
         // Utility bar (design 17b): three service promises left, the origin
         // claim right — a raised dark band above the sticky header, sourced
         // from strings.ticker (this bar is the promises' primary carrier;
-        // RateTicker is rates-only and decorative). Scrolls away; only the
+        // IndustryTicker names sectors, not promises). Scrolls away; only the
         // 56px bar below stays sticky. Hidden ≤sm (Mobile Audit finding 01) —
         // the promises move into the hero's trust line so mobile doesn't pay
         // 33px of chrome before the headline.

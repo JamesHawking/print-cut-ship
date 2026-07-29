@@ -234,6 +234,18 @@ export const pl = {
     'Bez konta',
     'Wyprodukowano w UE',
   ],
+  // The industries tape bracketing the light middle sections
+  // (IndustryTicker.tsx) — what these parts get made for, in display type.
+  // Kept to sectors FDM prototyping and tooling genuinely serve; do not add
+  // one we cannot point at real work in.
+  industries: [
+    'KOSMOS',
+    'MOTORYZACJA',
+    'EDUKACJA',
+    'ROBOTYKA',
+    'ELEKTRONIKA',
+    'ARCHITEKTURA',
+  ],
   process: {
     // "WYSYŁKA" chip — shared by the header quote sub-bar and quote editor.
     ships: 'WYSYŁKA',

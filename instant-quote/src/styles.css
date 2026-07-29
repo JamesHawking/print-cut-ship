@@ -209,9 +209,10 @@
   }
 }
 
-/* Landing v2 ambient motion (Landing Page v2.dc.html): rate-ticker marquee.
-   The hero courier drone is JS-driven (spring simulation in Hero.tsx) —
-   no keyframes here. Applied behind motion-safe variants. */
+/* Landing ambient motion: the marquee behind IndustryTicker. The travel is a
+   fixed fraction of the tape's own width, so a consumer whose items are much
+   wider must lengthen the duration to hold the same apparent speed.
+   Applied behind motion-safe variants. */
 @theme {
   --animate-ticker: ticker 48s linear infinite;
 

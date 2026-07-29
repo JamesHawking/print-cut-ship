@@ -7,7 +7,7 @@ import { LandingFaq } from '@/components/LandingFaq'
 import { Materials } from '@/components/Materials'
 import { PriceLadder } from '@/components/PriceLadder'
 import { PricingFormula } from '@/components/PricingFormula'
-import { RateTicker } from '@/components/RateTicker'
+import { IndustryTicker } from '@/components/IndustryTicker'
 import { SiteFooter } from '@/components/SiteFooter'
 import { SiteHeader } from '@/components/SiteHeader'
 import { StickyQuoteBar } from '@/components/StickyQuoteBar'
@@ -100,7 +100,7 @@ function Landing() {
         <PriceLadder />
         <Materials />
         {/* One tape ≤sm (Mobile Audit finding 08) — the hero baseplate keeps it. */}
-        <RateTicker reverse className="border-y max-sm:hidden" />
+        <IndustryTicker reverse className="border-y max-sm:hidden" />
         <PricingFormula />
         <LandingFaq />
         <GuidesTeaser />

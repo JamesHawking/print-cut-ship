@@ -217,6 +217,18 @@ export const en = {
     'No account',
     'Made in the EU',
   ],
+  // The industries tape bracketing the light middle sections
+  // (IndustryTicker.tsx) — what these parts get made for, in display type.
+  // Kept to sectors FDM prototyping and tooling genuinely serve; do not add
+  // one we cannot point at real work in.
+  industries: [
+    'SPACE',
+    'AUTOMOTIVE',
+    'EDUCATION',
+    'ROBOTICS',
+    'ELECTRONICS',
+    'ARCHITECTURE',
+  ],
   process: {
     // "SHIPS" chip — shared by the header quote sub-bar and quote editor.
     ships: 'SHIPS',

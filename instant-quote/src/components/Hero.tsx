@@ -16,7 +16,7 @@ import { useLocale, useStrings, type Locale } from '@/lib/i18n'
 import { stagePercent } from '@/lib/mesh/types'
 import { IntakeTabs } from './hero/IntakeTabs'
 import { PriceCounter } from './hero/PriceCounter'
-import { RateTicker } from './RateTicker'
+import { IndustryTicker } from './IndustryTicker'
 import { DEMO_PARTS, type DemoId } from './how-it-works/demo'
 
 /**
@@ -42,7 +42,7 @@ const ROW_ENTER =
 
 /**
  * Hero as the page's opening dark block (design direction 17b): utility bar
- * and nav sit on dark surfaces above, the rate ticker fuses to the bottom
+ * and nav sit on dark surfaces above, the industries tape fuses to the bottom
  * edge as a baseplate, and the fused console is the hero's only object. The
  * light intake chamber is the one bright surface — exactly where the file
  * goes. The dark chamber starts empty — skeleton rows holding its exact size
@@ -693,8 +693,8 @@ export function Hero({
         </div>
       </div>
 
-      {/* rate ticker fused to the hero's bottom edge as its baseplate */}
-      <RateTicker className="bg-card border-t" />
+      {/* industries tape fused to the hero's bottom edge as its baseplate */}
+      <IndustryTicker className="bg-card border-t" />
     </section>
   )
 }
