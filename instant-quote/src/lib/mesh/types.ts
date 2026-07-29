@@ -16,6 +16,35 @@ export interface MeshMetrics {
 
 export type MeshFormat = 'stl' | 'obj' | 'step' | 'positions'
 
+/**
+ * The four stages a file passes through between the drop and the price
+ * (Mobile Audit 5c, "progress is honest"). Each one is a real await boundary,
+ * not a paced fiction: `read` is the bytes plus their SHA-256, `mesh` is the
+ * parser returning triangles, `solid` is analyze() returning volume, area and
+ * watertightness, and `price` is the engine answering. There is deliberately
+ * no "slice" stage — nothing in this app or the backend slices.
+ */
+export type MeshStage = 'read' | 'mesh' | 'solid' | 'price'
+
+/** Ordered, so a stage can be compared against the one on screen. */
+export const MESH_STAGES: readonly MeshStage[] = [
+  'read',
+  'mesh',
+  'solid',
+  'price',
+]
+
+/**
+ * How far through the pipeline the given stage leaves us, as a percentage.
+ * Of the pipeline, not of the bytes — which is why it can be checked against
+ * the stage list beside it, and why it moves in four steps rather than
+ * sweeping smoothly like a fiction would.
+ */
+export function stagePercent(stage?: MeshStage): number {
+  const done = stage ? MESH_STAGES.indexOf(stage) + 1 : 0
+  return (done / MESH_STAGES.length) * 100
+}
+
 export interface WorkerRequest {
   id: string
   format: MeshFormat
@@ -26,6 +55,9 @@ export interface WorkerRequest {
 export type WorkerErrorCode = 'corrupt' | 'empty' | 'unsupported'
 
 export type WorkerResponse =
+  // Non-terminal: a stage finished, the job continues. Sent before either
+  // reply below, so handle it (and return) before narrowing on `ok`.
+  | { id: string; ok: 'progress'; stage: MeshStage }
   | {
       id: string
       ok: true

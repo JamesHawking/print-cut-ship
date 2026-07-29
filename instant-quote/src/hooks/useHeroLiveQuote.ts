@@ -1,33 +1,41 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PartQuote } from '@/lib/api/client'
-import type { MeshMetrics } from '@/lib/mesh/types'
+import type { MeshMetrics, MeshStage } from '@/lib/mesh/types'
 import { track } from '@/lib/funnel'
 import { usePartPrice } from './useApi'
 import { useParts } from './useParts'
 
 /**
- * Minimum time the measuring state stays on screen (Mobile Audit 2a): it is
- * the honesty beat — filename, then the geometry facts as the local parse
- * lands them. A cached or small part can price in ~200 ms, which reads as a
- * flicker; holding it makes the measurement legible. Paced against the
- * intake card's progress bar (2400 ms fill, MeasuringCard.tsx) so the bar
- * finishes travelling just before the price replaces it — change both
- * together.
+ * Minimum time the measuring state stays on screen (Mobile Audit 5b). It is a
+ * floor, not a pace: the four stages tick as they genuinely complete, and this
+ * only stops the whole panel flashing past on a small cached STL that prices
+ * in ~200 ms. 5b's own rule is that a bar which flashes reads as a glitch —
+ * one second is the shortest hold that still reads as a measurement rather
+ * than a stutter. Nothing else is timed against it; the bar is driven by real
+ * stage completion, not by this number.
  */
-const MIN_MEASURING_MS = 2800
+const MIN_MEASURING_MS = 1000
 
 /** What the hero's dark chamber renders. */
 export type HeroLiveState =
   | { kind: 'demo' }
   // metrics land when the local parse finishes, while the price request is
   // still in flight — the ≤sm measuring card shows them as they arrive
-  // (Mobile Audit 2a: the honesty beat).
-  | { kind: 'measuring'; fileName: string; metrics?: MeshMetrics }
+  // (Mobile Audit 2a: the honesty beat). `stage` is the last pipeline step
+  // that actually completed (5c: progress is honest).
+  | {
+      kind: 'measuring'
+      fileName: string
+      fileSize: number
+      metrics?: MeshMetrics
+      stage?: MeshStage
+    }
   | {
       kind: 'quoted'
       fileName: string
       fileSize: number
       watertight: boolean
+      metrics?: MeshMetrics
       process: string
       quote: PartQuote
     }
@@ -94,12 +102,21 @@ export function useHeroLiveQuote({
 
   if (!part || failed) return { kind: 'demo' }
   if (!quote || !dwellElapsed)
-    return { kind: 'measuring', fileName: part.fileName, metrics: part.metrics }
+    return {
+      kind: 'measuring',
+      fileName: part.fileName,
+      fileSize: part.fileSize,
+      metrics: part.metrics,
+      // The engine having answered IS the last stage completing, even while
+      // the floor below still holds the payoff back.
+      stage: quote ? 'price' : part.stage,
+    }
   return {
     kind: 'quoted',
     fileName: part.fileName,
     fileSize: part.fileSize,
     watertight: part.metrics?.watertight ?? false,
+    metrics: part.metrics,
     process: part.config.process,
     quote,
   }

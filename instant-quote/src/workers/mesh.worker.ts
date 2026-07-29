@@ -9,7 +9,11 @@ import { parseStl, MeshParseError } from '../lib/mesh/parse-stl'
 import { parseObj } from '../lib/mesh/parse-obj'
 import { parseStep, type OcctModule } from '../lib/mesh/parse-step'
 import { analyze } from '../lib/mesh/analyze'
-import type { WorkerRequest, WorkerResponse } from '../lib/mesh/types'
+import type {
+  MeshStage,
+  WorkerRequest,
+  WorkerResponse,
+} from '../lib/mesh/types'
 import occtWasmUrl from 'occt-import-js/dist/occt-import-js.wasm?url'
 
 let occtPromise: Promise<OcctModule> | null = null
@@ -30,9 +34,15 @@ async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const req = event.data
+  // Stage edges for the hero's progress readout (Mobile Audit 5c). These mark
+  // work that has actually finished — the terminal reply below is the `solid`
+  // edge, so only the two intermediate ones are posted here.
+  const done = (stage: MeshStage) =>
+    self.postMessage({ id: req.id, ok: 'progress', stage } as WorkerResponse)
   try {
     // Hash the original bytes before we transfer/replace anything.
     const hash = await sha256Hex(req.buffer)
+    done('read')
 
     let positions: Float32Array
     if (req.format === 'stl') {
@@ -44,6 +54,7 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
     } else {
       positions = new Float32Array(req.buffer)
     }
+    done('mesh')
 
     const metrics = analyze(positions)
 

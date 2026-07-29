@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type {
   MeshMetrics,
+  MeshStage,
   WorkerRequest,
   WorkerResponse,
   WorkerErrorCode,
@@ -43,7 +44,11 @@ export function useMeshWorker() {
   const pending = useRef(
     new Map<
       string,
-      { resolve: (r: AnalyzeResult) => void; reject: (e: AnalyzeError) => void }
+      {
+        resolve: (r: AnalyzeResult) => void
+        reject: (e: AnalyzeError) => void
+        onStage?: (stage: MeshStage) => void
+      }
     >(),
   )
 
@@ -56,6 +61,11 @@ export function useMeshWorker() {
       const res = event.data
       const entry = pending.current.get(res.id)
       if (!entry) return
+      // Progress frames don't settle the promise — the job is still running.
+      if (res.ok === 'progress') {
+        entry.onStage?.(res.stage)
+        return
+      }
       pending.current.delete(res.id)
       if (res.ok) {
         entry.resolve({
@@ -76,7 +86,16 @@ export function useMeshWorker() {
     }
   }, [])
 
-  async function analyze(file: File): Promise<AnalyzeResult> {
+  /**
+   * @param onStage Fires as each real pipeline stage completes (Mobile Audit
+   *   5c). Stages can arrive out of order for 3MF — the main thread reports
+   *   its own read/parse while the worker reports the positions pass it does
+   *   afterwards — so consumers must only ever advance, never rewind.
+   */
+  async function analyze(
+    file: File,
+    onStage?: (stage: MeshStage) => void,
+  ): Promise<AnalyzeResult> {
     const worker = workerRef.current
     if (!worker) throw new AnalyzeError('corrupt', 'Worker not ready.')
 
@@ -95,10 +114,12 @@ export function useMeshWorker() {
       // and the backend (MakerWorld tee, content-addressed keys) hashes file
       // bytes.
       fileHash = await sha256Hex(arrayBuffer)
+      onStage?.('read')
       const parts = parse3mfParts(arrayBuffer)
       if (parts.length >= 2) {
         pieces = parts.map((p) => ({ bboxMm: positionsBbox(p) }))
       }
+      onStage?.('mesh')
       const positions = mergePositions(parts)
       request = {
         id,
@@ -113,7 +134,7 @@ export function useMeshWorker() {
     }
 
     const result = await new Promise<AnalyzeResult>((resolve, reject) => {
-      pending.current.set(id, { resolve, reject })
+      pending.current.set(id, { resolve, reject, onStage })
       worker.postMessage(request, { transfer: [request.buffer] })
     })
     if (pieces) result.metrics.pieces = pieces

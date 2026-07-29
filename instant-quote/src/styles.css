@@ -279,6 +279,39 @@
   }
 }
 
+/* Hero motion vocabulary (Mobile Audit 5b): four durations and two curves for
+   the whole intake → measure → price run, so no beat gets a hand-picked number.
+   `--ease-*` is a Tailwind v4 theme namespace, so `ease-enter` is a utility;
+   there is NO `--duration-*` namespace, so durations are consumed as
+   `duration-(--duration-panel)`. `ease-out` is 5b's exit curve and already
+   ships with Tailwind — don't redefine it. */
+@theme {
+  --duration-flip: 120ms; /* state flip: drag-over, dim, stage tick */
+  --duration-tab: 180ms; /* tab underline, hover, sticky-bar fade */
+  --duration-panel: 280ms; /* panel swap, dropzone → measuring */
+
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  /* 5b's fourth duration — the 700ms price count-up — is JS-driven and lives
+     in src/lib/count-up.ts, where the interpolation can be unit-tested. */
+}
+
+/* Chamber skeleton while the engine works (5a qWork): the breakdown rows keep
+   their slots as breathing bars, so the price landing never reflows the page.
+   Applied behind motion-safe — under reduced motion the bars sit static. */
+@theme {
+  --animate-shimmer: shimmer 1.1s ease-in-out infinite;
+
+  @keyframes shimmer {
+    0%,
+    100% {
+      opacity: 0.18;
+    }
+    50% {
+      opacity: 0.34;
+    }
+  }
+}
+
 /* Scope note: these utilities read var(--foreground) DIRECTLY, not
    var(--color-foreground) — the theme-level alias computes its var() at
    :root and freezes to light ink, so a .dark subtree would never re-color

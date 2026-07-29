@@ -144,7 +144,7 @@ export function DemoPanel({
   onSelect,
   totals,
 }: {
-  selectedId: DemoId
+  selectedId: DemoId | null
   onSelect: (id: DemoId) => void
   /** Line totals in DEMO_PARTS order, already fallback-resolved. */
   totals: number[]
@@ -233,9 +233,11 @@ export function RejectedPanel({
   const isType = rejection.reason === 'type'
   return (
     <div className="flex h-full flex-col gap-3">
+      {/* Fades and rises above a dropzone that stays live (5b): no shake, no
+        red flash — a reasonable mistake, with the next action still in reach. */}
       <div
         role="alert"
-        className="border-destructive/40 bg-destructive/5 shrink-0 rounded-lg border p-3.5"
+        className="border-destructive/40 bg-destructive/5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:ease-enter shrink-0 rounded-lg border p-3.5 motion-safe:duration-200"
       >
         <p className="text-destructive flex items-start gap-2 text-[14px]/[1.25] font-extrabold">
           <UploadCloud aria-hidden className="mt-px size-4 shrink-0" />

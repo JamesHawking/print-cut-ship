@@ -61,7 +61,10 @@ export function StickyQuoteBar({
   if ((heroInView && !quoted) || footerInView) return null
 
   return (
-    <div className="dark bg-background/95 border-foreground/15 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur motion-safe:duration-200 lg:hidden">
+    // Fades, never slides (Mobile Audit 5c): a bar that travels up the screen
+    // reads as an interruption arriving, and it arrives while the visitor is
+    // reading something else.
+    <div className="dark bg-background/95 border-foreground/15 motion-safe:animate-in motion-safe:fade-in motion-safe:ease-enter fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur motion-safe:duration-(--duration-tab) lg:hidden">
       <div className="text-foreground mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6">
         {quoted ? (
           <>

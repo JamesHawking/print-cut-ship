@@ -6,7 +6,10 @@ import { track } from '@/lib/funnel'
 import { useStrings } from '@/lib/i18n'
 import { ACCEPT_ATTR, partitionFiles, type IntakeRejection } from '@/lib/upload'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { HeroLiveState } from '@/hooks/useHeroLiveQuote'
 import type { DemoId } from '../how-it-works/demo'
+import { MeasuredCard } from './MeasuredCard'
+import { MeasuringPanel } from './MeasuringPanel'
 import {
   DemoPanel,
   DragFace,
@@ -16,6 +19,15 @@ import {
 } from './intake-panels'
 
 type IntakeTab = 'upload' | 'link' | 'demo'
+
+/**
+ * 5b asks for a 120-out / 160-in crossfade. The incoming panel fades; the
+ * outgoing one is simply gone, because the box is a fixed height and the swap
+ * lands in a single frame — there is no gap to cover, and two panels stacked
+ * at partial opacity would just double the ink for an eighth of a second.
+ */
+const PANEL_FACE =
+  'h-full focus-visible:outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-[160ms] motion-safe:ease-enter'
 
 /** Never on a phone: the keyboard would cover the panel the user just opened. */
 const wantsFieldFocus = () =>
@@ -48,7 +60,7 @@ export function IntakeTabs({
   onFiles,
   onUrl,
   urlPending,
-  quoted,
+  live,
   linkOpenSignal,
   onPickerReady,
   selectedDemoId,
@@ -58,13 +70,13 @@ export function IntakeTabs({
   onFiles: (files: File[]) => void
   onUrl?: (url: string) => void
   urlPending?: boolean
-  /** A live quote is showing: the tabs collapse to the add-another row. */
-  quoted?: boolean
+  /** Drives the two faces the tabs hand over to: measuring, then measured. */
+  live: HeroLiveState
   /** Bumped by the sticky bar's link button — opens the Link tab. */
   linkOpenSignal?: number
   /** Hands the file input's opener out (the quoted chip, the demo CTA). */
   onPickerReady?: (open: () => void) => void
-  selectedDemoId: DemoId
+  selectedDemoId: DemoId | null
   onSelectDemo: (id: DemoId) => void
   demoTotals: number[]
 }) {
@@ -122,6 +134,32 @@ export function IntakeTabs({
 
   const { dragging, fileCount } = useWindowDrag(submitFiles)
 
+  // Where the sliding underline sits. Measured rather than derived: the tab
+  // widths depend on the locale's labels, on whether the icons are showing
+  // (they drop below 430px), and on when the mono font finishes loading — so
+  // every trigger is observed, not just the list.
+  const listRef = useRef<HTMLDivElement>(null)
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 })
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || typeof ResizeObserver === 'undefined') return
+    const measure = () => {
+      const active = list.querySelector<HTMLElement>('[data-state="active"]')
+      if (active) {
+        setIndicator({ left: active.offsetLeft, width: active.offsetWidth })
+      }
+    }
+    measure()
+    // The mono webfont lands after first paint and every label changes width
+    // with it; the observer below would catch that, but only once it has been
+    // wired up, so ask directly too.
+    void document.fonts?.ready.then(measure)
+    const ro = new ResizeObserver(measure)
+    ro.observe(list)
+    for (const child of list.children) ro.observe(child)
+    return () => ro.disconnect()
+  }, [tab, strings])
+
   function handleUrlSubmit(e?: FormEvent) {
     e?.preventDefault()
     const url = urlValue.trim()
@@ -130,43 +168,10 @@ export function IntakeTabs({
     setUrlValue('')
   }
 
-  // Quoted: the tabs have done their job — all that is left is the way to
-  // add another file. (Kept mounted, never conditionally unmounted, so the
-  // file input and its registered opener survive.)
-  if (quoted) {
-    return (
-      <div className="opacity-55 transition-opacity duration-300">
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={openPicker}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              openPicker()
-            }
-          }}
-          className="group border-muted-foreground/45 hover:border-primary/60 focus-visible:ring-ring flex cursor-pointer items-center gap-4 rounded-md border-[1.5px] border-dashed px-4 py-3.5 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-        >
-          <span
-            aria-hidden
-            className="border-foreground relative size-[34px] shrink-0 rounded-[5px] border-[1.5px]"
-          >
-            <span className="bg-foreground absolute top-1/2 left-1/2 h-[1.5px] w-3 -translate-x-1/2 -translate-y-1/2" />
-            <span className="bg-foreground absolute top-1/2 left-1/2 h-3 w-[1.5px] -translate-x-1/2 -translate-y-1/2" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-bold">{c.ownTitle}</span>
-            <span className="text-muted-foreground mt-0.5 block text-xs">
-              <span className="max-sm:hidden">{c.ownHintAdd}</span>
-              <span className="sm:hidden">{c.ownHintAddShort}</span>
-            </span>
-          </span>
-        </div>
-        {input(inputRef, submitFiles)}
-      </div>
-    )
-  }
+  // Once a file is in flight the tabs have made their choice, so the tablist
+  // stays put (the box must not change height — 5c) but stops responding: a
+  // tab switch mid-measure would move nothing behind the face on top of it.
+  const handedOver = live.kind !== 'demo'
 
   const finePrint = dragging
     ? c.finePrintDrag
@@ -189,13 +194,31 @@ export function IntakeTabs({
       className="flex-1"
     >
       <TabsList
+        ref={listRef}
         aria-label={c.tabsLabel}
+        // inert, not just pointer-events-none: a dimmed control that keyboard
+        // users can still tab into is worse than no control.
+        inert={dragging || handedOver}
         className={cn(
-          'flex border-b-[1.5px] motion-safe:transition-opacity',
-          // The tabs step back while a file is over the window.
-          dragging && 'pointer-events-none opacity-40',
+          'relative flex border-b-[1.5px] motion-safe:transition-opacity motion-safe:duration-(--duration-flip)',
+          // The tabs step back while a file is over the window, and again
+          // once one has been handed to the engine.
+          (dragging || handedOver) && 'opacity-40',
         )}
       >
+        {/* One underline that travels, rather than three that blink on and
+          off (5b): the mark stays the same object, so the eye follows it to
+          the tab it landed on instead of re-finding it. */}
+        <span
+          aria-hidden
+          className={cn(
+            'bg-primary motion-safe:ease-enter absolute bottom-[-1.5px] h-[2.5px] motion-safe:transition-[left,width] motion-safe:duration-(--duration-tab)',
+            // Nothing to draw until the first measurement lands, and drawing
+            // a zero-width mark would make the first paint slide.
+            !indicator.width && 'opacity-0',
+          )}
+          style={indicator}
+        />
         {TABS.map(({ id, icon: Icon, labelKey }) => (
           <TabsTrigger
             key={id}
@@ -209,9 +232,12 @@ export function IntakeTabs({
             className={cn(
               // The border is always there, transparent when inactive, so
               // activating a tab never shifts its label by 2.5px.
+              // The 2.5px bottom border is now the sliding indicator's job;
+              // the transparent border stays as the spacer that keeps the
+              // label from shifting when the mark arrives.
               'relative -mb-[1.5px] flex min-h-11 cursor-pointer items-center gap-2 border-b-[2.5px] border-transparent px-3.5 max-[400px]:px-3',
               'font-mono text-[11px] font-bold tracking-[0.1em] whitespace-nowrap uppercase',
-              'text-muted-foreground data-[state=active]:text-foreground data-[state=active]:border-primary',
+              'text-muted-foreground data-[state=active]:text-foreground',
               'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
               'motion-safe:transition-colors',
             )}
@@ -231,41 +257,62 @@ export function IntakeTabs({
       {/* One fixed box for every face — the panels fill it, never size it. */}
       <div className="relative mt-5 h-[238px] max-sm:h-[15rem]">
         {dragging && (
-          <div className="absolute inset-0 z-10">
+          <div className="motion-safe:animate-in motion-safe:fade-in absolute inset-0 z-10 motion-safe:duration-(--duration-flip)">
             <DragFace count={fileCount} />
           </div>
         )}
-        <TabsContent
-          value="upload"
-          className="h-full focus-visible:outline-none"
-        >
-          {error ? (
-            <RejectedPanel rejection={error} onChoose={openPicker} />
-          ) : (
-            <UploadPanel onChoose={openPicker} />
-          )}
-        </TabsContent>
-        <TabsContent value="link" className="h-full focus-visible:outline-none">
-          <LinkPanel
-            value={urlValue}
-            onChange={setUrlValue}
-            onSubmit={handleUrlSubmit}
-            pending={urlPending}
-            autoFocus={focusLinkInput}
+        {/* The engine has the file: the tabs' panels give way rather than
+          stack behind these, so nothing shows through and nothing keyboard-
+          reachable survives underneath. */}
+        {live.kind === 'measuring' ? (
+          <MeasuringPanel
+            fileName={live.fileName}
+            fileSize={live.fileSize}
+            stage={live.stage}
           />
-        </TabsContent>
-        <TabsContent value="demo" className="h-full focus-visible:outline-none">
-          <DemoPanel
-            selectedId={selectedDemoId}
-            onSelect={onSelectDemo}
-            totals={demoTotals}
+        ) : live.kind === 'quoted' ? (
+          <MeasuredCard
+            fileName={live.fileName}
+            metrics={live.metrics}
+            onAdd={openPicker}
           />
-        </TabsContent>
+        ) : (
+          <>
+            <TabsContent value="upload" className={PANEL_FACE}>
+              {error ? (
+                <RejectedPanel rejection={error} onChoose={openPicker} />
+              ) : (
+                <UploadPanel onChoose={openPicker} />
+              )}
+            </TabsContent>
+            <TabsContent value="link" className={PANEL_FACE}>
+              <LinkPanel
+                value={urlValue}
+                onChange={setUrlValue}
+                onSubmit={handleUrlSubmit}
+                pending={urlPending}
+                autoFocus={focusLinkInput}
+              />
+            </TabsContent>
+            <TabsContent value="demo" className={PANEL_FACE}>
+              <DemoPanel
+                selectedId={selectedDemoId}
+                onSelect={onSelectDemo}
+                totals={demoTotals}
+              />
+            </TabsContent>
+          </>
+        )}
       </div>
 
       {/* Not a live region: the tablist already announces the switch, and the
-        quote chamber below is the hero's one aria-live surface. */}
-      <p className="text-muted-foreground/80 mt-3.5 font-mono text-[0.6rem] leading-relaxed tracking-[0.1em] uppercase">
+        hero's one announcer sits at the top of the section.
+
+        The slot is reserved for the longest line the copy can wrap to, so
+        this paragraph cannot change the island's height (5b: a tab switch has
+        no height change). Without it, switching to Paste-a-link wrapped the
+        fine print to a second line and pushed the whole page down 15px. */}
+      <p className="text-muted-foreground/80 mt-3.5 min-h-8 font-mono text-[0.6rem] leading-relaxed tracking-[0.1em] uppercase max-sm:min-h-12">
         {finePrint}
       </p>
       {input(inputRef, submitFiles)}

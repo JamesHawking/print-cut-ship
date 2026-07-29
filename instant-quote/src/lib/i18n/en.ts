@@ -115,20 +115,30 @@ export const en = {
         'The limit is 100 MB. Email it over and we’ll take a bigger one.',
       chooseAnother: 'Choose another file',
       finePrintReject: 'Or email it · reply within one working day',
-      // ≤sm measuring card (2a-02): the honesty beat while the engine runs.
-      // The facts render as a label/value grid, so these are labels only —
-      // values come from formatInt / formatDims.
-      pricing: 'Pricing…',
+      // Measuring panel (Mobile Audit 5a/5c). One label per REAL pipeline
+      // stage — the file's bytes, the parser, the geometry check, the engine.
+      // The mock's fourth stage was "slice"; nothing here or in the backend
+      // slices, so it is named after the work that actually runs.
+      stageRead: 'Read the file',
+      stageMesh: 'Triangle mesh',
+      stageSolid: 'Solid check',
+      stagePrice: 'Price',
+      progressLabel: 'Measurement progress',
+      // Percentage of the pipeline, not of the bytes — four stages, so it can
+      // be checked against the list beside it.
+      measuringPct: (pct: number) => `${pct}% · measuring`,
       measuredLocal: 'Measured in your browser · nothing sent yet',
-      factsTriangles: 'Triangles',
-      factsBbox: 'Bounding box',
-      factsWatertight: 'Watertight',
-      factsYes: 'yes ✓',
+      // Measured card (5a) — replaces the dashed row and the receipt line.
+      addAnotherFile: 'Add another file',
       // ≤sm quoted state (2a-03): the intake collapses to this one chip.
       addFile: '+ add',
       chipSize: (sizeMb: string) => `${sizeMb} MB`,
       // ≤sm CTA under the demo quote — hands the flow back to the intake.
       priceMine: 'Now price mine',
+      // Chamber before anything has been priced (5a qEmpty) — the skeleton
+      // rows hold its size, so the real numbers arrive without a reflow.
+      emptyCaption: 'Your quote appears here',
+      statusIdle: 'engine live · waiting for a file',
       demoCaption: 'Your quote appears here — for now, our demo part',
       printable: 'printable',
       metaShip: (weekday: string) => `incl. VAT · ships ${weekday} · D+1 PL/DE`,
@@ -151,12 +161,9 @@ export const en = {
         `${material} · qty 1 · standard — change anything in the editor`,
       openQuote: 'Open full quote',
       staysPut: 'stays put · price locked 14 days',
-      // Quoted-state intake island: single dimmed row + received-file line.
-      ownTitle: 'My own design',
-      ownHintAdd: 'Drop another file to add it to this quote',
-      ownHintAddShort: 'Add another file to this quote',
-      received: (file: string, sizeMb: string) =>
-        `${file} received · ${sizeMb} MB`,
+      // Spoken once when the quote settles (5c). The chamber itself is not a
+      // live region — it would read every breakdown row on every demo switch.
+      announceQuoted: (price: string, ship: string) => `${price} · ${ship}`,
       watertightOk: 'watertight ✓',
     },
   },

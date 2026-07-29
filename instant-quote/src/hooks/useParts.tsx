@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
-import type { MeshMetrics } from '@/lib/mesh/types'
+import { MESH_STAGES, type MeshMetrics, type MeshStage } from '@/lib/mesh/types'
 import type { PartConfig } from '@/lib/api/client'
 import {
   classifyFile,
@@ -31,6 +31,8 @@ export interface Part {
   fileSize: number
   kind: 'mesh' | 'step'
   status: 'parsing' | 'ready' | 'error'
+  /** Last pipeline stage that actually completed (Mobile Audit 5c). */
+  stage?: MeshStage
   hash?: string
   metrics?: MeshMetrics
   positions?: Float32Array
@@ -62,6 +64,7 @@ type Action =
       metrics: MeshMetrics
       positions: Float32Array
     }
+  | { type: 'stage'; id: string; stage: MeshStage }
   | { type: 'failed'; id: string; code: string; message: string }
   | { type: 'upload_started'; id: string }
   | { type: 'uploaded'; id: string; fileId: string }
@@ -69,6 +72,9 @@ type Action =
   | { type: 'updateConfig'; id: string; config: Partial<PartConfig> }
   | { type: 'remove'; id: string }
   | { type: 'clear' }
+
+const stageRank = (stage?: MeshStage) =>
+  stage ? MESH_STAGES.indexOf(stage) : -1
 
 function reducer(state: Part[], action: Action): Part[] {
   switch (action.type) {
@@ -84,12 +90,22 @@ function reducer(state: Part[], action: Action): Part[] {
           config: { ...DEFAULT_CONFIG },
         },
       ]
+    // Monotonic: 3MF reports its main-thread read/parse before the worker
+    // reports the positions pass it runs afterwards, so a late-arriving
+    // earlier stage must never rewind the bar (5b: progress moves forward).
+    case 'stage':
+      return state.map((p) =>
+        p.id === action.id && stageRank(action.stage) > stageRank(p.stage)
+          ? { ...p, stage: action.stage }
+          : p,
+      )
     case 'parsed':
       return state.map((p) =>
         p.id === action.id
           ? {
               ...p,
               status: 'ready',
+              stage: 'solid',
               hash: action.hash,
               metrics: action.metrics,
               positions: action.positions,
@@ -227,7 +243,7 @@ export function PartsProvider({ children }: { children: ReactNode }) {
       })
       added.push(id)
 
-      analyze(file)
+      analyze(file, (stage) => dispatch({ type: 'stage', id, stage }))
         .then((res) => {
           dispatch({
             type: 'parsed',

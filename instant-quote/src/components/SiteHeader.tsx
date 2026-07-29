@@ -196,7 +196,16 @@ export function SiteHeader({
                     params={{ locale }}
                     className="text-primary-text hover:text-foreground font-bold whitespace-nowrap transition-colors"
                   >
-                    {strings.nav.resume(parts.length)}
+                    {/* Short form ≤sm for the same reason as the 1024–1280
+                      band above: the PL long form is 191px and, beside the
+                      wordmark and the menu button, put 59px of horizontal
+                      scroll on a 360px screen the moment a file was dropped. */}
+                    <span className="sm:hidden">
+                      {strings.nav.resumeShort(parts.length)}
+                    </span>
+                    <span className="max-sm:hidden">
+                      {strings.nav.resume(parts.length)}
+                    </span>
                   </Link>
                 )}
                 {/* Radix Dialog gives the dropdown its a11y contract for free:
