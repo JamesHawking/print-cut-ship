@@ -1,0 +1,9 @@
+[Unit]
+Description=MICRO_FACTORY MinIO bucket mirror to R2 (rclone)
+
+[Service]
+Type=oneshot
+User=iq
+Group=iq
+ExecStart=/usr/bin/rclone sync minio:instantquote r2:iq-minio-backup --config /srv/iq/.config/rclone/rclone.conf --transfers 4 --stats-one-line
+Nice=10

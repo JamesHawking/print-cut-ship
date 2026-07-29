@@ -1,0 +1,10 @@
+[Unit]
+Description=MICRO_FACTORY file-retention sweep (api sweep)
+
+[Service]
+Type=oneshot
+User=iq
+Group=iq
+EnvironmentFile=/srv/iq/env/api.env
+ExecStart=/srv/iq/current/api/api sweep
+Nice=10

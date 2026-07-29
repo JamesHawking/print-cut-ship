@@ -1,6 +1,6 @@
 # 03 — Deployment, CI/CD, and environments
 
-> **Status: ⬜ Not started** (as of 2026-07-16) — groundwork exists: production Dockerfile (backend/) and local docker-compose Postgres predate this plan; CI, Coolify wiring, and staging are untouched.
+> **Status: 🔨 In progress** (as of 2026-07-27) — the §7 solo-operator amendment supersedes the CI/staging design below: push-to-deploy rails landed in `deploy/` (ship, post-receive hook, bootstrap, systemd units, Traefik dynamic file, runbook); server bring-up on sidekick-agent (checklist in `deploy/README.md`) is pending. The original phases remain as the dormant re-arm blueprint.
 
 > Reconciled 2026-07-15 to the Go-canonical backend (see amendment in `DECISIONS.md`). The deploy unit is now **two containers** — the Go API (`backend/`) and the TanStack frontend (`instant-quote/`) — with `/api` routed to Go at the proxy.
 
@@ -73,14 +73,15 @@ One project `instant-quote`; environments `staging` and `production`. Per enviro
 
 ```yaml
 jobs:
-  frontend:            # working-directory: instant-quote
+  frontend: # working-directory: instant-quote
     steps: setup-bun (pin 1.3.x) → bun install --frozen-lockfile
-           → bun run typecheck → bun run lint → bun test → bun run build
-  backend:             # working-directory: backend
-    steps: setup-go (pin from go.mod) → go vet ./... → go test ./...
-           → go build ./cmd/api
-           # later (plan 01): postgres service container + `api migrate` before tests
-           # later (plan 12): golden-parity + E2E jobs attach here
+      → bun run typecheck → bun run lint → bun test → bun run build
+  backend: # working-directory: backend
+    steps:
+      setup-go (pin from go.mod) → go vet ./... → go test ./...
+      → go build ./cmd/api
+      # later (plan 01): postgres service container + `api migrate` before tests
+      # later (plan 12): golden-parity + E2E jobs attach here
 ```
 
 Also: a `gen-check` step in the backend job runs `make gen` and fails on diff — keeps `api/openapi.yaml`, the Go server, and the frontend TS client in lockstep (the OpenAPI-first contract is only real if CI enforces it).
@@ -145,3 +146,15 @@ Jobs are **subcommands of the Go binary**, run by Coolify scheduled tasks **insi
 - **Migrations at deploy time.** `api migrate` pre-deploy assumes backward-compatible (expand/contract) migrations while the old container drains — flag as discipline for plan 01; long/locking migrations need a maintenance window.
 - **Single-server blast radius.** Staging + production + data stores on one host; the off-server R2 backup is the backstop; second server is the escalation once revenue justifies.
 - **Two-artifact drift.** Frontend TS client is generated from the backend's OpenAPI spec (`make gen`); CI's `gen-check` is the guard. Never hand-edit the generated client.
+
+## 7. Amendment (2026-07-27) — solo-operator revision: push-to-deploy on sidekick-agent
+
+> Supersedes Phases B (frontend image), C (app hosting), D (CI), and E (CD), and drops Redis from §§2–3. Phase A carries forward (`/healthz` shipped; `/healthz/ready` and the frontend `/health` consciously skipped — systemd restart + ship smoke cover them). Phase F relocates (secrets live in `/srv/iq/env/*`, 0600, not Coolify app env). Phase G reshapes (same Go subcommands, run by systemd timers instead of Coolify tasks). The phases above stay as the dormant blueprint; **re-arm trigger: a second person or real revenue** — GitHub Actions would then front the same ship mechanism unchanged.
+
+Decided with the operator (2026-07-26): production is **co-tenant on the existing multi-tenant Hetzner box `sidekick-agent`** (Tailscale-only management; public surface stays 80/443 via the existing coolify-proxy Traefik). **Coolify stays, demoted to the data plane**: Postgres 16 (host port 5433, databases `app` + `app_dev`) and MinIO (host 9002/9003), plus its scheduled Postgres→R2 backup UI. The two apps run **outside Coolify as systemd units** under a dedicated `iq` user: `iq-api` (static Go binary, :8090 — 8080 is taken by Traefik's dashboard) and `iq-web` (`node .output/server/index.mjs`, :3010 — 3000 is taken by another tenant). Routing is one Traefik **dynamic-config drop-in** (`/data/coolify/proxy/dynamic/iq.yaml`, file provider, hot-reload) targeting `host.docker.internal`, including a tailnet-only `ipAllowList` guard on `/api/v1/payments/stub/*` (the stub can never be reached publicly) and an http+basicAuth `iq.37-27-84-96.sslip.io` preview host until the domain is purchased.
+
+Deploys: `git push` over tailnet to a bare repo (`/srv/iq/git/app.git`; GitHub stays as a second push URL, journal only). The post-receive hook checks out the pushed SHA and runs `deploy/ship`, streaming into the push output; docs-only pushes deploy nothing. **One welded gate before anything mutates**: `cd backend && go test ./...` — the 1,512-case pricing goldens. Then build → `api migrate` + `api seed` (expand/contract migration discipline; they run while the old binary still serves) → atomic symlink flip (`/srv/iq/current/{api,web}` → `releases/<side>-<sha>`) → restart → smoke (`/healthz`, `/api/v1/config`, web `/`). `ship rollback api|web` flips back in seconds; `ship status` reports SHAs/health/disk. Dev on the server lives in `/srv/iq/dev` against `app_dev` + a dev bucket (`deploy/dev api|web`, preview at `http://100.114.132.68:3001` over tailnet) — half-written migrations cannot touch the prod schema.
+
+Constraints that shaped the implementation: `storage.go` builds the internal and presign S3 clients from **one** `S3_USE_SSL` flag, so `S3_ENDPOINT` = `S3_PUBLIC_ENDPOINT` with the scheme matching the page scheme (all-http in preview, all-https from domain day); frontend config is build-baked (`VITE_SITE_URL`, `API_PROXY`), so domain day requires a `ship web` rebuild; nothing in the runtime imports Redis, so it is dropped (see the matching DECISIONS.md amendment).
+
+**Done when (replaces §5 items 1, 2, 5, 6):** a push from the Mac deploys through the gate with output streaming into `git push`; a golden-breaking push is rejected with prod untouched; `ship rollback` verified; the preview host serves the full flow (presigned upload included) while the stub route 403s publicly; nightly Postgres and MinIO backups land in R2 and a restore has been rehearsed with timing recorded (§5 item 3 stands). Artifacts: `deploy/` (ship, post-receive, bootstrap.sh, systemd units incl. `iq-sweep` + `iq-minio-backup` timers, `traefik/iq.dynamic.yaml`, env templates, `dev` helper, README runbook with the bring-up checklist and domain-day steps).

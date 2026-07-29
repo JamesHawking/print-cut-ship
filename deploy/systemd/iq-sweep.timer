@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily MICRO_FACTORY retention sweep
+
+[Timer]
+OnCalendar=*-*-* 03:47:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
