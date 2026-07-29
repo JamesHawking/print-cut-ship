@@ -177,6 +177,16 @@
     'Martian Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
+:root {
+  /* Everything SiteHeader's landing variant puts above the hero: the utility
+     bar plus the sticky 56px nav and its rule — measured at 88.4px. The hero
+     subtracts it to own exactly the first screen at lg+ (Hero.tsx).
+     Deliberately rounded DOWN: erring a fraction tall puts the fold inside
+     the industries tape, while erring short leaves a bright hairline of the
+     next section under it. Change it with SiteHeader. */
+  --header-stack: 88px;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

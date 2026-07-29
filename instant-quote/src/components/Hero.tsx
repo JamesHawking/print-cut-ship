@@ -238,15 +238,20 @@ export function Hero({
     <section
       id="top"
       ref={sectionRef}
-      className="dark bg-background text-foreground border-b"
+      // lg+: the hero and its baseplate own the whole first screen — min-h,
+      // not h, so a short laptop still scrolls rather than cropping the
+      // console. On a tall display the leftover goes to the content block
+      // below, which centres in it, and the tape stays welded to the bottom
+      // edge; nothing of the next (light) section shows before the scroll.
+      className="dark bg-background text-foreground flex flex-col border-b lg:min-h-[calc(100svh-var(--header-stack))]"
     >
       {/* The hero's only live region — one settled sentence per quote. */}
       <p role="status" className="sr-only">
         {announcement}
       </p>
       {/* full-bleed ghost grid; the content column sits on top of it */}
-      <div className="blueprint-grid-ghost">
-        <div className="mx-auto max-w-6xl px-4 pt-7 pb-14 sm:px-6 sm:pt-12 md:pt-[60px] md:pb-16">
+      <div className="blueprint-grid-ghost flex flex-1 flex-col justify-center">
+        <div className="mx-auto w-full max-w-6xl px-4 pt-7 pb-14 sm:px-6 sm:pt-12 md:pt-[60px] md:pb-16">
           {/* eyebrow row: kicker left, static status dot right (the console
             LED below is the page's single animated liveness carrier).
             Dropped ≤sm so intake + CTA fit a 360×640 first screen. */}
