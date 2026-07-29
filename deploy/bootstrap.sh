@@ -23,10 +23,21 @@ BUN_VERSION=1.3.0
   echo "run as root" >&2
   exit 1
 }
-[ "$(uname -m)" = x86_64 ] || {
-  echo "expects x86_64 (adjust tarball URLs for other arches)" >&2
+case "$(uname -m)" in
+x86_64)
+  GO_ARCH=amd64
+  NODE_ARCH=x64
+  ;;
+aarch64)
+  GO_ARCH=arm64
+  NODE_ARCH=arm64
+  ;;
+*)
+  echo "unsupported arch: $(uname -m)" >&2
   exit 1
-}
+  ;;
+esac
+NODE_DIR="node-v${NODE_VERSION}-linux-${NODE_ARCH}"
 
 say() { printf '\n==> %s\n' "$1"; }
 
@@ -47,19 +58,19 @@ sysctl -q -p /etc/sysctl.d/99-iq.conf
 
 # --- 2. toolchains (additive; nothing existed on this host) ----------------
 if ! /usr/local/go/bin/go version 2>/dev/null | grep -q "go$GO_VERSION"; then
-  say "installing Go $GO_VERSION"
-  curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tgz
+  say "installing Go $GO_VERSION ($GO_ARCH)"
+  curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" -o /tmp/go.tgz
   rm -rf /usr/local/go
   tar -C /usr/local -xzf /tmp/go.tgz
   rm /tmp/go.tgz
 fi
 
 if ! /usr/local/bin/node --version 2>/dev/null | grep -q "v$NODE_VERSION"; then
-  say "installing Node $NODE_VERSION"
-  curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" -o /tmp/node.txz
-  rm -rf "/usr/local/node-v${NODE_VERSION}"
+  say "installing Node $NODE_VERSION ($NODE_ARCH)"
+  curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_DIR}.tar.xz" -o /tmp/node.txz
+  rm -rf "/usr/local/${NODE_DIR}"
   tar -C /usr/local -xJf /tmp/node.txz
-  for b in node npm npx; do ln -sfn "/usr/local/node-v${NODE_VERSION}/bin/$b" "/usr/local/bin/$b"; done
+  for b in node npm npx; do ln -sfn "/usr/local/${NODE_DIR}/bin/$b" "/usr/local/bin/$b"; done
   rm /tmp/node.txz
 fi
 
