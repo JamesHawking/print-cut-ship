@@ -75,10 +75,17 @@ http:
       priority: 100
 
     # ---------- PRODUCTION (uncomment on domain day; replace <domain>) ----
-    # In production, prefer setting the MinIO FQDN (https://s3.<domain>) on
-    # the Coolify MinIO service instead of an iq-s3 router here — Coolify
-    # then owns its Traefik labels + LE cert and they survive Coolify's own
-    # config regeneration.
+    # The s3 host routes to Garage's S3 API (host 9002 -> container 3900)
+    # via the same iq-s3 service as preview — Garage has no Coolify FQDN
+    # wiring of its own, so this router stays ours in production too.
+    #
+    # iq-s3:
+    #   entryPoints: [https]
+    #   rule: "Host(`s3.<domain>`)"
+    #   service: iq-s3
+    #   priority: 100
+    #   tls:
+    #     certResolver: letsencrypt
     #
     # iq-http:
     #   entryPoints: [http]

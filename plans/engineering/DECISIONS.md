@@ -29,6 +29,15 @@ Locked 2026-07-15. Every plan in this folder builds on these choices — plans m
 > `/srv/iq/env/*` (0600), not Coolify app env. Details: plan 03 §7 +
 > `deploy/README.md`.
 
+> **Amendment (2026-07-30): Garage replaces MinIO as the production object store.**
+> Community MinIO became unmaintained (2025 pivot to commercial AIStor), so
+> the File-storage row's server-side store is **Garage v2** on Coolify —
+> chosen over R2-as-primary to keep customer files on own infra (R2 remains
+> the backup destination and the sanctioned migration path). Standard S3
+> client code is unchanged except a new optional `S3_REGION` env (Garage
+> validates the SigV4 region). Local dev keeps compose MinIO — swapping it
+> is not worth the churn while the S3 API is the contract.
+
 | Area                             | Decision                                                                                                                                                                                                                                                                                                                                                                                                         | Rationale                                                                                                                                            | Alternative considered                                                                                                                                                        |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Database                         | PostgreSQL on Coolify                                                                                                                                                                                                                                                                                                                                                                                            | Locked by hosting scope decision; boring, well-supported                                                                                             | Managed Postgres (Neon/Supabase) — rejected to keep everything on Coolify                                                                                                     |

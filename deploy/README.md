@@ -50,9 +50,13 @@ Coolify (demoted): Postgres 16 @127.0.0.1:5433 (app + app_dev) · MinIO (9002/90
    docker exec <pg-container> createdb -U postgres app_dev
    ```
 
-4. `[U]` Coolify UI — **MinIO** service, port mappings **9002:9000** (API)
-   and **9003:9001** (console). No FQDN while in preview.
-   Verify: `curl -f http://127.0.0.1:9002/minio/health/live`.
+4. `[U]` Coolify UI — **Garage** service (community MinIO is unmaintained;
+   decision 2026-07-30). Template ships no ports: edit the compose to add
+   `ports: ['9002:3900']` (S3 API) before deploying. Then init (layout,
+   `iq-api` key, `instantquote` + `instantquote-dev` buckets, grants, CORS)
+   via `docker exec <container> /garage …` — and note **Garage validates
+   the SigV4 region**: `S3_REGION=garage` must be set in `api.env`.
+   Verify: `nc -z 127.0.0.1 9002` and a `--region garage` `list-buckets`.
 
 5. `[U]` Fill `/srv/iq/env/api.env` (DB password, MinIO keys) and
    `/srv/iq/env/web.build.env`. Both are already 0600 `iq:iq`.
@@ -80,9 +84,10 @@ Coolify (demoted): Postgres 16 @127.0.0.1:5433 (app + app_dev) · MinIO (9002/90
    target and a nightly backup schedule on the Postgres resource. Verify an
    execution lands in R2.
 
-10. `[U]` `rclone config` as `iq` (remotes: `minio:` → 127.0.0.1:9002,
-    `r2:` → the R2 bucket), then `systemctl start iq-minio-backup` and
-    check objects in R2.
+10. `[U]` `rclone config` as `iq` (remotes: `minio:` → 127.0.0.1:9002 — the
+    label is historical, it points at Garage; set S3 provider "Other",
+    region `garage` — and `r2:` → the R2 bucket), then
+    `systemctl start iq-minio-backup` and check objects in R2.
 
 11. **Restore drill** (do it once, for real): restore the newest R2 dump
     into a throwaway `app_restore_test` DB, count a known table, drop it.
@@ -136,8 +141,8 @@ The root `Makefile` (`make dev`, `db-up`, compose Postgres/MinIO) is
 1. Buy the domain; DNS A records `@` and `s3` → 37.27.84.96.
 2. `/data/coolify/proxy/dynamic/iq.yaml`: fill `<domain>`, uncomment the
    production stanza, delete the preview stanza (hot-reloads on save).
-3. Coolify MinIO service: set FQDN `https://s3.<domain>` (Coolify then owns
-   its cert + labels; the manual `iq-s3` route was preview-only).
+3. The `iq-s3` router stays ours in production too (Garage has no Coolify
+   FQDN wiring) — the prod stanza includes its https variant.
 4. `/srv/iq/env/api.env`: S3 endpoints → `s3.<domain>`, `S3_USE_SSL=true`,
    `PUBLIC_BASE_URL=https://<domain>`, `COOKIE_SECURE=true`.
 5. `/srv/iq/env/web.build.env`: `VITE_SITE_URL=https://<domain>`.
