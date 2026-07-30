@@ -1,0 +1,19 @@
+[Unit]
+Description=MICRO_FACTORY API (Go, :8090)
+Wants=network-online.target
+After=network-online.target docker.service
+StartLimitIntervalSec=0
+
+[Service]
+User=iq
+Group=iq
+EnvironmentFile=/srv/iq/env/api.env
+WorkingDirectory=/srv/iq/current/api
+ExecStart=/srv/iq/current/api/api serve
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

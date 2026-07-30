@@ -11,16 +11,17 @@ by multiple AI agents — coding and non-coding alike.
 
 ## Repo map
 
-| Path | What lives here | Start with |
-| --- | --- | --- |
-| `backend/` | Go API — canonical backend (chi, sqlc, OpenAPI-first) | `backend/README.md` |
-| `instant-quote/` | TanStack Start + React 19 frontend (Bun) | `instant-quote/README.md` |
-| `plans/engineering/` | Production-readiness roadmap: 16 topic plans + ROADMAP + DECISIONS | `plans/engineering/ROADMAP.md` |
-| `plans/advisor/` | Audit-derived implementation plans with a status table | `plans/advisor/README.md` |
-| `plans/seo/` | Executable SEO/content build prompts | `plans/seo/00_README.md` |
-| `business/` | What the company is: product, positioning, brand | `business/README.md` |
-| `research/` | Market and competitor research | `research/README.md` |
-| `archive/` | Historical artifacts kept for provenance | — |
+| Path                 | What lives here                                                                          | Start with                     |
+| -------------------- | ---------------------------------------------------------------------------------------- | ------------------------------ |
+| `backend/`           | Go API — canonical backend (chi, sqlc, OpenAPI-first)                                    | `backend/README.md`            |
+| `instant-quote/`     | TanStack Start + React 19 frontend (Bun)                                                 | `instant-quote/README.md`      |
+| `deploy/`            | Push-to-deploy rails for the production box (ship, bootstrap, systemd, Traefik, runbook) | `deploy/README.md`             |
+| `plans/engineering/` | Production-readiness roadmap: 16 topic plans + ROADMAP + DECISIONS                       | `plans/engineering/ROADMAP.md` |
+| `plans/advisor/`     | Audit-derived implementation plans with a status table                                   | `plans/advisor/README.md`      |
+| `plans/seo/`         | Executable SEO/content build prompts                                                     | `plans/seo/00_README.md`       |
+| `business/`          | What the company is: product, positioning, brand                                         | `business/README.md`           |
+| `research/`          | Market and competitor research                                                           | `research/README.md`           |
+| `archive/`           | Historical artifacts kept for provenance                                                 | —                              |
 
 ## If you are an agent
 

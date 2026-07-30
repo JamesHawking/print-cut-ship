@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# post-receive — push-to-deploy hook for /srv/iq/git/app.git.
+#
+# Installed (as a copy) by deploy/bootstrap.sh; re-run bootstrap after
+# editing this file. Kept deliberately tiny and stable: it only refreshes
+# the checkout and decides WHAT to deploy — ship (which changes often)
+# always runs from the freshly pushed revision.
+#
+#   backend/** changed        -> ship api
+#   instant-quote/** changed  -> ship web
+#   both                      -> ship all (backend first)
+#   deploy/** only            -> checkout refreshed, no deploy (warn)
+#   anything else (docs/plans)-> no deploy
+set -u
+
+GIT_DIR=/srv/iq/git/app.git
+WORK=/srv/iq/app/src
+ZERO=0000000000000000000000000000000000000000
+
+rc=0
+while read -r old new ref; do
+  if [ "$ref" != "refs/heads/main" ]; then
+    echo "hook: $ref stored (only main deploys)"
+    continue
+  fi
+  if [ "$new" = "$ZERO" ]; then
+    echo "hook: main deleted — nothing to do"
+    continue
+  fi
+
+  mkdir -p "$WORK"
+  git --git-dir="$GIT_DIR" --work-tree="$WORK" checkout -f "$new" || {
+    rc=1
+    continue
+  }
+
+  targets=
+  if [ "$old" = "$ZERO" ]; then
+    targets=all
+  else
+    changed=$(git --git-dir="$GIT_DIR" diff --name-only "$old" "$new")
+    api=0 web=0 dep=0
+    printf '%s\n' "$changed" | grep -q '^backend/' && api=1
+    printf '%s\n' "$changed" | grep -q '^instant-quote/' && web=1
+    printf '%s\n' "$changed" | grep -q '^deploy/' && dep=1
+    if [ $dep = 1 ]; then
+      echo "hook: NOTE deploy/ changed — ship runs from the fresh checkout, but"
+      echo "hook: unit/hook/bootstrap changes take effect only after a bootstrap re-run."
+    fi
+    if [ $api = 1 ] && [ $web = 1 ]; then
+      targets=all
+    elif [ $api = 1 ]; then
+      targets=api
+    elif [ $web = 1 ]; then
+      targets=web
+    elif [ $dep = 1 ]; then
+      : # deploy-tooling-only push — note above already printed, nothing to deploy
+    else
+      echo "hook: docs-only push — no deploy"
+    fi
+  fi
+
+  if [ -n "$targets" ]; then
+    echo "hook: deploying '$targets' @ ${new:0:12}"
+    env -u GIT_DIR -u GIT_WORK_TREE IQ_SHA="$new" "$WORK/deploy/ship" "$targets" || rc=$?
+  fi
+done
+exit $rc

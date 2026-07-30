@@ -45,6 +45,12 @@ func New() (*Store, error) {
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
 	}
+	// Garage (and some other S3-compatible stores) reject signatures whose
+	// SigV4 scope doesn't match their configured region; minio-go signs with
+	// us-east-1 when no region is set.
+	if region := os.Getenv("S3_REGION"); region != "" {
+		opts.Region = region
+	}
 	client, err := minio.New(endpoint, opts)
 	if err != nil {
 		return nil, fmt.Errorf("storage: client: %w", err)

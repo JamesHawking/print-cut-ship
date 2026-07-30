@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# dev — run the dev servers on the server, against dev-only state.
+#
+#   deploy/dev api [subcommand]   Go API on :8091, database app_dev,
+#                                 bucket instantquote-dev (default: serve;
+#                                 e.g. `deploy/dev api migrate` migrates
+#                                 the DEV database only)
+#   deploy/dev web                Vite dev server on :3001 (HMR), proxying
+#                                 /api to :8091
+#
+# Run from any checkout (normally /srv/iq/dev). Sources the prod env file
+# for credentials, then overrides everything stateful so nothing here can
+# touch production: separate database, separate bucket, separate ports.
+# Preview from your laptop over tailnet: http://<tailscale-ip>:3001
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+ENVFILE=/srv/iq/env/api.env
+# Explicit PATH like ship's — shell profiles are unreliable across
+# login/non-login/ssh-exec shells for a system user.
+export PATH=/usr/local/go/bin:/srv/iq/.bun/bin:/usr/local/bin:/usr/bin:/bin
+TSIP=$(tailscale ip -4 2>/dev/null | head -1 || true)
+TSIP=${TSIP:-100.114.132.68}
+
+usage() {
+  echo "usage: deploy/dev api [api-subcommand] | deploy/dev web"
+  exit 2
+}
+
+# Read KEY=VALUE lines literally (systemd EnvironmentFile grammar) — never
+# bash-source: secrets with shell metacharacters would corrupt or execute.
+load_env() {
+  local line k v
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in '' | \#*) continue ;; esac
+    k=${line%%=*}
+    v=${line#*=}
+    case $k in '' | *[!A-Za-z0-9_]*) continue ;; esac
+    export "$k=$v"
+  done <"$1"
+}
+
+case ${1:-} in
+api)
+  shift
+  load_env "$ENVFILE"
+  # Same Postgres instance + credentials, dev database. The path swap is
+  # textual: prod DSN ends in /app?sslmode=... (see api.env.example).
+  export DATABASE_URL=${DATABASE_URL/\/app\?//app_dev?}
+  # Structural guard: the database NAME (path segment before the query
+  # string) must be app_dev — a substring match anywhere else won't pass.
+  case $DATABASE_URL in
+  */app_dev | */app_dev\?*) ;;
+  *)
+    echo "dev: DATABASE_URL rewrite failed — refusing to run against a non-app_dev database" >&2
+    exit 1
+    ;;
+  esac
+  export PORT=8091
+  export S3_ENDPOINT=127.0.0.1:9002
+  export S3_PUBLIC_ENDPOINT=$TSIP:9002
+  export S3_USE_SSL=false
+  export S3_BUCKET=instantquote-dev
+  export PUBLIC_BASE_URL=http://$TSIP:3001
+  export COOKIE_SECURE=false
+  cd "$ROOT/backend"
+  exec go run ./cmd/api "${@:-serve}"
+  ;;
+web)
+  cd "$ROOT/instant-quote"
+  [ -d node_modules ] || bun install --frozen-lockfile
+  export API_PROXY=http://localhost:8091
+  exec bunx vite dev --port 3001 --host
+  ;;
+*) usage ;;
+esac
