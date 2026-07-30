@@ -7,9 +7,10 @@ via the existing coolify-proxy Traefik). Design record:
 
 **The flow:** `git push` from anywhere on the tailnet → bare repo on the
 server → `post-receive` hook checks out the pushed SHA and runs `ship`,
-streaming into your push output. One welded gate — `go test ./...` in
-`backend/` (1,512-case pricing goldens included) — runs before anything
-mutates. Backend ≈ 2–3 min, with frontend ≈ 6–9 min on this shared box.
+streaming into your push output. The welded gate runs before anything
+mutates: `go test ./...` in `backend/` (1,512-case pricing goldens
+included), plus `bun run typecheck` for web targets (operator decision
+2026-07-30). Backend ≈ 2–3 min, with frontend ≈ 6–9 min on this shared box.
 
 ```
 Internet ──80/443──> coolify-proxy (Traefik, existing)

@@ -120,7 +120,7 @@ deploy_web() {
   local rel=$RELEASES/web-$REL_ID
   say "build web ($SHA)"
   cd "$SRC/instant-quote"
-  bun install --frozen-lockfile
+  # bun install already ran in the gate phase (typecheck needs node_modules)
   (
     load_env "$ENVDIR/web.build.env"
     NODE_OPTIONS=--max-old-space-size=1536 nice -n10 ionice -c2 -n7 bun run build
@@ -197,6 +197,11 @@ main() {
   say "gate: go test ./... (pricing goldens included)"
   (cd "$SRC/backend" && nice -n10 go test ./...) ||
     die "GATE FAILED — production untouched"
+  if [ "$target" = web ] || [ "$target" = all ]; then
+    say "gate: bun run typecheck (web)"
+    (cd "$SRC/instant-quote" && bun install --frozen-lockfile && nice -n10 bun run typecheck) ||
+      die "GATE FAILED — production untouched"
+  fi
 
   case $target in
   api) deploy_api ;;
