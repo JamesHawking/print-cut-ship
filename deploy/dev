@@ -24,18 +24,32 @@ usage() {
   exit 2
 }
 
+# Read KEY=VALUE lines literally (systemd EnvironmentFile grammar) — never
+# bash-source: secrets with shell metacharacters would corrupt or execute.
+load_env() {
+  local line k v
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in '' | \#*) continue ;; esac
+    k=${line%%=*}
+    v=${line#*=}
+    case $k in '' | *[!A-Za-z0-9_]*) continue ;; esac
+    export "$k=$v"
+  done <"$1"
+}
+
 case ${1:-} in
 api)
   shift
-  set -a
-  # shellcheck disable=SC1090
-  . "$ENVFILE"
-  set +a
+  load_env "$ENVFILE"
   # Same Postgres instance + credentials, dev database. The path swap is
   # textual: prod DSN ends in /app?sslmode=... (see api.env.example).
   export DATABASE_URL=${DATABASE_URL/\/app\?//app_dev?}
-  case $DATABASE_URL in *app_dev*) ;; *)
-    echo "dev: DATABASE_URL rewrite failed — refusing to run against '$DATABASE_URL'" >&2
+  # Structural guard: the database NAME (path segment before the query
+  # string) must be app_dev — a substring match anywhere else won't pass.
+  case $DATABASE_URL in
+  */app_dev | */app_dev\?*) ;;
+  *)
+    echo "dev: DATABASE_URL rewrite failed — refusing to run against a non-app_dev database" >&2
     exit 1
     ;;
   esac
@@ -51,6 +65,7 @@ api)
   ;;
 web)
   cd "$ROOT/instant-quote"
+  [ -d node_modules ] || bun install --frozen-lockfile
   export API_PROXY=http://localhost:8091
   exec bunx vite dev --port 3001 --host
   ;;

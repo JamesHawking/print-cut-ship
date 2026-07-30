@@ -80,8 +80,12 @@ if ! command -v rclone >/dev/null || ! command -v unzip >/dev/null; then
   apt-get install -y -q rclone unzip
 fi
 
+# Global PATH gets ONLY root-owned dirs. Never put iq-writable paths
+# (/srv/iq/.bun/bin) on other users' PATH — that's a privilege-escalation
+# vector on a shared box. iq's own shell gets bun via ~iq/.bashrc (the bun
+# installer adds it; ship sets its own PATH explicitly anyway).
 cat >/etc/profile.d/iq-toolchains.sh <<'EOF'
-export PATH=/usr/local/go/bin:/srv/iq/.bun/bin:$PATH
+export PATH=/usr/local/go/bin:$PATH
 EOF
 
 # --- 3. iq user + tree ------------------------------------------------------
@@ -134,9 +138,12 @@ cat <<EOF
 
 bootstrap done. Manual steps remaining (details: deploy/README.md):
 
-  1. Coolify UI: Postgres 16 resource, public port 5433; then create
+  1. Coolify UI: PostgreSQL resource, public port 5433; then create
      databases 'app' and 'app_dev' in it.
-  2. Coolify UI: MinIO service, host ports 9002:9000 and 9003:9001.
+  2. Coolify UI: Garage service — add "ports: ['9002:3900']" to its compose
+     before deploying (S3 API; no console). Then init via the garage CLI:
+     layout assign/apply, key, buckets, grants, CORS — and api.env needs
+     S3_REGION=garage (Garage validates the SigV4 region).
   3. Fill /srv/iq/env/api.env and /srv/iq/env/web.build.env (0600 already).
   4. Copy the Traefik dynamic file (set the basicAuth hash first):
        cp $SRC/traefik/iq.dynamic.yaml /data/coolify/proxy/dynamic/iq.yaml

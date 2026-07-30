@@ -80,9 +80,12 @@ Coolify (demoted): Postgres 16 @127.0.0.1:5433 (app + app_dev) · MinIO (9002/90
    tailnet (see below); confirm it 403s from the public internet.
    `[U]` then: `/srv/iq/current/api/api promote-admin <your-email>`.
 
-9. `[U]` Cloudflare R2 — bucket + API token; in Coolify, add the S3 storage
-   target and a nightly backup schedule on the Postgres resource. Verify an
-   execution lands in R2.
+9. `[U]` Cloudflare R2 — create bucket **`iq-minio-backup`** (exactly that
+   name: the `iq-minio-backup.service` unit targets it) + an API token; in
+   Coolify, add the S3 storage target and a nightly backup schedule on the
+   Postgres resource. Verify an execution lands in R2. The object mirror
+   uses `rclone copy` (never `sync`) so source-side deletions are NOT
+   replicated — the backstop keeps what Garage loses.
 
 10. `[U]` `rclone config` as `iq` (remotes: `minio:` → 127.0.0.1:9002 — the
     label is historical, it points at Garage; set S3 provider "Other",
@@ -166,6 +169,12 @@ The root `Makefile` (`make dev`, `db-up`, compose Postgres/MinIO) is
   `docker system prune` — other tenants' images live there.
 - **After a Coolify upgrade**: confirm `/data/coolify/proxy/dynamic/iq.yaml`
   still exists and routes (`curl -fsS http://iq.37-27-84-96.sslip.io/healthz`).
+- **The public-exposure invariant is the Hetzner Cloud Firewall.** Both apps
+  (and docker-published 5433/9002) bind 0.0.0.0; the ONLY thing keeping
+  :8090/:3010/:5433/:9002 off the internet — and the stub-payments Traefik
+  guard meaningful — is the cloud firewall allowlisting exactly 80/443
+  (verified 2026-07-30). After ANY firewall change, re-verify:
+  `for p in 8090 3010 5433 9002; do nc -z -G4 37.27.84.96 $p && echo "$p OPEN(!)"; done`
 - **If UFW is ever enabled** on this box, allow the docker bridge networks —
   Traefik reaches the apps via `host.docker.internal`.
 - **Secrets map**: server runtime — `/srv/iq/env/*` (0600); Mac dev —

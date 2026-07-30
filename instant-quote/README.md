@@ -140,7 +140,8 @@ description, canonical, OG/Twitter and hreflang (app screens pass `noindex`);
 JSON-LD goes through `jsonLd(...)` builders (`Organization` + `WebSite`
 site-wide on the `$locale` layout; `breadcrumbJsonLd` for content pages).
 Absolute URLs come from `SITE_URL` = `VITE_SITE_URL` (env) with a placeholder
-default — set the real origin in Coolify env and mirror it in
+default — the real origin is **build-baked** from `/srv/iq/env/web.build.env`
+(changing it requires a web rebuild — plan 03 §7); mirror it in
 `public/robots.txt`. Indexable pages are listed in `vite.config.ts`
 `publicPages`: each entry is prerendered at build time and emitted into
 `sitemap.xml` with hreflang alternates (add new content routes there).

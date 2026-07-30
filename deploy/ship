@@ -33,6 +33,24 @@ die() {
   exit 1
 }
 
+# Read KEY=VALUE lines literally — the env files use systemd EnvironmentFile
+# grammar, and bash-sourcing them would expand/execute shell metacharacters
+# in secrets. No quoting, no expansion; blank lines and #comments skipped.
+load_env() {
+  local line k v
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in '' | \#*) continue ;; esac
+    k=${line%%=*}
+    v=${line#*=}
+    case $k in '' | *[!A-Za-z0-9_]*)
+      echo "ship: ignoring malformed env line in $1: ${line%%=*}" >&2
+      continue
+      ;;
+    esac
+    export "$k=$v"
+  done <"$1"
+}
+
 sha() {
   local s
   s=${IQ_SHA:-$(git --git-dir="$GIT_DIR" rev-parse refs/heads/main)}
@@ -78,7 +96,7 @@ prune() { # keep newest $KEEP per side, never the one in use
 }
 
 deploy_api() {
-  local rel=$RELEASES/api-$SHA
+  local rel=$RELEASES/api-$REL_ID
   say "build api ($SHA)"
   mkdir -p "$rel"
   (cd "$SRC/backend" && nice -n10 go build -trimpath -ldflags='-s -w' -o "$rel/api" ./cmd/api)
@@ -86,10 +104,7 @@ deploy_api() {
 
   say "migrate + seed (new binary, old one still serving)"
   (
-    set -a
-    # shellcheck disable=SC1091
-    . "$ENVDIR/api.env"
-    set +a
+    load_env "$ENVDIR/api.env"
     "$rel/api" migrate
     "$rel/api" seed
   )
@@ -102,18 +117,14 @@ deploy_api() {
 }
 
 deploy_web() {
-  local rel=$RELEASES/web-$SHA
+  local rel=$RELEASES/web-$REL_ID
   say "build web ($SHA)"
   cd "$SRC/instant-quote"
   bun install --frozen-lockfile
   (
-    set -a
-    # shellcheck disable=SC1091
-    . "$ENVDIR/web.build.env"
-    set +a
+    load_env "$ENVDIR/web.build.env"
     NODE_OPTIONS=--max-old-space-size=1536 nice -n10 ionice -c2 -n7 bun run build
   )
-  rm -rf "$rel"
   mkdir -p "$rel"
   cp -a .output/. "$rel/"
   printf '%s  %s\n' "$SHA" "$(date -Is)" >"$rel/RELEASE"
@@ -174,6 +185,10 @@ main() {
   flock -n 9 || die "another ship is in progress"
 
   SHA=$(sha)
+  # Release dirs are unique per DEPLOY, not per SHA: a same-SHA redeploy
+  # (e.g. domain day's env-only rebuild) must never delete or overwrite the
+  # release the live symlink points at.
+  REL_ID=$SHA-$(date +%Y%m%d%H%M%S)
   mkdir -p "$IQ/log"
   LOG=$IQ/log/ship-$(date +%Y%m%d-%H%M%S)-$SHA.log
   exec > >(tee -a "$LOG") 2>&1

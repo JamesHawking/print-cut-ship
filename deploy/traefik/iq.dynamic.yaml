@@ -55,9 +55,14 @@ http:
       middlewares: [iq-stub-tailnet-only]
       service: iq-api
       priority: 300
+    # basicAuth here too: the browser re-sends cached credentials on
+    # same-origin fetches, so the app works — but anonymous bots can't hit
+    # /api (upload issuance, OTP requests) on the preview host. Note this
+    # also gates /healthz until the real domain.
     iq-prev-api:
       entryPoints: [http]
       rule: "Host(`iq.37-27-84-96.sslip.io`) && (PathPrefix(`/api`) || Path(`/healthz`))"
+      middlewares: [iq-preview-auth]
       service: iq-api
       priority: 200
     iq-prev-web:

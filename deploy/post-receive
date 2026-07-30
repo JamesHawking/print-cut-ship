@@ -43,6 +43,10 @@ while read -r old new ref; do
     printf '%s\n' "$changed" | grep -q '^backend/' && api=1
     printf '%s\n' "$changed" | grep -q '^instant-quote/' && web=1
     printf '%s\n' "$changed" | grep -q '^deploy/' && dep=1
+    if [ $dep = 1 ]; then
+      echo "hook: NOTE deploy/ changed — ship runs from the fresh checkout, but"
+      echo "hook: unit/hook/bootstrap changes take effect only after a bootstrap re-run."
+    fi
     if [ $api = 1 ] && [ $web = 1 ]; then
       targets=all
     elif [ $api = 1 ]; then
@@ -50,8 +54,7 @@ while read -r old new ref; do
     elif [ $web = 1 ]; then
       targets=web
     elif [ $dep = 1 ]; then
-      echo "hook: deploy tooling updated in the checkout — run ship manually to"
-      echo "hook: exercise it; unit/hook/bootstrap changes need a bootstrap re-run."
+      : # deploy-tooling-only push — note above already printed, nothing to deploy
     else
       echo "hook: docs-only push — no deploy"
     fi
