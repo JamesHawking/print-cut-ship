@@ -8,7 +8,12 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 import { MESH_STAGES, type MeshMetrics, type MeshStage } from '@/lib/mesh/types'
-import type { PartConfig } from '@/lib/api/client'
+import {
+  DEFAULT_COLOR,
+  DEFAULT_INFILL,
+  DEFAULT_NOZZLE,
+  type PartConfig,
+} from '@/lib/api/client'
 import {
   classifyFile,
   MAX_FILE_BYTES,
@@ -47,6 +52,9 @@ const DEFAULT_CONFIG: PartConfig = {
   process: 'pla',
   quantity: 1,
   leadTime: 'standard',
+  nozzle: DEFAULT_NOZZLE,
+  infill: DEFAULT_INFILL,
+  color: DEFAULT_COLOR,
 }
 
 type Action =

@@ -4,7 +4,9 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   api,
+  pricePartKey,
   toApiMetrics,
+  toPricePart,
   type Catalog,
   type PartQuote,
   type ShipDate,
@@ -76,10 +78,9 @@ export function useDemoPrices(): PartQuote[] | undefined {
 
 /**
  * Live quote for one user part (the hero's inline quote). The query key is
- * byte-identical to the single-part shape quote.tsx builds
- * (['price', [[hash, process, quantity, leadTime]]]), so the quote page
- * renders from cache with zero refetch after the hero auto-navigates —
- * change one side only in lockstep with the other.
+ * byte-identical to the single-part shape quote.tsx builds, so the quote page
+ * renders from cache with zero refetch after the hero auto-navigates — both
+ * sides go through pricePartKey/toPricePart so they cannot drift apart.
  */
 export function usePartPrice(part: Part | undefined): {
   quote: PartQuote | undefined
@@ -90,27 +91,13 @@ export function usePartPrice(part: Part | undefined): {
   const { data, isError } = useQuery({
     queryKey: [
       'price',
-      ready
-        ? [
-            [
-              part.hash,
-              part.config.process,
-              part.config.quantity,
-              part.config.leadTime,
-            ],
-          ]
-        : [],
+      ready ? [pricePartKey({ hash: part.hash!, config: part.config })] : [],
     ],
     queryFn: async () => {
       const res = await api.POST('/api/v1/price', {
         body: {
           parts: [
-            {
-              metrics: toApiMetrics(part!.metrics!),
-              process: part!.config.process,
-              quantity: part!.config.quantity,
-              leadTime: part!.config.leadTime,
-            },
+            toPricePart({ metrics: part!.metrics!, config: part!.config }),
           ],
         },
       })
@@ -147,6 +134,38 @@ export function usePriceCompare(): PriceCompareRow[] | undefined {
     retry: 1,
   })
   return data
+}
+
+/**
+ * One real part re-quoted in every material, at its current configuration.
+ * Both the materials bench and the config panel's material dropdown read this
+ * — one query key, so the deltas in the dropdown and the rows in the bench are
+ * the same numbers from the same request.
+ */
+export function usePartCompare(part: (Part & { hash: string }) | null) {
+  return useQuery({
+    queryKey: [
+      'price-compare',
+      part && pricePartKey({ hash: part.hash, config: part.config }),
+    ],
+    queryFn: async () => {
+      const res = await api.POST('/api/v1/price/compare', {
+        body: {
+          metrics: toApiMetrics(part!.metrics!),
+          quantity: part!.config.quantity,
+          leadTime: part!.config.leadTime,
+          nozzle: part!.config.nozzle,
+          infill: part!.config.infill,
+          color: part!.config.color,
+        },
+      })
+      if (!res.data) throw new ApiRequestError(res.error)
+      return res.data
+    },
+    enabled: !!part && !!part.metrics,
+    staleTime: Infinity,
+    gcTime: 10 * 60_000,
+  })
 }
 
 /** Ship dates per lead time, refreshed every minute (cutoff can flip). */

@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -417,6 +418,189 @@ function PricingEditor() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-2 text-sm font-bold tracking-tight">Nozzles</h2>
+          {/* The seeded multipliers are geometric, not measured — this table
+            is where a calibration pass lands, without a deploy. Shell and
+            throughput multiply the FDM baseline below, so n04 must stay at
+            1.0 for the 0.4 mm path to keep pricing as it always has. */}
+          <p className="text-muted-foreground mb-2 text-xs">
+            Multipliers on the FDM baseline (calibrated for 0.4 mm). Keep n04 at
+            1.0.
+          </p>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Diameter (mm)</TableHead>
+                  <TableHead>Shell ×</TableHead>
+                  <TableHead>Throughput ×</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {draft.Nozzles.map((n, i) => (
+                  <TableRow key={n.ID}>
+                    <TableCell className="font-mono text-xs font-bold">
+                      {n.ID}
+                    </TableCell>
+                    <TableCell>
+                      <Num
+                        value={n.DiameterMm}
+                        onCommit={(v) =>
+                          update((c) => (c.Nozzles[i].DiameterMm = v))
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Num
+                        value={n.ShellMult}
+                        onCommit={(v) =>
+                          update((c) => (c.Nozzles[i].ShellMult = v))
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Num
+                        value={n.ThroughputMult}
+                        onCommit={(v) =>
+                          update((c) => (c.Nozzles[i].ThroughputMult = v))
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        <div>
+          <h2 className="mb-2 text-sm font-bold tracking-tight">Infills</h2>
+          <p className="text-muted-foreground mb-2 text-xs">
+            Fractions feed the shell+infill model directly — no separate price
+            multiplier. "standard" must equal the FDM infill fraction.
+          </p>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Fraction</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {draft.Infills.map((inf, i) => (
+                  <TableRow key={inf.ID}>
+                    <TableCell className="font-mono text-xs font-bold">
+                      {inf.ID}
+                    </TableCell>
+                    <TableCell>
+                      <Num
+                        value={inf.Fraction}
+                        onCommit={(v) =>
+                          update((c) => (c.Infills[i].Fraction = v))
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-2 text-sm font-bold tracking-tight">Colours</h2>
+          <p className="text-muted-foreground mb-2 text-xs">
+            Out-of-stock colours carry the surcharge and the extra lead day.
+            Built-in ids and their order are fixed; new colourways append.
+          </p>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead>Hex</TableHead>
+                  <TableHead>In stock</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {draft.Colors.map((col, i) => (
+                  <TableRow key={col.ID}>
+                    <TableCell className="font-mono text-xs font-bold">
+                      {col.ID}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        className="h-8 text-xs"
+                        value={col.Label}
+                        onChange={(e) =>
+                          update((c) => (c.Colors[i].Label = e.target.value))
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className="border-border size-5 shrink-0 rounded-full border"
+                          style={{ background: col.Hex }}
+                        />
+                        <Input
+                          className="h-8 font-mono text-xs"
+                          value={col.Hex}
+                          onChange={(e) =>
+                            update((c) => (c.Colors[i].Hex = e.target.value))
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        aria-label={`${col.Label} in stock`}
+                        checked={col.InStock}
+                        onCheckedChange={(v) =>
+                          update((c) => (c.Colors[i].InStock = v))
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        <div>
+          <h2 className="mb-2 text-sm font-bold tracking-tight">
+            Colour policy
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Surcharge fraction</Label>
+              <Num
+                className="h-8 font-mono text-xs"
+                value={draft.ColorSurchargeFraction}
+                onCommit={(n) => update((c) => (c.ColorSurchargeFraction = n))}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Extra lead days</Label>
+              <Num
+                className="h-8 font-mono text-xs"
+                value={draft.ColorSurchargeLeadDays}
+                onCommit={(n) =>
+                  update((c) => (c.ColorSurchargeLeadDays = Math.round(n)))
+                }
+              />
+            </div>
           </div>
         </div>
       </section>

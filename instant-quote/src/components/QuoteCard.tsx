@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ConfigPanel } from './ConfigPanel'
-import { PriceBreakTable } from './PriceBreakTable'
 import { DfmBadges } from './DfmBadges'
 import { formatInt, formatPln, formatPercent, formatVolume } from '@/lib/format'
 import { useLocale, useStrings } from '@/lib/i18n'
@@ -179,19 +178,16 @@ export function QuoteCard({
         the config section, so text sits at font-metric height (~1.2), not
         the body's 1.5 — this is most of its tighter vertical rhythm. */}
       <CardContent className="space-y-5 border-t pt-5 leading-[normal]">
+        {/* The quantity chips carry each tier's per-part price now, so the
+          separate price-break table would print the same five numbers twice. */}
         <ConfigPanel
           config={part.config}
           onChange={onConfigChange}
           quote={quote}
+          part={part}
           compareOpen={compareOpen}
           onToggleCompare={onToggleCompare}
         />
-        {!quote.blocked && (
-          <PriceBreakTable
-            priceBreaks={quote.priceBreaks}
-            activeQuantity={part.config.quantity}
-          />
-        )}
       </CardContent>
     </Card>
   )

@@ -1,11 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { Part } from '@/hooks/useParts'
-import { useCatalog } from '@/hooks/useApi'
-import { api, toApiMetrics, type ProcessId } from '@/lib/api/client'
-import { ApiRequestError } from '@/lib/api/errors'
+import { useCatalog, usePartCompare } from '@/hooks/useApi'
+import { type ProcessId } from '@/lib/api/client'
 import { formatDecimal, formatPln } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useLocale, useStrings } from '@/lib/i18n'
@@ -27,27 +25,7 @@ export function MaterialsBench({ part, onSelectProcess, onClose }: Props) {
   const locale = useLocale()
   const catalog = useCatalog()
 
-  const compareQuery = useQuery({
-    queryKey: [
-      'price-compare',
-      part.hash,
-      part.config.quantity,
-      part.config.leadTime,
-    ],
-    queryFn: async () => {
-      const res = await api.POST('/api/v1/price/compare', {
-        body: {
-          metrics: toApiMetrics(part.metrics!),
-          quantity: part.config.quantity,
-          leadTime: part.config.leadTime,
-        },
-      })
-      if (!res.data) throw new ApiRequestError(res.error)
-      return res.data
-    },
-    staleTime: Infinity,
-    gcTime: 10 * 60_000,
-  })
+  const compareQuery = usePartCompare(part)
 
   const rows = compareQuery.data?.rows ?? []
   const priceOf = (id: string) => rows.find((r) => r.process === id)?.quote

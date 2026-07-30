@@ -860,6 +860,65 @@ export const en = {
     base: 'base',
     printMeta: (grams: string, hours: string) =>
       `~${grams} g · ${hours} h print`,
+
+    color: 'Colour',
+    printQuality: 'Print quality',
+    strength: 'Strength · infill',
+    colorNames: {
+      black: 'Black',
+      white: 'White',
+      grey: 'Grey',
+      red: 'Red',
+      orange: 'Orange',
+      yellow: 'Yellow',
+      green: 'Green',
+      blue: 'Blue',
+      silver: 'Silver',
+    } as Record<string, string>,
+    colorInStock: 'In stock · included',
+    colorOnRequest: (pct: string, days: number) =>
+      `On request · +${pct} · +${days} day${days === 1 ? '' : 's'}`,
+    colorTag: (name: string, included: boolean) =>
+      `${name.toUpperCase()} · ${included ? 'INCLUDED' : 'ON REQUEST'}`,
+    nozzleNames: {
+      n02: 'Fine detail',
+      n04: 'Standard',
+      n06: 'Sturdy draft',
+      n08: 'Max speed',
+    } as Record<string, string>,
+    nozzleSpecs: {
+      n02: '0.2 mm nozzle · slowest',
+      n04: '0.4 mm nozzle · recommended',
+      n06: '0.6 mm nozzle · thick walls',
+      n08: '0.8 mm nozzle · visible lines',
+    } as Record<string, string>,
+    nozzleMeta: {
+      n02: 'Small text, threads, sharp edges',
+      n04: 'The right choice for most parts',
+      n06: 'Thicker extrusions, faster print',
+      n08: 'Large parts, max deposition rate',
+    } as Record<string, string>,
+    infillNames: {
+      light: 'Light',
+      standard: 'Standard',
+      strong: 'Strong',
+      solid: 'Solid',
+    } as Record<string, string>,
+    infillMeta: {
+      light: 'Display parts, prototypes',
+      standard: 'Right for most parts',
+      strong: 'Functional, load-bearing parts',
+      solid: 'Waterproof, machinable',
+    } as Record<string, string>,
+    nozzleTag: (mm: string) => `${mm} MM NOZZLE`,
+    infillTag: (name: string, pct: string) => `${name.toUpperCase()} · ${pct}`,
+    perPartPrice: 'zł / part per tier',
+    selected: '✓',
+    noChange: '±0',
+    delta: (amount: string, cheaper: boolean) =>
+      `${cheaper ? '−' : '+'}${amount}`,
+    pickColor: (name: string) => `Colour: ${name}`,
+    recap: 'Your configuration',
   },
   step: {
     title: 'This STEP needs a quick manual check',

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -12,13 +12,24 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import type {
+  ColorId,
+  InfillId,
   LeadTimeId,
+  NozzleId,
+  OptionPrice,
   PartConfig,
   PartQuote,
   ProcessId,
 } from '@/lib/api/client'
-import { useCatalog, useShipDates } from '@/hooks/useApi'
-import { formatDecimal, formatInt, formatShipDate } from '@/lib/format'
+import type { Part } from '@/hooks/useParts'
+import { useCatalog, usePartCompare, useShipDates } from '@/hooks/useApi'
+import {
+  formatDecimal,
+  formatInt,
+  formatPercent,
+  formatPln,
+  formatShipDate,
+} from '@/lib/format'
 import { useLocale, useStrings } from '@/lib/i18n'
 
 interface Props {
@@ -26,6 +37,8 @@ interface Props {
   onChange: (patch: Partial<PartConfig>) => void
   /** Enables the material meta line (weight / print-time estimates). */
   quote?: PartQuote
+  /** Set for real parts: unlocks per-material deltas in the dropdown. */
+  part?: Part
   /** Editor only: shows the materials-bench toggle next to the label. */
   compareOpen?: boolean
   onToggleCompare?: () => void
@@ -35,10 +48,29 @@ interface Props {
 // so typing "125" doesn't fire a pricing request per keystroke.
 const QTY_DEBOUNCE_MS = 250
 
+/** Section label — the mono kicker every group opens with. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Label className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase">
+      {children}
+    </Label>
+  )
+}
+
+/** The right-hand mono tag that echoes the current selection. */
+function SectionTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-muted-foreground font-mono text-[0.625rem] tracking-wider tabular-nums">
+      {children}
+    </span>
+  )
+}
+
 export function ConfigPanel({
   config,
   onChange,
   quote,
+  part,
   compareOpen,
   onToggleCompare,
 }: Props) {
@@ -78,17 +110,63 @@ export function ConfigPanel({
 
   const process = catalog?.processes.find((p) => p.id === config.process)
   const shipByLead = new Map(shipDates?.map((s) => [s.leadTime, s]))
-  const discountAt = (q: number) =>
-    catalog?.discountTiers.find((t) => t.quantity === q)?.fraction ?? 0
   const loading = !catalog
+
+  // Per-material prices for this exact part. Shares a query key with the
+  // materials bench, so opening both costs one request.
+  const comparePart =
+    part && part.hash && part.metrics ? (part as Part & { hash: string }) : null
+  const compare = usePartCompare(comparePart)
+  const materialUnit = useMemo(() => {
+    const m = new Map<string, number | null>()
+    for (const row of compare.data?.rows ?? []) {
+      m.set(row.process, row.quote.blocked ? null : row.quote.unitPricePln)
+    }
+    return m
+  }, [compare.data])
+
+  // Every option's price, keyed axis+id. The engine computes these from the
+  // same code path that prices the part, so what a choice is advertised to
+  // cost is what it charges once picked.
+  const optionUnit = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const o of quote?.optionPrices ?? ([] as OptionPrice[])) {
+      m.set(`${o.axis}:${o.id}`, o.unitPricePln)
+    }
+    return m
+  }, [quote])
+
+  /**
+   * The zł a choice would add or remove versus the current selection.
+   * `null` when there is nothing to compare against yet — an empty slot, not
+   * a "±0", because a delta we can't compute is not a delta of zero.
+   */
+  function deltaLabel(price: number | null | undefined, active: boolean) {
+    if (active) return strings.config.selected
+    if (price == null || quote == null || quote.blocked) return null
+    const diff = price - quote.unitPricePln
+    if (Math.abs(diff) < 0.005) return strings.config.noChange
+    return strings.config.delta(formatPln(Math.abs(diff), locale), diff < 0)
+  }
+
+  function axisDelta(axis: string, id: string, active: boolean) {
+    return deltaLabel(optionUnit.get(`${axis}:${id}`), active)
+  }
+
+  const colors = catalog?.colors ?? []
+  const colorName = (id: string) =>
+    strings.config.colorNames[id] ??
+    colors.find((c) => c.id === id)?.label ??
+    id
+  const currentColor = colors.find((c) => c.id === config.color)
+  const surchargePct = formatPercent(catalog?.colorSurchargeFraction ?? 0.05)
 
   return (
     <div className="space-y-5" aria-busy={loading}>
+      {/* Material ------------------------------------------------------- */}
       <div className="space-y-2">
         <div className="flex items-baseline justify-between gap-3">
-          <Label className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase">
-            {strings.config.process}
-          </Label>
+          <SectionLabel>{strings.config.process}</SectionLabel>
           {onToggleCompare && (
             <button
               type="button"
@@ -108,11 +186,26 @@ export function ConfigPanel({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(catalog?.processes ?? []).map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.label}
-              </SelectItem>
-            ))}
+            {(catalog?.processes ?? []).map((p) => {
+              // Deltas render inside the item rather than in a bespoke
+              // popover, so Radix keeps typeahead and focus management.
+              const delta = deltaLabel(
+                materialUnit.get(p.id),
+                p.id === config.process,
+              )
+              return (
+                <SelectItem key={p.id} value={p.id}>
+                  <span className="flex w-full items-baseline justify-between gap-3">
+                    <span>{p.label}</span>
+                    {delta && (
+                      <span className="text-muted-foreground font-mono text-[0.59375rem] tabular-nums">
+                        {delta}
+                      </span>
+                    )}
+                  </span>
+                </SelectItem>
+              )
+            })}
           </SelectContent>
         </Select>
         {process && quote && !quote.blocked && (
@@ -127,17 +220,211 @@ export function ConfigPanel({
         )}
       </div>
 
+      {/* Colour --------------------------------------------------------- */}
       <div className="space-y-2">
-        <Label
-          htmlFor="qty"
-          className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase"
-        >
-          {strings.config.quantity}
-        </Label>
+        <div className="flex items-baseline justify-between gap-3">
+          <SectionLabel>{strings.config.color}</SectionLabel>
+          <SectionTag>
+            {strings.config.colorTag(
+              colorName(config.color),
+              currentColor?.inStock ?? true,
+            )}
+          </SectionTag>
+        </div>
+        {/* Grouped by stock status so the cost of a colour is legible before
+          it is clicked, not after. */}
+        {(
+          [
+            [true, strings.config.colorInStock],
+            [
+              false,
+              strings.config.colorOnRequest(
+                surchargePct,
+                catalog?.colorSurchargeLeadDays ?? 1,
+              ),
+            ],
+          ] as const
+        ).map(([inStock, groupLabel]) => {
+          const group = colors.filter((c) => c.inStock === inStock)
+          if (group.length === 0) return null
+          return (
+            <div key={String(inStock)} className="space-y-1.5">
+              <p className="text-muted-foreground font-mono text-[0.5625rem] tracking-[0.16em] uppercase">
+                {groupLabel}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {group.map((c) => {
+                  const active = c.id === config.color
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      aria-pressed={active}
+                      // A title is not an accessible name — swatches carry no
+                      // text, so the colour has to be spoken from here.
+                      aria-label={strings.config.pickColor(colorName(c.id))}
+                      title={colorName(c.id)}
+                      onClick={() => onChange({ color: c.id as ColorId })}
+                      style={{ background: c.hex }}
+                      className={cn(
+                        'border-foreground/15 size-7 cursor-pointer rounded-full border transition-[box-shadow,transform] duration-100 active:scale-[0.94] motion-reduce:active:scale-100',
+                        'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                        active &&
+                          'ring-background ring-offset-foreground ring-2 ring-offset-2',
+                      )}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Print quality (nozzle) ----------------------------------------- */}
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <SectionLabel>{strings.config.printQuality}</SectionLabel>
+          <SectionTag>
+            {strings.config.nozzleTag(
+              formatDecimal(
+                catalog?.nozzles.find((n) => n.id === config.nozzle)
+                  ?.diameterMm ?? 0.4,
+                locale,
+                1,
+                1,
+              ),
+            )}
+          </SectionTag>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {(catalog?.nozzles ?? []).map((n) => {
+            const active = config.nozzle === n.id
+            const delta = axisDelta('nozzle', n.id, active)
+            return (
+              <button
+                key={n.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onChange({ nozzle: n.id as NozzleId })}
+                className={cn(
+                  'flex min-h-[44px] cursor-pointer flex-col items-start gap-[3px] rounded-md border px-3 py-2.5 text-left transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
+                  'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  active
+                    ? 'border-foreground bg-foreground text-background'
+                    : 'border-border bg-card hover:bg-secondary/60',
+                )}
+              >
+                <span className="flex w-full items-baseline justify-between gap-1.5">
+                  <span className="text-[0.8125rem] font-bold">
+                    {strings.config.nozzleNames[n.id] ?? n.id}
+                  </span>
+                  <span
+                    className={cn(
+                      'font-mono text-[0.5625rem] font-bold whitespace-nowrap tabular-nums',
+                      active ? 'text-background/75' : 'text-muted-foreground',
+                    )}
+                  >
+                    {delta}
+                  </span>
+                </span>
+                <span
+                  className={cn(
+                    'font-mono text-[0.5625rem]',
+                    active ? 'text-background/75' : 'text-muted-foreground',
+                  )}
+                >
+                  {strings.config.nozzleSpecs[n.id] ?? ''}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider">
+          {strings.config.nozzleMeta[config.nozzle] ?? ''}
+        </p>
+      </div>
+
+      {/* Strength (infill) ---------------------------------------------- */}
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <SectionLabel>{strings.config.strength}</SectionLabel>
+          <SectionTag>
+            {strings.config.infillTag(
+              strings.config.infillNames[config.infill] ?? config.infill,
+              formatPercent(
+                catalog?.infills.find((i) => i.id === config.infill)
+                  ?.fraction ?? 0.2,
+              ),
+            )}
+          </SectionTag>
+        </div>
+        <div className="flex gap-2">
+          {(catalog?.infills ?? []).map((i) => {
+            const active = config.infill === i.id
+            const delta = axisDelta('infill', i.id, active)
+            return (
+              <button
+                key={i.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onChange({ infill: i.id as InfillId })}
+                className={cn(
+                  'min-h-[54px] flex-1 cursor-pointer rounded-md border px-1 py-2 text-center transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
+                  'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  active
+                    ? 'border-foreground bg-foreground text-background'
+                    : 'border-border bg-card hover:bg-secondary/60',
+                )}
+              >
+                <span className="block text-[0.71875rem] font-bold">
+                  {strings.config.infillNames[i.id] ?? i.id}
+                </span>
+                <span
+                  className={cn(
+                    'mt-0.5 block font-mono text-[0.5625rem] tabular-nums',
+                    active ? 'text-background/75' : 'text-muted-foreground',
+                  )}
+                >
+                  {formatPercent(i.fraction)}
+                </span>
+                <span
+                  className={cn(
+                    'mt-0.5 block font-mono text-[0.53125rem] whitespace-nowrap tabular-nums',
+                    active ? 'text-background/75' : 'text-muted-foreground',
+                  )}
+                >
+                  {delta}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-muted-foreground font-mono text-[0.59375rem] tracking-wider">
+          {strings.config.infillMeta[config.infill] ?? ''}
+        </p>
+      </div>
+
+      {/* Quantity ------------------------------------------------------- */}
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <Label
+            htmlFor="qty"
+            className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase"
+          >
+            {strings.config.quantity}
+          </Label>
+          <SectionTag>{strings.config.perPartPrice}</SectionTag>
+        </div>
         <div className="flex flex-wrap items-stretch gap-2">
           {(catalog?.quantityChips ?? []).map((q) => {
             const active = config.quantity === q
-            const disc = discountAt(q)
+            // The resulting per-part price at that tier, straight from the
+            // engine's price-break table — a discount percentage tells you
+            // nothing about what you would actually pay.
+            const unit = quote?.priceBreaks.find(
+              (b) => b.quantity === q,
+            )?.unitPricePln
             return (
               <button
                 key={q}
@@ -158,11 +445,11 @@ export function ConfigPanel({
                 </span>
                 <span
                   className={cn(
-                    'mt-0.5 block text-[0.5625rem]',
+                    'mt-0.5 block text-[0.5625rem] tabular-nums',
                     active ? 'text-background/75' : 'text-muted-foreground',
                   )}
                 >
-                  {disc > 0 ? `−${Math.round(disc * 100)}%` : ' '}
+                  {unit == null ? ' ' : formatDecimal(unit, locale, 2, 2)}
                 </span>
               </button>
             )
@@ -179,10 +466,9 @@ export function ConfigPanel({
         </div>
       </div>
 
+      {/* Delivery ------------------------------------------------------- */}
       <div className="space-y-2">
-        <Label className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase">
-          {strings.config.leadTime}
-        </Label>
+        <SectionLabel>{strings.config.leadTime}</SectionLabel>
         {loading ? (
           <div className="space-y-2">
             <Skeleton className="h-12 w-full rounded-md" />
@@ -198,7 +484,13 @@ export function ConfigPanel({
             {(catalog?.leadTimes ?? []).map((lt) => {
               const active = config.leadTime === lt.id
               const ship = shipByLead.get(lt.id)
-              const delta = Math.round((lt.mult - 1) * 100)
+              const delta = axisDelta('leadTime', lt.id, active)
+              // An on-request colour pushes every date out, so the row has to
+              // promise the date that part actually ships on.
+              const date =
+                currentColor && !currentColor.inStock
+                  ? ship?.datePlusColorDelay
+                  : ship?.date
               return (
                 <label
                   key={lt.id}
@@ -216,23 +508,17 @@ export function ConfigPanel({
                       <div className="text-[0.8125rem] font-semibold">
                         {LEAD_LABEL[lt.id]}
                       </div>
-                      {ship && (
+                      {date && (
                         <div className="text-muted-foreground mt-0.5 text-[0.6875rem]">
                           {/* The API's `label` is the engine's canonical EN
                             form — display formats the structured date. */}
-                          {strings.config.ships(
-                            formatShipDate(ship.date, locale),
-                          )}
+                          {strings.config.ships(formatShipDate(date, locale))}
                         </div>
                       )}
                     </div>
                   </div>
                   <div className="text-muted-foreground font-mono text-[0.6875rem] tabular-nums">
-                    {delta === 0
-                      ? strings.config.base
-                      : delta > 0
-                        ? `+${delta}%`
-                        : `${delta}%`}
+                    {delta}
                   </div>
                 </label>
               )

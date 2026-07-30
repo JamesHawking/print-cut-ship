@@ -9,7 +9,14 @@ function part(id: string, status: Part['status'] = 'ready'): Part {
     fileSize: 1,
     kind: 'mesh',
     status,
-    config: { process: 'pla', quantity: 1, leadTime: 'standard' },
+    config: {
+      process: 'pla',
+      quantity: 1,
+      leadTime: 'standard',
+      nozzle: 'n04',
+      infill: 'standard',
+      color: 'black',
+    },
   }
 }
 

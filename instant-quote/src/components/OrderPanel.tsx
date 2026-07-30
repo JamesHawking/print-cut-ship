@@ -4,14 +4,16 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { HowWePriceDialog } from './HowWePriceDialog'
-import { formatPln } from '@/lib/format'
+import { formatDecimal, formatPercent, formatPln } from '@/lib/format'
 import { useLocale, useStrings } from '@/lib/i18n'
 import { useCatalog } from '@/hooks/useApi'
 import { cn } from '@/lib/utils'
-import type { OrderTotals, PartQuote } from '@/lib/api/client'
+import type { OrderTotals, PartConfig, PartQuote } from '@/lib/api/client'
 
 interface Props {
   breakdownQuote: PartQuote | null
+  /** Config behind breakdownQuote — opens the card with a plain recap. */
+  breakdownConfig?: PartConfig
   totals: OrderTotals
   pricesExVat: boolean
   onTogglePricesExVat: (value: boolean) => void
@@ -29,6 +31,7 @@ interface Props {
 
 export function OrderPanel({
   breakdownQuote,
+  breakdownConfig,
   totals,
   pricesExVat,
   onTogglePricesExVat,
@@ -46,6 +49,31 @@ export function OrderPanel({
   const vatSwitchId = useId()
   const catalog = useCatalog()
   const displayTotal = pricesExVat ? totals.netTotalPln : totals.grossTotalPln
+
+  // One plain-language line for the whole configuration, so the card opens by
+  // saying what is being bought before it says what it costs.
+  const recap =
+    breakdownConfig && catalog
+      ? [
+          catalog.processes.find((p) => p.id === breakdownConfig.process)
+            ?.label ?? breakdownConfig.process,
+          `${strings.config.nozzleNames[breakdownConfig.nozzle] ?? breakdownConfig.nozzle} ${formatDecimal(
+            catalog.nozzles.find((n) => n.id === breakdownConfig.nozzle)
+              ?.diameterMm ?? 0.4,
+            locale,
+            1,
+            1,
+          )} mm`,
+          `${strings.config.infillNames[breakdownConfig.infill] ?? breakdownConfig.infill} ${formatPercent(
+            catalog.infills.find((i) => i.id === breakdownConfig.infill)
+              ?.fraction ?? 0.2,
+          )}`,
+          strings.config.colorNames[breakdownConfig.color] ??
+            catalog.colors.find((c) => c.id === breakdownConfig.color)?.label ??
+            breakdownConfig.color,
+          `×${breakdownConfig.quantity}`,
+        ].join(' · ')
+      : null
 
   // Rows sum to the gross total: the focused part's engine lines, the other
   // parts folded into one row, then the order-level lines.
@@ -118,6 +146,17 @@ export function OrderPanel({
           </div>
           <HowWePriceDialog />
         </div>
+
+        {recap && (
+          <div className="space-y-1.5">
+            <p className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase">
+              {strings.config.recap}
+            </p>
+            <p className="font-mono text-[0.6875rem] leading-relaxed font-bold">
+              {recap}
+            </p>
+          </div>
+        )}
 
         {rows.length > 0 && (
           <div>

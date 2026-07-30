@@ -893,6 +893,68 @@ export const pl = {
     base: 'baza',
     printMeta: (grams: string, hours: string) =>
       `~${grams} g · ${hours} h druku`,
+
+    // Turn 2: benefit-first names lead, the technical spec is secondary.
+    color: 'Kolor',
+    printQuality: 'Jakość druku',
+    strength: 'Wytrzymałość · wypełnienie',
+    // Names are keyed by catalog id; an id the dictionary doesn't know falls
+    // back to the server's English label, like materials already do.
+    colorNames: {
+      black: 'Czarny',
+      white: 'Biały',
+      grey: 'Szary',
+      red: 'Czerwony',
+      orange: 'Pomarańczowy',
+      yellow: 'Żółty',
+      green: 'Zielony',
+      blue: 'Niebieski',
+      silver: 'Srebrny',
+    } as Record<string, string>,
+    colorInStock: 'Na stanie · w cenie',
+    colorOnRequest: (pct: string, days: number) =>
+      `Na zamówienie · +${pct} · +${days} dz.`,
+    colorTag: (name: string, included: boolean) =>
+      `${name.toUpperCase()} · ${included ? 'W CENIE' : 'NA ZAMÓWIENIE'}`,
+    nozzleNames: {
+      n02: 'Drobne detale',
+      n04: 'Standard',
+      n06: 'Mocny szkic',
+      n08: 'Maks. prędkość',
+    } as Record<string, string>,
+    nozzleSpecs: {
+      n02: 'dysza 0,2 mm · najwolniejsza',
+      n04: 'dysza 0,4 mm · zalecana',
+      n06: 'dysza 0,6 mm · grube ścianki',
+      n08: 'dysza 0,8 mm · widoczne warstwy',
+    } as Record<string, string>,
+    nozzleMeta: {
+      n02: 'Drobny tekst, gwinty, ostre krawędzie',
+      n04: 'Właściwy wybór dla większości części',
+      n06: 'Grubsze ścianki, szybszy druk',
+      n08: 'Duże części, maks. wydajność',
+    } as Record<string, string>,
+    infillNames: {
+      light: 'Lekkie',
+      standard: 'Standard',
+      strong: 'Mocne',
+      solid: 'Pełne',
+    } as Record<string, string>,
+    infillMeta: {
+      light: 'Modele poglądowe, prototypy',
+      standard: 'Właściwe dla większości części',
+      strong: 'Części funkcjonalne, przenoszące obciążenia',
+      solid: 'Wodoszczelne, do obróbki mechanicznej',
+    } as Record<string, string>,
+    nozzleTag: (mm: string) => `DYSZA ${mm} MM`,
+    infillTag: (name: string, pct: string) => `${name.toUpperCase()} · ${pct}`,
+    perPartPrice: 'zł / szt. w progu',
+    selected: '✓',
+    noChange: '±0',
+    delta: (amount: string, cheaper: boolean) =>
+      `${cheaper ? '−' : '+'}${amount}`,
+    pickColor: (name: string) => `Kolor: ${name}`,
+    recap: 'Twoja konfiguracja',
   },
   step: {
     title: 'Ten STEP wymaga szybkiej ręcznej weryfikacji',

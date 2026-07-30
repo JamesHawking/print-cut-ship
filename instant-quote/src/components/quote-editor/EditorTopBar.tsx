@@ -86,7 +86,9 @@ export function EditorTopBar({
               {strings.quote.metaPieces(summary.partCount)}
             </span>
             <span className="text-muted-foreground truncate">
-              {summary.materialLabel} · {summary.leadLabel}
+              {summary.materialLabel}
+              {summary.optionsLabel && ` · ${summary.optionsLabel}`} ·{' '}
+              {summary.leadLabel}
               {summary.shipLabel &&
                 ` · ${strings.process.ships} ${summary.shipLabel}`}
             </span>

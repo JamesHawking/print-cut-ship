@@ -22,7 +22,8 @@ import { useParts, type Part } from '@/hooks/useParts'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
   api,
-  toApiMetrics,
+  pricePartKey,
+  toPricePart,
   type PartConfig,
   type PartQuote,
 } from '@/lib/api/client'
@@ -107,24 +108,13 @@ function QuoteWorkspace() {
   )
 
   const priceQuery = useQuery({
-    queryKey: [
-      'price',
-      readyParts.map((p) => [
-        p.hash,
-        p.config.process,
-        p.config.quantity,
-        p.config.leadTime,
-      ]),
-    ],
+    queryKey: ['price', readyParts.map(pricePartKey)],
     queryFn: async () => {
       const res = await api.POST('/api/v1/price', {
         body: {
-          parts: readyParts.map((p) => ({
-            metrics: toApiMetrics(p.metrics!),
-            process: p.config.process,
-            quantity: p.config.quantity,
-            leadTime: p.config.leadTime,
-          })),
+          parts: readyParts.map((p) =>
+            toPricePart({ metrics: p.metrics!, config: p.config }),
+          ),
         },
       })
       if (!res.data) throw new ApiRequestError(res.error)
@@ -224,6 +214,12 @@ function QuoteWorkspace() {
   const summaryShip = selectedPart
     ? shipDates?.find((s) => s.leadTime === selectedPart.config.leadTime)
     : undefined
+  // An on-request colour pushes the whole part out a business day, so the bar
+  // has to quote the date that part actually ships on.
+  const summaryColorDelayed =
+    !!selectedPart &&
+    catalog?.colors.find((c) => c.id === selectedPart.config.color)?.inStock ===
+      false
   const summary =
     totals && selectedPart
       ? {
@@ -231,9 +227,22 @@ function QuoteWorkspace() {
           materialLabel:
             catalog?.processes.find((p) => p.id === selectedPart.config.process)
               ?.label ?? '',
+          optionsLabel: [
+            strings.config.nozzleNames[selectedPart.config.nozzle] ??
+              selectedPart.config.nozzle,
+            strings.config.colorNames[selectedPart.config.color] ??
+              catalog?.colors.find((c) => c.id === selectedPart.config.color)
+                ?.label ??
+              selectedPart.config.color,
+          ].join(' · '),
           leadLabel: strings.config[selectedPart.config.leadTime],
           shipLabel: summaryShip
-            ? formatShipWeekday(summaryShip.date, locale)
+            ? formatShipWeekday(
+                summaryColorDelayed
+                  ? summaryShip.datePlusColorDelay
+                  : summaryShip.date,
+                locale,
+              )
             : undefined,
           grossTotalPln: totals.grossTotalPln,
         }

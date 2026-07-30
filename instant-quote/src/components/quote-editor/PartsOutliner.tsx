@@ -47,6 +47,18 @@ export function PartsOutliner({
   const [mwUrl, setMwUrl] = useState('')
   const processLabel = (id: string) =>
     catalog?.processes.find((p) => p.id === id)?.label ?? id
+  // Material · nozzle · colour · quantity — the row truncates, so the two
+  // things that changed most recently sit in the middle where they're
+  // readable rather than at the end where they'd be cut.
+  const configMeta = (config: Part['config']) =>
+    [
+      processLabel(config.process),
+      strings.config.nozzleNames[config.nozzle] ?? config.nozzle,
+      strings.config.colorNames[config.color] ??
+        catalog?.colors.find((c) => c.id === config.color)?.label ??
+        config.color,
+      `×${config.quantity}`,
+    ].join(' · ')
 
   return (
     <aside
@@ -122,7 +134,7 @@ export function PartsOutliner({
                           ? part.kind === 'step'
                             ? strings.partsList.manualQuote
                             : strings.partsList.failed
-                          : `${processLabel(part.config.process)} · ×${part.config.quantity}`}
+                          : configMeta(part.config)}
                     </span>
                     {part.uploadStatus === 'failed' && (
                       <button

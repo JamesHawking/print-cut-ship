@@ -175,6 +175,7 @@ function OrderDetail() {
                   <TableRow>
                     <TableHead>File</TableHead>
                     <TableHead>Process</TableHead>
+                    <TableHead>Print</TableHead>
                     <TableHead className="text-right">Qty</TableHead>
                     <TableHead>Lead time</TableHead>
                     <TableHead className="text-right">Unit</TableHead>
@@ -408,6 +409,10 @@ function ItemRow({
         )}
       </TableCell>
       <TableCell className="font-mono text-xs">{it.process}</TableCell>
+      {/* What the machine has to be set to — nozzle, infill, filament. */}
+      <TableCell className="font-mono text-xs whitespace-nowrap">
+        {[it.nozzle, it.infill, it.color].filter(Boolean).join(' · ')}
+      </TableCell>
       <TableCell className="text-right font-mono text-xs tabular-nums">
         {it.quantity}
       </TableCell>

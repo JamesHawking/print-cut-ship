@@ -117,6 +117,11 @@ export function QuoteColumnContent({
               ? selectedQuote
               : orderableEntries[0].quote
           }
+          breakdownConfig={
+            selectedPart && selectedQuote && !selectedQuote.blocked
+              ? selectedPart.config
+              : orderableEntries[0].part.config
+          }
           totals={totals}
           pricesExVat={pricesExVat}
           onTogglePricesExVat={onTogglePricesExVat}

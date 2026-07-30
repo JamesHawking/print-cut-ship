@@ -29,6 +29,8 @@ const SPY_NAV_KEY = {
 export interface QuoteSummary {
   partCount: number
   materialLabel: string
+  /** Nozzle + colour — the print options the top bar echoes back. */
+  optionsLabel?: string
   leadLabel: string
   shipLabel?: string
   grossTotalPln: number
