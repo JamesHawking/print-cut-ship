@@ -751,6 +751,7 @@ export const en = {
     machine: 'Machine time',
     finishing: 'Finishing',
     plates: (n: number) => `Extra plates (${n})`,
+    color: 'Colour surcharge',
   },
   apiError: {
     invalid_body: 'The request was malformed. Refresh and try again.',
@@ -760,6 +761,8 @@ export const en = {
       'The selected material is no longer available. Refresh and re-quote.',
     unknown_lead_time:
       'The selected lead time is no longer available. Refresh and re-quote.',
+    unknown_print_option:
+      'The selected print setting is no longer available. Refresh and re-quote.',
     quantity_range: (p: Params) =>
       `Quantity must be between 1 and ${num(p.max ?? 100)}.`,
     invalid_metrics: 'The part geometry looks invalid. Re-upload the file.',

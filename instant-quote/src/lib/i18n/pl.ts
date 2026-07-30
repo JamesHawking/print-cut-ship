@@ -781,6 +781,7 @@ export const pl = {
     machine: 'Czas maszynowy',
     finishing: 'Wykończenie',
     plates: (n: number) => `Dodatkowe płyty (${n})`,
+    color: 'Dopłata za kolor',
   },
   apiError: {
     invalid_body:
@@ -791,6 +792,8 @@ export const pl = {
       'Wybrany materiał nie jest już dostępny. Odśwież i wyceń ponownie.',
     unknown_lead_time:
       'Wybrany termin nie jest już dostępny. Odśwież i wyceń ponownie.',
+    unknown_print_option:
+      'Wybrane ustawienie druku nie jest już dostępne. Odśwież i wyceń ponownie.',
     quantity_range: (p: Params) =>
       `Ilość musi mieścić się w zakresie 1–${num(p.max ?? 100)}.`,
     invalid_metrics:

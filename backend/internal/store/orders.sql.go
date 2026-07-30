@@ -184,7 +184,7 @@ func (q *Queries) GetOrderByStatusToken(ctx context.Context, statusToken string)
 }
 
 const getOrderItemsByOrderID = `-- name: GetOrderItemsByOrderID :many
-SELECT id, order_id, file_id, file_name, hash, process, quantity, lead_time, unit_price_grosze, line_total_grosze, part_quote_snapshot, created_at FROM order_items WHERE order_id = $1 ORDER BY created_at
+SELECT id, order_id, file_id, file_name, hash, process, quantity, lead_time, unit_price_grosze, line_total_grosze, part_quote_snapshot, created_at, nozzle, infill, color FROM order_items WHERE order_id = $1 ORDER BY created_at
 `
 
 func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID uuid.UUID) ([]OrderItem, error) {
@@ -209,6 +209,9 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID uuid.UUID)
 			&i.LineTotalGrosze,
 			&i.PartQuoteSnapshot,
 			&i.CreatedAt,
+			&i.Nozzle,
+			&i.Infill,
+			&i.Color,
 		); err != nil {
 			return nil, err
 		}
@@ -284,9 +287,10 @@ func (q *Queries) InsertOrder(ctx context.Context, arg InsertOrderParams) (Inser
 const insertOrderItem = `-- name: InsertOrderItem :exec
 INSERT INTO order_items (
     order_id, file_id, file_name, hash, process, quantity, lead_time,
+    nozzle, infill, color,
     unit_price_grosze, line_total_grosze, part_quote_snapshot
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 )
 `
 
@@ -298,6 +302,9 @@ type InsertOrderItemParams struct {
 	Process           string
 	Quantity          int32
 	LeadTime          string
+	Nozzle            string
+	Infill            string
+	Color             string
 	UnitPriceGrosze   int32
 	LineTotalGrosze   int32
 	PartQuoteSnapshot []byte
@@ -312,6 +319,9 @@ func (q *Queries) InsertOrderItem(ctx context.Context, arg InsertOrderItemParams
 		arg.Process,
 		arg.Quantity,
 		arg.LeadTime,
+		arg.Nozzle,
+		arg.Infill,
+		arg.Color,
 		arg.UnitPriceGrosze,
 		arg.LineTotalGrosze,
 		arg.PartQuoteSnapshot,

@@ -68,6 +68,7 @@ const (
 	TransitionNotAllowed  ApiErrorCode = "transition_not_allowed"
 	Unauthorized          ApiErrorCode = "unauthorized"
 	UnknownLeadTime       ApiErrorCode = "unknown_lead_time"
+	UnknownPrintOption    ApiErrorCode = "unknown_print_option"
 	UnknownProcess        ApiErrorCode = "unknown_process"
 	UnsupportedCountry    ApiErrorCode = "unsupported_country"
 	UnsupportedKind       ApiErrorCode = "unsupported_kind"
@@ -77,10 +78,11 @@ const (
 
 // Defines values for BreakdownLineKey.
 const (
-	Finishing BreakdownLineKey = "finishing"
-	Machine   BreakdownLineKey = "machine"
-	Material  BreakdownLineKey = "material"
-	Plates    BreakdownLineKey = "plates"
+	BreakdownLineKeyColor     BreakdownLineKey = "color"
+	BreakdownLineKeyFinishing BreakdownLineKey = "finishing"
+	BreakdownLineKeyMachine   BreakdownLineKey = "machine"
+	BreakdownLineKeyMaterial  BreakdownLineKey = "material"
+	BreakdownLineKeyPlates    BreakdownLineKey = "plates"
 )
 
 // Defines values for CreateFileRequestKind.
@@ -136,11 +138,19 @@ const (
 	SK EuCountry = "SK"
 )
 
+// Defines values for InfillId.
+const (
+	InfillIdLight    InfillId = "light"
+	InfillIdSolid    InfillId = "solid"
+	InfillIdStandard InfillId = "standard"
+	InfillIdStrong   InfillId = "strong"
+)
+
 // Defines values for LeadTimeId.
 const (
-	Economy  LeadTimeId = "economy"
-	Express  LeadTimeId = "express"
-	Standard LeadTimeId = "standard"
+	LeadTimeIdEconomy  LeadTimeId = "economy"
+	LeadTimeIdExpress  LeadTimeId = "express"
+	LeadTimeIdStandard LeadTimeId = "standard"
 )
 
 // Defines values for MakerworldErrorCode.
@@ -157,6 +167,22 @@ const (
 const (
 	Admin    MeResponseRole = "admin"
 	Customer MeResponseRole = "customer"
+)
+
+// Defines values for NozzleId.
+const (
+	N02 NozzleId = "n02"
+	N04 NozzleId = "n04"
+	N06 NozzleId = "n06"
+	N08 NozzleId = "n08"
+)
+
+// Defines values for OptionPriceAxis.
+const (
+	OptionPriceAxisColor    OptionPriceAxis = "color"
+	OptionPriceAxisInfill   OptionPriceAxis = "infill"
+	OptionPriceAxisLeadTime OptionPriceAxis = "leadTime"
+	OptionPriceAxisNozzle   OptionPriceAxis = "nozzle"
 )
 
 // Defines values for OrderStatus.
@@ -372,10 +398,18 @@ type AdminOrderDetail struct {
 
 // AdminOrderItem defines model for AdminOrderItem.
 type AdminOrderItem struct {
-	FileId       *openapi_types.UUID `json:"fileId,omitempty"`
-	FileName     string              `json:"fileName"`
-	LeadTime     LeadTimeId          `json:"leadTime"`
-	LineTotalPln float64             `json:"lineTotalPln"`
+	// Color Filament colour. Unlike the other ids this list is extensible from the admin pricing editor, so it is not a closed enum — unknown values price as the default.
+	Color    *ColorId            `json:"color,omitempty"`
+	FileId   *openapi_types.UUID `json:"fileId,omitempty"`
+	FileName string              `json:"fileName"`
+
+	// Infill Infill density — standard (20%) is the default.
+	Infill       *InfillId  `json:"infill,omitempty"`
+	LeadTime     LeadTimeId `json:"leadTime"`
+	LineTotalPln float64    `json:"lineTotalPln"`
+
+	// Nozzle Nozzle diameter — n04 (0.4 mm) is the default.
+	Nozzle *NozzleId `json:"nozzle,omitempty"`
 
 	// PartQuoteSnapshot The part's frozen PartQuote (breakdown, dfmFlags, plates) copied at order time; shape pinned by the pricing engine, not the spec.
 	PartQuoteSnapshot *map[string]interface{} `json:"partQuoteSnapshot,omitempty"`
@@ -506,11 +540,39 @@ type CalDate struct {
 	Y int `json:"y"`
 }
 
+// CatalogColor defines model for CatalogColor.
+type CatalogColor struct {
+	Hex string `json:"hex"`
+
+	// Id Filament colour. Unlike the other ids this list is extensible from the admin pricing editor, so it is not a closed enum — unknown values price as the default.
+	Id      ColorId `json:"id"`
+	InStock bool    `json:"inStock"`
+
+	// Label Canonical English name. The frontend localizes from id and falls back to this, the same contract CatalogProcess.label uses — it is what lets a colour be added from the admin editor without a deploy.
+	Label string `json:"label"`
+}
+
+// CatalogInfill defines model for CatalogInfill.
+type CatalogInfill struct {
+	Fraction float64 `json:"fraction"`
+
+	// Id Infill density — standard (20%) is the default.
+	Id InfillId `json:"id"`
+}
+
 // CatalogLeadTime defines model for CatalogLeadTime.
 type CatalogLeadTime struct {
 	BusinessDays int        `json:"businessDays"`
 	Id           LeadTimeId `json:"id"`
 	Mult         float64    `json:"mult"`
+}
+
+// CatalogNozzle defines model for CatalogNozzle.
+type CatalogNozzle struct {
+	DiameterMm float64 `json:"diameterMm"`
+
+	// Id Nozzle diameter — n04 (0.4 mm) is the default.
+	Id NozzleId `json:"id"`
 }
 
 // CatalogProcess defines model for CatalogProcess.
@@ -526,14 +588,19 @@ type CatalogProcess struct {
 
 // CatalogResponse defines model for CatalogResponse.
 type CatalogResponse struct {
+	ColorSurchargeFraction   float64           `json:"colorSurchargeFraction"`
+	ColorSurchargeLeadDays   int               `json:"colorSurchargeLeadDays"`
+	Colors                   []CatalogColor    `json:"colors"`
 	DiscountTiers            []DiscountTier    `json:"discountTiers"`
 	ExtraPlateFeePln         float64           `json:"extraPlateFeePln"`
 	Fdm                      FdmModel          `json:"fdm"`
 	FreeShippingThresholdPln float64           `json:"freeShippingThresholdPln"`
+	Infills                  []CatalogInfill   `json:"infills"`
 	LeadTimes                []CatalogLeadTime `json:"leadTimes"`
 	MaxParts                 int               `json:"maxParts"`
 	MinOrderPln              float64           `json:"minOrderPln"`
 	MinPartPricePln          float64           `json:"minPartPricePln"`
+	Nozzles                  []CatalogNozzle   `json:"nozzles"`
 	OrderFeePln              float64           `json:"orderFeePln"`
 	Processes                []CatalogProcess  `json:"processes"`
 	QuantityChips            []int             `json:"quantityChips"`
@@ -546,6 +613,9 @@ type CheckoutResponse struct {
 	// Url Provider-hosted checkout URL to redirect the browser to
 	Url string `json:"url"`
 }
+
+// ColorId Filament colour. Unlike the other ids this list is extensible from the admin pricing editor, so it is not a closed enum — unknown values price as the default.
+type ColorId = string
 
 // ConfirmFileResponse defines model for ConfirmFileResponse.
 type ConfirmFileResponse struct {
@@ -652,6 +722,9 @@ type FdmModel struct {
 	ShellThicknessMm        float64 `json:"shellThicknessMm"`
 }
 
+// InfillId Infill density — standard (20%) is the default.
+type InfillId string
+
 // LeadTimeId defines model for LeadTimeId.
 type LeadTimeId string
 
@@ -693,6 +766,19 @@ type MeshMetrics struct {
 	UsedHullFallback bool            `json:"usedHullFallback"`
 	VolumeCm3        float64         `json:"volumeCm3"`
 }
+
+// NozzleId Nozzle diameter — n04 (0.4 mm) is the default.
+type NozzleId string
+
+// OptionPrice The unit price one alternative on a config axis would produce, everything else held equal. The quantity axis has its own table (PriceBreak); this covers the rest, so the client shows what a choice costs before it is made without ever deriving a price itself.
+type OptionPrice struct {
+	Axis         OptionPriceAxis `json:"axis"`
+	Id           string          `json:"id"`
+	UnitPricePln float64         `json:"unitPricePln"`
+}
+
+// OptionPriceAxis defines model for OptionPrice.Axis.
+type OptionPriceAxis string
 
 // OrderStatus Order lifecycle state; transitions are owned by the backend state machine (internal/orders).
 type OrderStatus string
@@ -739,6 +825,7 @@ type PartQuote struct {
 	DiscountFraction   float64         `json:"discountFraction"`
 	LeadTimeMultiplier float64         `json:"leadTimeMultiplier"`
 	LineTotalPln       float64         `json:"lineTotalPln"`
+	OptionPrices       []OptionPrice   `json:"optionPrices"`
 
 	// PieceCount Present only for multi-piece 3MF parts
 	PieceCount *int `json:"pieceCount,omitempty"`
@@ -770,11 +857,19 @@ type PriceBreak struct {
 
 // PriceCompareRequest One part without a process — process is the loop variable
 type PriceCompareRequest struct {
+	// Color Filament colour. Unlike the other ids this list is extensible from the admin pricing editor, so it is not a closed enum — unknown values price as the default.
+	Color *ColorId `json:"color,omitempty"`
+
+	// Infill Infill density — standard (20%) is the default.
+	Infill   *InfillId  `json:"infill,omitempty"`
 	LeadTime LeadTimeId `json:"leadTime"`
 
 	// Metrics Pricing-relevant subset of client-side mesh analysis
-	Metrics  MeshMetrics `json:"metrics"`
-	Quantity int         `json:"quantity"`
+	Metrics MeshMetrics `json:"metrics"`
+
+	// Nozzle Nozzle diameter — n04 (0.4 mm) is the default.
+	Nozzle   *NozzleId `json:"nozzle,omitempty"`
+	Quantity int       `json:"quantity"`
 }
 
 // PriceCompareResponse defines model for PriceCompareResponse.
@@ -790,12 +885,20 @@ type PriceCompareRow struct {
 
 // PricePart defines model for PricePart.
 type PricePart struct {
+	// Color Filament colour. Unlike the other ids this list is extensible from the admin pricing editor, so it is not a closed enum — unknown values price as the default.
+	Color *ColorId `json:"color,omitempty"`
+
+	// Infill Infill density — standard (20%) is the default.
+	Infill   *InfillId  `json:"infill,omitempty"`
 	LeadTime LeadTimeId `json:"leadTime"`
 
 	// Metrics Pricing-relevant subset of client-side mesh analysis
-	Metrics  MeshMetrics `json:"metrics"`
-	Process  ProcessId   `json:"process"`
-	Quantity int         `json:"quantity"`
+	Metrics MeshMetrics `json:"metrics"`
+
+	// Nozzle Nozzle diameter — n04 (0.4 mm) is the default.
+	Nozzle   *NozzleId `json:"nozzle,omitempty"`
+	Process  ProcessId `json:"process"`
+	Quantity int       `json:"quantity"`
 }
 
 // PriceRequest defines model for PriceRequest.
@@ -809,17 +912,32 @@ type PriceResponse struct {
 	Totals OrderTotals `json:"totals"`
 }
 
+// PricingColorDef defines model for PricingColorDef.
+type PricingColorDef struct {
+	Hex     string `json:"Hex"`
+	ID      string `json:"ID"`
+	InStock bool   `json:"InStock"`
+
+	// Label Canonical English name; the frontend localizes from ID.
+	Label string `json:"Label"`
+}
+
 // PricingConfig Mirrors the Go pricing.Config struct's JSON exactly — Go field names (the struct has no json tags; Build keeps its lowercase x/y/z tags). The drift-guard test fails the build if the struct and this schema diverge.
 type PricingConfig struct {
+	ColorSurchargeFraction   float64               `json:"ColorSurchargeFraction"`
+	ColorSurchargeLeadDays   int                   `json:"ColorSurchargeLeadDays"`
+	Colors                   []PricingColorDef     `json:"Colors"`
 	DiscountTiers            []PricingDiscountTier `json:"DiscountTiers"`
 	ExtraPlateFeePln         float64               `json:"ExtraPlateFeePln"`
 	Fdm                      PricingFdmModel       `json:"Fdm"`
 	FreeShippingThresholdPln float64               `json:"FreeShippingThresholdPln"`
+	Infills                  []PricingInfillDef    `json:"Infills"`
 	LeadTimes                []PricingLeadTimeDef  `json:"LeadTimes"`
 	MinBillableVolumeCm3     float64               `json:"MinBillableVolumeCm3"`
 	MinFeatureMm             float64               `json:"MinFeatureMm"`
 	MinOrderPln              float64               `json:"MinOrderPln"`
 	MinPartPricePln          float64               `json:"MinPartPricePln"`
+	Nozzles                  []PricingNozzleDef    `json:"Nozzles"`
 	OrderFeePln              float64               `json:"OrderFeePln"`
 	PlateGutterMm            float64               `json:"PlateGutterMm"`
 	Processes                []PricingProcessDef   `json:"Processes"`
@@ -860,11 +978,25 @@ type PricingFdmModel struct {
 	ShellThicknessMm        float64 `json:"ShellThicknessMm"`
 }
 
+// PricingInfillDef defines model for PricingInfillDef.
+type PricingInfillDef struct {
+	Fraction float64 `json:"Fraction"`
+	ID       string  `json:"ID"`
+}
+
 // PricingLeadTimeDef defines model for PricingLeadTimeDef.
 type PricingLeadTimeDef struct {
 	BusinessDays int     `json:"BusinessDays"`
 	ID           string  `json:"ID"`
 	Mult         float64 `json:"Mult"`
+}
+
+// PricingNozzleDef Multipliers on the FdmModel baseline, which is calibrated for 0.4 mm — n04 is the identity element. UNCALIBRATED seeds; see the note on pricing.Default.
+type PricingNozzleDef struct {
+	DiameterMm     float64 `json:"DiameterMm"`
+	ID             string  `json:"ID"`
+	ShellMult      float64 `json:"ShellMult"`
+	ThroughputMult float64 `json:"ThroughputMult"`
 }
 
 // PricingProcessDef defines model for PricingProcessDef.
@@ -910,7 +1042,10 @@ type RequestCodeRequestLocale string
 
 // ShipDate defines model for ShipDate.
 type ShipDate struct {
-	Date                CalDate `json:"date"`
+	Date CalDate `json:"date"`
+
+	// DatePlusColorDelay The same date pushed out by colorSurchargeLeadDays business days — what a part in an on-request colour actually ships on. Equal to date when the delay is zero.
+	DatePlusColorDelay  CalDate `json:"datePlusColorDelay"`
 	DispatchStartsToday bool    `json:"dispatchStartsToday"`
 
 	// Label e.g. "Thu 16 Jul" (canonical engine label; UI formats the date per locale)
@@ -944,16 +1079,25 @@ type StepQuoteResponse struct {
 
 // SubmitQuotePart defines model for SubmitQuotePart.
 type SubmitQuotePart struct {
+	// Color Filament colour. Unlike the other ids this list is extensible from the admin pricing editor, so it is not a closed enum — unknown values price as the default.
+	Color *ColorId `json:"color,omitempty"`
+
 	// FileId The stored file backing this part (plan 02). When present the server verifies it exists with a matching hash and links it.
 	FileId   *openapi_types.UUID `json:"fileId,omitempty"`
 	FileName string              `json:"fileName"`
 	Hash     string              `json:"hash"`
-	LeadTime LeadTimeId          `json:"leadTime"`
+
+	// Infill Infill density — standard (20%) is the default.
+	Infill   *InfillId  `json:"infill,omitempty"`
+	LeadTime LeadTimeId `json:"leadTime"`
 
 	// Metrics Pricing-relevant subset of client-side mesh analysis
-	Metrics  MeshMetrics `json:"metrics"`
-	Process  ProcessId   `json:"process"`
-	Quantity int         `json:"quantity"`
+	Metrics MeshMetrics `json:"metrics"`
+
+	// Nozzle Nozzle diameter — n04 (0.4 mm) is the default.
+	Nozzle   *NozzleId `json:"nozzle,omitempty"`
+	Process  ProcessId `json:"process"`
+	Quantity int       `json:"quantity"`
 }
 
 // SubmitQuoteRequest defines model for SubmitQuoteRequest.
@@ -994,12 +1138,20 @@ type TrackedOrder struct {
 
 // TrackedOrderItem defines model for TrackedOrderItem.
 type TrackedOrderItem struct {
-	FileName     string     `json:"fileName"`
+	// Color Filament colour. Unlike the other ids this list is extensible from the admin pricing editor, so it is not a closed enum — unknown values price as the default.
+	Color    *ColorId `json:"color,omitempty"`
+	FileName string   `json:"fileName"`
+
+	// Infill Infill density — standard (20%) is the default.
+	Infill       *InfillId  `json:"infill,omitempty"`
 	LeadTime     LeadTimeId `json:"leadTime"`
 	LineTotalPln float64    `json:"lineTotalPln"`
-	Process      ProcessId  `json:"process"`
-	Quantity     int        `json:"quantity"`
-	UnitPricePln float64    `json:"unitPricePln"`
+
+	// Nozzle Nozzle diameter — n04 (0.4 mm) is the default.
+	Nozzle       *NozzleId `json:"nozzle,omitempty"`
+	Process      ProcessId `json:"process"`
+	Quantity     int       `json:"quantity"`
+	UnitPricePln float64   `json:"unitPricePln"`
 }
 
 // TransitionOrderRequest defines model for TransitionOrderRequest.

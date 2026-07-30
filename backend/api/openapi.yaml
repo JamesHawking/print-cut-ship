@@ -868,6 +868,24 @@ components:
       type: string
       enum: [economy, standard, express]
 
+    NozzleId:
+      type: string
+      description: Nozzle diameter — n04 (0.4 mm) is the default.
+      enum: [n02, n04, n06, n08]
+
+    InfillId:
+      type: string
+      description: Infill density — standard (20%) is the default.
+      enum: [light, standard, strong, solid]
+
+    ColorId:
+      type: string
+      description: >-
+        Filament colour. Unlike the other ids this list is extensible from the
+        admin pricing editor, so it is not a closed enum — unknown values price
+        as the default.
+      minLength: 1
+
     EuCountry:
       type: string
       description: Supported EU shipping destinations
@@ -927,6 +945,12 @@ components:
           maximum: 10000
         leadTime:
           $ref: '#/components/schemas/LeadTimeId'
+        nozzle:
+          $ref: '#/components/schemas/NozzleId'
+        infill:
+          $ref: '#/components/schemas/InfillId'
+        color:
+          $ref: '#/components/schemas/ColorId'
 
     PriceRequest:
       type: object
@@ -952,6 +976,12 @@ components:
           maximum: 10000
         leadTime:
           $ref: '#/components/schemas/LeadTimeId'
+        nozzle:
+          $ref: '#/components/schemas/NozzleId'
+        infill:
+          $ref: '#/components/schemas/InfillId'
+        color:
+          $ref: '#/components/schemas/ColorId'
 
     PriceCompareRow:
       type: object
@@ -1001,7 +1031,7 @@ components:
       properties:
         key:
           type: string
-          enum: [material, machine, finishing, plates]
+          enum: [material, machine, finishing, plates, color]
         label:
           type: string
           description: English debug prose; the frontend renders from key (+count).
@@ -1011,6 +1041,21 @@ components:
         amountPln:
           type: number
           format: double
+
+    OptionPrice:
+      type: object
+      description: >-
+        The unit price one alternative on a config axis would produce,
+        everything else held equal. The quantity axis has its own table
+        (PriceBreak); this covers the rest, so the client shows what a choice
+        costs before it is made without ever deriving a price itself.
+      required: [axis, id, unitPricePln]
+      properties:
+        axis:
+          type: string
+          enum: [nozzle, infill, leadTime, color]
+        id: { type: string }
+        unitPricePln: { type: number, format: double }
 
     PriceBreak:
       type: object
@@ -1025,7 +1070,7 @@ components:
       required:
         [blocked, billableVolumeCm3, weightG, printHours, unitBasePln,
          discountFraction, leadTimeMultiplier, unitPricePln, lineTotalPln,
-         breakdown, dfmFlags, priceBreaks]
+         breakdown, dfmFlags, priceBreaks, optionPrices]
       properties:
         blocked: { type: boolean }
         billableVolumeCm3: { type: number, format: double }
@@ -1054,6 +1099,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PriceBreak'
+        optionPrices:
+          type: array
+          items:
+            $ref: '#/components/schemas/OptionPrice'
         pieceCount:
           type: integer
           description: Present only for multi-piece 3MF parts
@@ -1111,6 +1160,37 @@ components:
         mult: { type: number, format: double }
         businessDays: { type: integer }
 
+    CatalogNozzle:
+      type: object
+      required: [id, diameterMm]
+      properties:
+        id:
+          $ref: '#/components/schemas/NozzleId'
+        diameterMm: { type: number, format: double }
+
+    CatalogInfill:
+      type: object
+      required: [id, fraction]
+      properties:
+        id:
+          $ref: '#/components/schemas/InfillId'
+        fraction: { type: number, format: double }
+
+    CatalogColor:
+      type: object
+      required: [id, label, hex, inStock]
+      properties:
+        id:
+          $ref: '#/components/schemas/ColorId'
+        label:
+          type: string
+          description: >-
+            Canonical English name. The frontend localizes from id and falls
+            back to this, the same contract CatalogProcess.label uses — it is
+            what lets a colour be added from the admin editor without a deploy.
+        hex: { type: string }
+        inStock: { type: boolean }
+
     DiscountTier:
       type: object
       required: [quantity, fraction]
@@ -1132,9 +1212,10 @@ components:
     CatalogResponse:
       type: object
       required:
-        [processes, leadTimes, discountTiers, fdm, quantityChips, maxParts,
-         minOrderPln, minPartPricePln, orderFeePln, shippingFlatPln,
-         freeShippingThresholdPln, vatRate, extraPlateFeePln]
+        [processes, leadTimes, nozzles, infills, colors, discountTiers, fdm,
+         quantityChips, maxParts, minOrderPln, minPartPricePln, orderFeePln,
+         shippingFlatPln, freeShippingThresholdPln, vatRate, extraPlateFeePln,
+         colorSurchargeFraction, colorSurchargeLeadDays]
       properties:
         processes:
           type: array
@@ -1144,6 +1225,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CatalogLeadTime'
+        nozzles:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogNozzle'
+        infills:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogInfill'
+        colors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogColor'
+        colorSurchargeFraction: { type: number, format: double }
+        colorSurchargeLeadDays: { type: integer }
         discountTiers:
           type: array
           items:
@@ -1172,12 +1267,19 @@ components:
 
     ShipDate:
       type: object
-      required: [leadTime, date, dispatchStartsToday, label]
+      required: [leadTime, date, datePlusColorDelay, dispatchStartsToday, label]
       properties:
         leadTime:
           $ref: '#/components/schemas/LeadTimeId'
         date:
           $ref: '#/components/schemas/CalDate'
+        datePlusColorDelay:
+          allOf:
+            - $ref: '#/components/schemas/CalDate'
+          description: >-
+            The same date pushed out by colorSurchargeLeadDays business days —
+            what a part in an on-request colour actually ships on. Equal to
+            date when the delay is zero.
         dispatchStartsToday: { type: boolean }
         label:
           type: string
@@ -1218,6 +1320,12 @@ components:
           maximum: 10000
         leadTime:
           $ref: '#/components/schemas/LeadTimeId'
+        nozzle:
+          $ref: '#/components/schemas/NozzleId'
+        infill:
+          $ref: '#/components/schemas/InfillId'
+        color:
+          $ref: '#/components/schemas/ColorId'
 
     SubmitQuoteRequest:
       type: object
@@ -1376,6 +1484,12 @@ components:
           type: integer
         leadTime:
           $ref: '#/components/schemas/LeadTimeId'
+        nozzle:
+          $ref: '#/components/schemas/NozzleId'
+        infill:
+          $ref: '#/components/schemas/InfillId'
+        color:
+          $ref: '#/components/schemas/ColorId'
         unitPricePln:
           type: number
           format: double
@@ -1563,7 +1677,8 @@ components:
         The drift-guard test fails the build if the struct and this schema
         diverge.
       required:
-        [Processes, LeadTimes, Fdm, DiscountTiers, ExtraPlateFeePln,
+        [Processes, LeadTimes, Nozzles, Infills, Colors, Fdm, DiscountTiers,
+         ColorSurchargeFraction, ColorSurchargeLeadDays, ExtraPlateFeePln,
          PlateGutterMm, MinOrderPln, MinPartPricePln, OrderFeePln,
          ShippingFlatPln, FreeShippingThresholdPln, VatRate,
          MinBillableVolumeCm3, MinFeatureMm, SameDayCutoffHour]
@@ -1576,12 +1691,26 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PricingLeadTimeDef'
+        Nozzles:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingNozzleDef'
+        Infills:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingInfillDef'
+        Colors:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingColorDef'
         Fdm:
           $ref: '#/components/schemas/PricingFdmModel'
         DiscountTiers:
           type: array
           items:
             $ref: '#/components/schemas/PricingDiscountTier'
+        ColorSurchargeFraction: { type: number, format: double }
+        ColorSurchargeLeadDays: { type: integer }
         ExtraPlateFeePln: { type: number, format: double }
         PlateGutterMm: { type: number, format: double }
         MinOrderPln: { type: number, format: double }
@@ -1622,6 +1751,40 @@ components:
         ID: { type: string }
         Mult: { type: number, format: double }
         BusinessDays: { type: integer }
+
+    PricingNozzleDef:
+      type: object
+      additionalProperties: false
+      description: >-
+        Multipliers on the FdmModel baseline, which is calibrated for 0.4 mm —
+        n04 is the identity element. UNCALIBRATED seeds; see the note on
+        pricing.Default.
+      required: [ID, DiameterMm, ShellMult, ThroughputMult]
+      properties:
+        ID: { type: string }
+        DiameterMm: { type: number, format: double }
+        ShellMult: { type: number, format: double }
+        ThroughputMult: { type: number, format: double }
+
+    PricingInfillDef:
+      type: object
+      additionalProperties: false
+      required: [ID, Fraction]
+      properties:
+        ID: { type: string }
+        Fraction: { type: number, format: double }
+
+    PricingColorDef:
+      type: object
+      additionalProperties: false
+      required: [ID, Label, Hex, InStock]
+      properties:
+        ID: { type: string }
+        Label:
+          type: string
+          description: Canonical English name; the frontend localizes from ID.
+        Hex: { type: string }
+        InStock: { type: boolean }
 
     PricingFdmModel:
       type: object
@@ -2102,6 +2265,12 @@ components:
           type: integer
         leadTime:
           $ref: '#/components/schemas/LeadTimeId'
+        nozzle:
+          $ref: '#/components/schemas/NozzleId'
+        infill:
+          $ref: '#/components/schemas/InfillId'
+        color:
+          $ref: '#/components/schemas/ColorId'
         unitPricePln:
           type: number
           format: double
@@ -2201,6 +2370,7 @@ components:
         - parts_count
         - unknown_process
         - unknown_lead_time
+        - unknown_print_option
         - quantity_range
         - invalid_metrics
         - invalid_email

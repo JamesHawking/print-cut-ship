@@ -331,6 +331,13 @@ func loadActivePricingConfig(ctx context.Context, st *store.Store, logger *slog.
 	var cfg pricing.Config
 	err = json.Unmarshal(row.Config, &cfg)
 	if err == nil {
+		// Snapshots written before a table existed get it from Default, so a
+		// tuned config survives the upgrade instead of tripping Validate and
+		// being self-healed back to stock rates below.
+		if pricing.BackfillDefaults(&cfg) {
+			logger.Info("active pricing config backfilled with new defaults",
+				"id", row.ID, "label", row.Label)
+		}
 		err = pricing.Validate(&cfg)
 	}
 	if err != nil {

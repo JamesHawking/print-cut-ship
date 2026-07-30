@@ -34,6 +34,35 @@ type FdmModel struct {
 	InfillGramsPerPrintHour float64
 }
 
+// NozzleDef scales the FdmModel baseline, which is calibrated for the 0.4 mm
+// nozzle — so n04 is the identity element and the 0.4 mm path is unchanged by
+// construction. A wider nozzle lays thicker walls (more material) and deposits
+// faster (less machine time); the two pull against each other.
+type NozzleDef struct {
+	ID             string
+	DiameterMm     float64
+	ShellMult      float64 // × Fdm.ShellThicknessMm
+	ThroughputMult float64 // × both Fdm g/h rates
+}
+
+// InfillDef replaces Fdm.InfillFraction per part. No new pricing constants:
+// the fraction already drives interior volume → weight → material zł, and
+// → print hours → machine zł.
+type InfillDef struct {
+	ID       string
+	Fraction float64
+}
+
+// ColorDef is a filament colour. Label is the canonical English name; the
+// frontend localizes from ID and falls back to Label, the same contract
+// ProcessDef.Label uses. Hex is the swatch.
+type ColorDef struct {
+	ID      string
+	Label   string
+	Hex     string
+	InStock bool
+}
+
 type DiscountTier struct {
 	Quantity float64
 	Fraction float64
@@ -44,8 +73,16 @@ type Config struct {
 	// TS Object.keys insertion order.
 	Processes     []ProcessDef
 	LeadTimes     []LeadTimeDef
+	Nozzles       []NozzleDef
+	Infills       []InfillDef
+	Colors        []ColorDef
 	Fdm           FdmModel
 	DiscountTiers []DiscountTier
+
+	// Charged on parts printed in a colour that isn't on the shelf, and
+	// added to the quoted lead time.
+	ColorSurchargeFraction float64
+	ColorSurchargeLeadDays int
 
 	ExtraPlateFeePln         float64
 	PlateGutterMm            float64
@@ -78,6 +115,59 @@ func (c *Config) LeadTime(id string) (LeadTimeDef, bool) {
 	return LeadTimeDef{}, false
 }
 
+// Default print options. An empty id means "the default": golden.json's
+// configs predate these fields and decode to "", and a zero-value NozzleDef
+// would divide by zero on its ×0 throughput. Lookups fall back here rather
+// than returning a zero value, so an unrecognised id degrades to a real
+// price instead of a panic.
+const (
+	DefaultNozzleID = "n04"
+	DefaultInfillID = "standard"
+	DefaultColorID  = "black"
+)
+
+// Nozzle resolves a nozzle id, falling back to the 0.4 mm baseline.
+func (c *Config) Nozzle(id string) NozzleDef {
+	var fallback NozzleDef
+	for _, n := range c.Nozzles {
+		if n.ID == id {
+			return n
+		}
+		if n.ID == DefaultNozzleID {
+			fallback = n
+		}
+	}
+	return fallback
+}
+
+// Infill resolves an infill id, falling back to the standard density.
+func (c *Config) Infill(id string) InfillDef {
+	var fallback InfillDef
+	for _, i := range c.Infills {
+		if i.ID == id {
+			return i
+		}
+		if i.ID == DefaultInfillID {
+			fallback = i
+		}
+	}
+	return fallback
+}
+
+// Color resolves a colour id, falling back to the default stock colour.
+func (c *Config) Color(id string) ColorDef {
+	var fallback ColorDef
+	for _, col := range c.Colors {
+		if col.ID == id {
+			return col
+		}
+		if col.ID == DefaultColorID {
+			fallback = col
+		}
+	}
+	return fallback
+}
+
 // H2SPlate is the Bambu Lab H2S build plate shared by all processes.
 var H2SPlate = BuildVolumeMm{X: 340, Y: 320, Z: 340}
 
@@ -107,6 +197,41 @@ var Default = Config{
 		{ID: "standard", Mult: 1.0, BusinessDays: 5},
 		{ID: "express", Mult: 1.3, BusinessDays: 3},
 	},
+	// UNCALIBRATED — geometric seeds, not measured. Slicers lay a fixed two
+	// walls at a line width of ~1.125 × nozzle, which reproduces the
+	// calibrated 0.9 mm shell at 0.4 mm exactly; the extruded bead's
+	// cross-section scales with diameter², hence (d/0.4)² throughput. The
+	// resulting ladder is monotonic but steep (0.2 mm prices at +127% on the
+	// demo bracket). Re-fit these against real print data before launch —
+	// plans/engineering/14-pricing-engine.md §2. They live in the versioned
+	// snapshot, so the admin editor retunes them without a deploy.
+	Nozzles: []NozzleDef{
+		{ID: "n02", DiameterMm: 0.2, ShellMult: 0.5, ThroughputMult: 0.25},
+		{ID: "n04", DiameterMm: 0.4, ShellMult: 1.0, ThroughputMult: 1.0},
+		{ID: "n06", DiameterMm: 0.6, ShellMult: 1.5, ThroughputMult: 2.25},
+		{ID: "n08", DiameterMm: 0.8, ShellMult: 2.0, ThroughputMult: 4.0},
+	},
+	// "standard" must equal Fdm.InfillFraction — it is the same setting, and
+	// the default part has to price identically whether or not it names one.
+	Infills: []InfillDef{
+		{ID: "light", Fraction: 0.15},
+		{ID: "standard", Fraction: 0.2},
+		{ID: "strong", Fraction: 0.4},
+		{ID: "solid", Fraction: 1.0},
+	},
+	Colors: []ColorDef{
+		{ID: "black", Label: "Black", Hex: "#1b1b1f", InStock: true},
+		{ID: "white", Label: "White", Hex: "#f2f1ec", InStock: true},
+		{ID: "grey", Label: "Grey", Hex: "#9a9ea6", InStock: true},
+		{ID: "red", Label: "Red", Hex: "#c8322b"},
+		{ID: "orange", Label: "Orange", Hex: "#f26722"},
+		{ID: "yellow", Label: "Yellow", Hex: "#f2c14e"},
+		{ID: "green", Label: "Green", Hex: "#3fa66b"},
+		{ID: "blue", Label: "Blue", Hex: "#3060c0"},
+		{ID: "silver", Label: "Silver", Hex: "#c9ccd2"},
+	},
+	ColorSurchargeFraction: 0.05,
+	ColorSurchargeLeadDays: 1,
 	Fdm: FdmModel{
 		InfillFraction:          0.2,
 		ShellThicknessMm:        0.9,

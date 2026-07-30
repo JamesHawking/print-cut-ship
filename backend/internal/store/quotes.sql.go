@@ -46,7 +46,7 @@ func (q *Queries) GetQuoteByShortID(ctx context.Context, shortID string) (Quote,
 }
 
 const getQuotePartsByQuoteID = `-- name: GetQuotePartsByQuoteID :many
-SELECT id, quote_id, file_id, file_name, hash, process, quantity, lead_time, unit_price_grosze, line_total_grosze, billable_volume_cm3, piece_count, plates, breakdown, dfm_flags, created_at FROM quote_parts WHERE quote_id = $1 ORDER BY created_at
+SELECT id, quote_id, file_id, file_name, hash, process, quantity, lead_time, unit_price_grosze, line_total_grosze, billable_volume_cm3, piece_count, plates, breakdown, dfm_flags, created_at, nozzle, infill, color FROM quote_parts WHERE quote_id = $1 ORDER BY created_at
 `
 
 func (q *Queries) GetQuotePartsByQuoteID(ctx context.Context, quoteID uuid.UUID) ([]QuotePart, error) {
@@ -75,6 +75,9 @@ func (q *Queries) GetQuotePartsByQuoteID(ctx context.Context, quoteID uuid.UUID)
 			&i.Breakdown,
 			&i.DfmFlags,
 			&i.CreatedAt,
+			&i.Nozzle,
+			&i.Infill,
+			&i.Color,
 		); err != nil {
 			return nil, err
 		}
@@ -149,10 +152,11 @@ func (q *Queries) InsertQuote(ctx context.Context, arg InsertQuoteParams) (Inser
 const insertQuotePart = `-- name: InsertQuotePart :exec
 INSERT INTO quote_parts (
     quote_id, file_id, file_name, hash, process, quantity, lead_time,
+    nozzle, infill, color,
     unit_price_grosze, line_total_grosze, billable_volume_cm3,
     piece_count, plates, breakdown, dfm_flags
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 )
 `
 
@@ -164,6 +168,9 @@ type InsertQuotePartParams struct {
 	Process           string
 	Quantity          int32
 	LeadTime          string
+	Nozzle            string
+	Infill            string
+	Color             string
 	UnitPriceGrosze   int32
 	LineTotalGrosze   int32
 	BillableVolumeCm3 *float64
@@ -182,6 +189,9 @@ func (q *Queries) InsertQuotePart(ctx context.Context, arg InsertQuotePartParams
 		arg.Process,
 		arg.Quantity,
 		arg.LeadTime,
+		arg.Nozzle,
+		arg.Infill,
+		arg.Color,
 		arg.UnitPriceGrosze,
 		arg.LineTotalGrosze,
 		arg.BillableVolumeCm3,

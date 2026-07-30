@@ -12,10 +12,11 @@ RETURNING id, short_id;
 -- name: InsertQuotePart :exec
 INSERT INTO quote_parts (
     quote_id, file_id, file_name, hash, process, quantity, lead_time,
+    nozzle, infill, color,
     unit_price_grosze, line_total_grosze, billable_volume_cm3,
     piece_count, plates, breakdown, dfm_flags
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 );
 
 -- name: GetQuoteByShortID :one

@@ -106,6 +106,9 @@ type OrderItem struct {
 	LineTotalGrosze   int32
 	PartQuoteSnapshot []byte
 	CreatedAt         pgtype.Timestamptz
+	Nozzle            string
+	Infill            string
+	Color             string
 }
 
 type Payment struct {
@@ -170,6 +173,9 @@ type QuotePart struct {
 	Breakdown         []byte
 	DfmFlags          []byte
 	CreatedAt         pgtype.Timestamptz
+	Nozzle            string
+	Infill            string
+	Color             string
 }
 
 type Session struct {

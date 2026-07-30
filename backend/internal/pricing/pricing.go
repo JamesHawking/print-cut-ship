@@ -30,6 +30,10 @@ type PartConfig struct {
 	Process  string  `json:"process"`
 	Quantity float64 `json:"quantity"`
 	LeadTime string  `json:"leadTime"`
+	// Print options. An empty id means the default — see DefaultNozzleID.
+	Nozzle string `json:"nozzle,omitempty"`
+	Infill string `json:"infill,omitempty"`
+	Color  string `json:"color,omitempty"`
 }
 
 type DfmFlag struct {
@@ -56,6 +60,17 @@ type PriceBreak struct {
 	DiscountFraction float64 `json:"discountFraction"`
 }
 
+// OptionPrice is the unit price one alternative on a config axis would
+// produce, everything else held equal. The quantity axis has its own table
+// (PriceBreaks); this covers the rest, so the client can show what a choice
+// costs before it is made without ever deriving a price itself.
+type OptionPrice struct {
+	// nozzle | infill | leadTime | color
+	Axis         string  `json:"axis"`
+	ID           string  `json:"id"`
+	UnitPricePln float64 `json:"unitPricePln"`
+}
+
 type PartQuote struct {
 	Blocked           bool    `json:"blocked"`
 	BillableVolumeCm3 float64 `json:"billableVolumeCm3"`
@@ -72,6 +87,7 @@ type PartQuote struct {
 	Breakdown          []BreakdownLine `json:"breakdown"`
 	DfmFlags           []DfmFlag       `json:"dfmFlags"`
 	PriceBreaks        []PriceBreak    `json:"priceBreaks"`
+	OptionPrices       []OptionPrice   `json:"optionPrices"`
 	// Present only for multi-piece 3MF parts.
 	PieceCount *int `json:"pieceCount,omitempty"`
 	Plates     *int `json:"plates,omitempty"`
@@ -127,20 +143,115 @@ func (c *Config) InterpolateDiscount(quantity float64) float64 {
 // unitBasePrice: shell (surface area × thickness, clamped to volume) plus
 // infill of the remaining interior; material from weight × per-kg rate and
 // factor; machine time books shell and infill grams at separate throughputs.
-func (c *Config) unitBasePrice(proc ProcessDef, volumeCm3, surfaceAreaCm2 float64) (total float64, lines []BreakdownLine, weightG, printH float64) {
-	shellVolCm3 := math.Min(volumeCm3, surfaceAreaCm2*(c.Fdm.ShellThicknessMm/10))
-	infillVolCm3 := c.Fdm.InfillFraction * (volumeCm3 - shellVolCm3)
+//
+// The nozzle scales both the shell thickness and the two throughputs. At the
+// 0.4 mm baseline both multipliers are 1.0, and multiplying an IEEE-754 float
+// by 1.0 is exact — so the default path is bit-identical to the pre-nozzle
+// engine, which is what keeps the golden fixtures valid.
+func (c *Config) unitBasePrice(proc ProcessDef, noz NozzleDef, infillFraction, volumeCm3, surfaceAreaCm2 float64) (total float64, lines []BreakdownLine, weightG, printH float64) {
+	shellVolCm3 := math.Min(volumeCm3, surfaceAreaCm2*(c.Fdm.ShellThicknessMm*noz.ShellMult/10))
+	infillVolCm3 := infillFraction * (volumeCm3 - shellVolCm3)
 	shellG := shellVolCm3 * proc.DensityGCm3
 	infillG := infillVolCm3 * proc.DensityGCm3
 	weightG = shellG + infillG
 	material := (weightG * proc.PlnPerKg * proc.Factor) / 1000
-	printH = shellG/c.Fdm.ShellGramsPerPrintHour + infillG/c.Fdm.InfillGramsPerPrintHour
+	printH = shellG/(c.Fdm.ShellGramsPerPrintHour*noz.ThroughputMult) +
+		infillG/(c.Fdm.InfillGramsPerPrintHour*noz.ThroughputMult)
 	machine := printH * proc.PlnPerHour
 	return material + machine, []BreakdownLine{
 		{Key: "material", Label: "Material", AmountPln: material},
 		{Key: "machine", Label: "Machine time", AmountPln: machine},
 		{Key: "finishing", Label: "Finishing", AmountPln: 0},
 	}, weightG, printH
+}
+
+// partPrice runs the whole unit-price arithmetic for one config over geometry
+// that has already been measured and plate-packed. ComputePartQuote calls it
+// once for the real config and once per alternative for OptionPrices, so the
+// delta the panel promises before a click and the price charged after it can
+// never come from two different code paths.
+func (c *Config) partPrice(
+	proc ProcessDef,
+	billableVolumeCm3, surfaceAreaCm2 float64,
+	plates int,
+	config PartConfig,
+) (unitPricePln, unitBasePln float64, lines []BreakdownLine, weightG, printH float64) {
+	noz := c.Nozzle(config.Nozzle)
+	inf := c.Infill(config.Infill)
+	col := c.Color(config.Color)
+
+	unitBasePln, lines, weightG, printH = c.unitBasePrice(
+		proc, noz, inf.Fraction, billableVolumeCm3, surfaceAreaCm2)
+
+	// Per-unit fee for each plate beyond the first, folded into the base so
+	// discounts, lead-time multipliers, and breakdown scaling apply uniformly.
+	if plateFeePln := float64(plates-1) * c.ExtraPlateFeePln; plateFeePln > 0 {
+		unitBasePln += plateFeePln
+		lines = append(lines, BreakdownLine{
+			Key:       "plates",
+			Label:     fmt.Sprintf("Extra plates (%d)", plates-1),
+			Count:     plates - 1,
+			AmountPln: plateFeePln,
+		})
+	}
+
+	// Colours that aren't on the shelf carry a handling surcharge. Folded into
+	// the base like the plate fee: because it is multiplicative it commutes
+	// with the discount and the lead-time multiplier, so folding it in is
+	// arithmetically identical to charging it last — and it lands before the
+	// per-part floor, where it belongs.
+	if !col.InStock && c.ColorSurchargeFraction > 0 {
+		fee := unitBasePln * c.ColorSurchargeFraction
+		unitBasePln += fee
+		lines = append(lines, BreakdownLine{
+			Key:       "color",
+			Label:     "Colour surcharge",
+			AmountPln: fee,
+		})
+	}
+
+	leadTime, _ := c.LeadTime(config.LeadTime)
+	rawUnit := unitBasePln * (1 - c.InterpolateDiscount(config.Quantity)) * leadTime.Mult
+	// mapi-tech floors every part at a minimum price.
+	unitPricePln = math.Max(round2(rawUnit), c.MinPartPricePln)
+	return unitPricePln, unitBasePln, lines, weightG, printH
+}
+
+// optionPrices re-prices the part once per alternative on every axis except
+// quantity, which has its own table.
+func (c *Config) optionPrices(
+	proc ProcessDef,
+	billableVolumeCm3, surfaceAreaCm2 float64,
+	plates int,
+	config PartConfig,
+) []OptionPrice {
+	out := make([]OptionPrice, 0,
+		len(c.Nozzles)+len(c.Infills)+len(c.LeadTimes)+len(c.Colors))
+	add := func(axis, id string, variant PartConfig) {
+		unit, _, _, _, _ := c.partPrice(proc, billableVolumeCm3, surfaceAreaCm2, plates, variant)
+		out = append(out, OptionPrice{Axis: axis, ID: id, UnitPricePln: unit})
+	}
+	for _, n := range c.Nozzles {
+		v := config
+		v.Nozzle = n.ID
+		add("nozzle", n.ID, v)
+	}
+	for _, i := range c.Infills {
+		v := config
+		v.Infill = i.ID
+		add("infill", i.ID, v)
+	}
+	for _, lt := range c.LeadTimes {
+		v := config
+		v.LeadTime = lt.ID
+		add("leadTime", lt.ID, v)
+	}
+	for _, col := range c.Colors {
+		v := config
+		v.Color = col.ID
+		add("color", col.ID, v)
+	}
+	return out
 }
 
 // sortedDesc lets us compare a part against a build box allowing any rotation.
@@ -262,26 +373,11 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 		}
 	}
 
-	unitBasePln, baseLines, weightG, printHours := c.unitBasePrice(proc, billableVolumeCm3, metrics.SurfaceAreaCm2)
-	// Per-unit fee for each plate beyond the first, folded into the base so
-	// discounts, lead-time multipliers, and breakdown scaling apply uniformly.
-	plateFeePln := float64(plates-1) * c.ExtraPlateFeePln
-	if plateFeePln > 0 {
-		unitBasePln += plateFeePln
-		baseLines = append(baseLines, BreakdownLine{
-			Key:       "plates",
-			Label:     fmt.Sprintf("Extra plates (%d)", plates-1),
-			Count:     plates - 1,
-			AmountPln: plateFeePln,
-		})
-	}
+	unitPricePln, unitBasePln, baseLines, weightG, printHours := c.partPrice(
+		proc, billableVolumeCm3, metrics.SurfaceAreaCm2, plates, config)
 	discountFraction := c.InterpolateDiscount(config.Quantity)
 	leadTime, _ := c.LeadTime(config.LeadTime)
 	leadTimeMultiplier := leadTime.Mult
-
-	rawUnit := unitBasePln * (1 - discountFraction) * leadTimeMultiplier
-	// mapi-tech floors every part at a minimum price.
-	unitPricePln := math.Max(round2(rawUnit), c.MinPartPricePln)
 	qty := math.Max(1, math.Floor(config.Quantity))
 	lineTotalPln := round2(unitPricePln * qty)
 
@@ -332,6 +428,8 @@ func (c *Config) ComputePartQuote(metrics MeshMetrics, config PartConfig) PartQu
 		Breakdown:          scaled,
 		DfmFlags:           dfmFlags,
 		PriceBreaks:        priceBreaks,
+		OptionPrices: c.optionPrices(
+			proc, billableVolumeCm3, metrics.SurfaceAreaCm2, plates, config),
 	}
 	if multiPiece {
 		n := len(pieces)

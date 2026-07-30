@@ -240,6 +240,9 @@ func (s *server) buildOrderDetail(ctx context.Context, o store.Order) (AdminOrde
 			Process:      ProcessId(it.Process),
 			Quantity:     int(it.Quantity),
 			LeadTime:     LeadTimeId(it.LeadTime),
+			Nozzle:       ptr(NozzleId(it.Nozzle)),
+			Infill:       ptr(InfillId(it.Infill)),
+			Color:        &it.Color,
 			UnitPricePln: money.FromGrosze(it.UnitPriceGrosze),
 			LineTotalPln: money.FromGrosze(it.LineTotalGrosze),
 		}

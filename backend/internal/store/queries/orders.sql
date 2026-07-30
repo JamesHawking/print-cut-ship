@@ -11,9 +11,10 @@ RETURNING id, short_id;
 -- name: InsertOrderItem :exec
 INSERT INTO order_items (
     order_id, file_id, file_name, hash, process, quantity, lead_time,
+    nozzle, infill, color,
     unit_price_grosze, line_total_grosze, part_quote_snapshot
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 );
 
 -- name: MarkQuoteOrdered :exec

@@ -123,6 +123,28 @@ func toDomainMetrics(m MeshMetrics) pricing.MeshMetrics {
 	return out
 }
 
+// derefOpt reads an optional generated id, returning "" when absent — which
+// the engine reads as "the default" (pricing.DefaultNozzleID and friends).
+func derefOpt[T ~string](v *T) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+// ptr takes the address of a value — the generated response types make
+// optional fields pointers, and a stored id is never absent.
+func ptr[T any](v T) *T { return &v }
+
+// orDefault resolves "the default" to a concrete id before storage, so a
+// persisted row says what was printed rather than what was left unsaid.
+func orDefault(v, fallback string) string {
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
 func fromDomainQuote(q pricing.PartQuote) PartQuote {
 	out := PartQuote{
 		Blocked:            q.Blocked,
@@ -137,6 +159,7 @@ func fromDomainQuote(q pricing.PartQuote) PartQuote {
 		Breakdown:          make([]BreakdownLine, 0, len(q.Breakdown)),
 		DfmFlags:           make([]DfmFlag, 0, len(q.DfmFlags)),
 		PriceBreaks:        make([]PriceBreak, 0, len(q.PriceBreaks)),
+		OptionPrices:       make([]OptionPrice, 0, len(q.OptionPrices)),
 		PieceCount:         q.PieceCount,
 		Plates:             q.Plates,
 	}
@@ -176,6 +199,13 @@ func fromDomainQuote(q pricing.PartQuote) PartQuote {
 			Quantity:         int(b.Quantity),
 			UnitPricePln:     b.UnitPricePln,
 			DiscountFraction: b.DiscountFraction,
+		})
+	}
+	for _, o := range q.OptionPrices {
+		out.OptionPrices = append(out.OptionPrices, OptionPrice{
+			Axis:         OptionPriceAxis(o.Axis),
+			Id:           o.ID,
+			UnitPricePln: o.UnitPricePln,
 		})
 	}
 	return out
@@ -233,6 +263,29 @@ func validateMetricsQtyLead(cfg *pricing.Config, metrics MeshMetrics, quantity i
 	return nil
 }
 
+// validatePrintOptions rejects unrecognised nozzle/infill/colour ids. The
+// engine would fall back to its defaults, which is the right behaviour for
+// old persisted rows but the wrong one for a live request: the shop would
+// receive an id it can't print. Omitting a field entirely is fine — that
+// means "the default" and is how pre-Turn-2 clients speak.
+func validatePrintOptions(cfg *pricing.Config, nozzle, infill, color string) *validationError {
+	unknown := func(field, value string) *validationError {
+		return &validationError{UnknownPrintOption,
+			fmt.Sprintf("unknown %s %q", field, value),
+			map[string]any{field: value}}
+	}
+	if nozzle != "" && cfg.Nozzle(nozzle).ID != nozzle {
+		return unknown("nozzle", nozzle)
+	}
+	if infill != "" && cfg.Infill(infill).ID != infill {
+		return unknown("infill", infill)
+	}
+	if color != "" && cfg.Color(color).ID != color {
+		return unknown("color", color)
+	}
+	return nil
+}
+
 func priceParts(cfg *pricing.Config, parts []SubmitQuotePart) ([]pricing.PartQuote, pricing.OrderTotals) {
 	quotes := make([]pricing.PartQuote, 0, len(parts))
 	for _, p := range parts {
@@ -240,6 +293,9 @@ func priceParts(cfg *pricing.Config, parts []SubmitQuotePart) ([]pricing.PartQuo
 			Process:  string(p.Process),
 			Quantity: float64(p.Quantity),
 			LeadTime: string(p.LeadTime),
+			Nozzle:   derefOpt(p.Nozzle),
+			Infill:   derefOpt(p.Infill),
+			Color:    derefOpt(p.Color),
 		}))
 	}
 	return quotes, cfg.ComputeOrderTotals(quotes)
@@ -266,10 +322,17 @@ func (s *server) Price(w http.ResponseWriter, r *http.Request) {
 			badRequest(w, v.code, v.msg, v.params)
 			return
 		}
+		if v := validatePrintOptions(cfg, derefOpt(p.Nozzle), derefOpt(p.Infill), derefOpt(p.Color)); v != nil {
+			badRequest(w, v.code, v.msg, v.params)
+			return
+		}
 		q := cfg.ComputePartQuote(toDomainMetrics(p.Metrics), pricing.PartConfig{
 			Process:  string(p.Process),
 			Quantity: float64(p.Quantity),
 			LeadTime: string(p.LeadTime),
+			Nozzle:   derefOpt(p.Nozzle),
+			Infill:   derefOpt(p.Infill),
+			Color:    derefOpt(p.Color),
 		})
 		domainQuotes = append(domainQuotes, q)
 		quotes = append(quotes, fromDomainQuote(q))
@@ -290,12 +353,19 @@ func (s *server) PriceCompare(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, v.code, v.msg, v.params)
 		return
 	}
+	if v := validatePrintOptions(cfg, derefOpt(req.Nozzle), derefOpt(req.Infill), derefOpt(req.Color)); v != nil {
+		badRequest(w, v.code, v.msg, v.params)
+		return
+	}
 	rows := make([]PriceCompareRow, 0, len(cfg.Processes))
 	for _, p := range cfg.Processes {
 		q := cfg.ComputePartQuote(toDomainMetrics(req.Metrics), pricing.PartConfig{
 			Process:  p.ID,
 			Quantity: float64(req.Quantity),
 			LeadTime: string(req.LeadTime),
+			Nozzle:   derefOpt(req.Nozzle),
+			Infill:   derefOpt(req.Infill),
+			Color:    derefOpt(req.Color),
 		})
 		rows = append(rows, PriceCompareRow{
 			Process: ProcessId(p.ID),
@@ -325,6 +395,20 @@ func (s *server) GetConfig(w http.ResponseWriter, _ *http.Request) {
 			Id: LeadTimeId(lt.ID), Mult: lt.Mult, BusinessDays: lt.BusinessDays,
 		})
 	}
+	nozzles := make([]CatalogNozzle, 0, len(priceCfg.Nozzles))
+	for _, n := range priceCfg.Nozzles {
+		nozzles = append(nozzles, CatalogNozzle{Id: NozzleId(n.ID), DiameterMm: n.DiameterMm})
+	}
+	infills := make([]CatalogInfill, 0, len(priceCfg.Infills))
+	for _, i := range priceCfg.Infills {
+		infills = append(infills, CatalogInfill{Id: InfillId(i.ID), Fraction: i.Fraction})
+	}
+	colors := make([]CatalogColor, 0, len(priceCfg.Colors))
+	for _, c := range priceCfg.Colors {
+		colors = append(colors, CatalogColor{
+			Id: c.ID, Label: c.Label, Hex: c.Hex, InStock: c.InStock,
+		})
+	}
 	tiers := make([]DiscountTier, 0, len(priceCfg.DiscountTiers))
 	for _, dt := range priceCfg.DiscountTiers {
 		tiers = append(tiers, DiscountTier{Quantity: int(dt.Quantity), Fraction: dt.Fraction})
@@ -332,6 +416,9 @@ func (s *server) GetConfig(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, CatalogResponse{
 		Processes:     processes,
 		LeadTimes:     leadTimes,
+		Nozzles:       nozzles,
+		Infills:       infills,
+		Colors:        colors,
 		DiscountTiers: tiers,
 		Fdm: FdmModel{
 			InfillFraction:          priceCfg.Fdm.InfillFraction,
@@ -348,6 +435,8 @@ func (s *server) GetConfig(w http.ResponseWriter, _ *http.Request) {
 		FreeShippingThresholdPln: priceCfg.FreeShippingThresholdPln,
 		VatRate:                  priceCfg.VatRate,
 		ExtraPlateFeePln:         priceCfg.ExtraPlateFeePln,
+		ColorSurchargeFraction:   priceCfg.ColorSurchargeFraction,
+		ColorSurchargeLeadDays:   priceCfg.ColorSurchargeLeadDays,
 	})
 }
 
@@ -357,9 +446,15 @@ func (s *server) GetShipDates(w http.ResponseWriter, _ *http.Request) {
 	dates := make([]ShipDate, 0, len(priceCfg.LeadTimes))
 	for _, lt := range priceCfg.LeadTimes {
 		sd := leadtime.ComputeShipDate(lt.BusinessDays, priceCfg.SameDayCutoffHour, now)
+		// What a part in an on-request colour actually ships on. Computed the
+		// same way rather than by adding a day to sd.Date, so it lands on a
+		// business day like every other quoted date.
+		delayed := leadtime.ComputeShipDate(
+			lt.BusinessDays+priceCfg.ColorSurchargeLeadDays, priceCfg.SameDayCutoffHour, now)
 		dates = append(dates, ShipDate{
 			LeadTime:            LeadTimeId(lt.ID),
 			Date:                CalDate{Y: sd.Date.Y, M: sd.Date.M, D: sd.Date.D},
+			DatePlusColorDelay:  CalDate{Y: delayed.Date.Y, M: delayed.Date.M, D: delayed.Date.D},
 			DispatchStartsToday: sd.DispatchStartsToday,
 			Label:               sd.Label,
 		})
@@ -584,6 +679,9 @@ func (s *server) persistQuote(ctx context.Context, req SubmitQuoteRequest, quote
 			Process:           string(p.Process),
 			Quantity:          int32(p.Quantity), // safe: validatePart caps at MaxQuantity
 			LeadTime:          string(p.LeadTime),
+			Nozzle:            orDefault(derefOpt(p.Nozzle), pricing.DefaultNozzleID),
+			Infill:            orDefault(derefOpt(p.Infill), pricing.DefaultInfillID),
+			Color:             orDefault(derefOpt(p.Color), pricing.DefaultColorID),
 			UnitPriceGrosze:   grosze(q.UnitPricePln),
 			LineTotalGrosze:   grosze(q.LineTotalPln),
 			BillableVolumeCm3: &billable,

@@ -560,6 +560,18 @@ export interface components {
     /** @enum {string} */
     LeadTimeId: 'economy' | 'standard' | 'express'
     /**
+     * @description Nozzle diameter — n04 (0.4 mm) is the default.
+     * @enum {string}
+     */
+    NozzleId: 'n02' | 'n04' | 'n06' | 'n08'
+    /**
+     * @description Infill density — standard (20%) is the default.
+     * @enum {string}
+     */
+    InfillId: 'light' | 'standard' | 'strong' | 'solid'
+    /** @description Filament colour. Unlike the other ids this list is extensible from the admin pricing editor, so it is not a closed enum — unknown values price as the default. */
+    ColorId: string
+    /**
      * @description Supported EU shipping destinations
      * @enum {string}
      */
@@ -616,6 +628,9 @@ export interface components {
       process: components['schemas']['ProcessId']
       quantity: number
       leadTime: components['schemas']['LeadTimeId']
+      nozzle?: components['schemas']['NozzleId']
+      infill?: components['schemas']['InfillId']
+      color?: components['schemas']['ColorId']
     }
     PriceRequest: {
       parts: components['schemas']['PricePart'][]
@@ -625,6 +640,9 @@ export interface components {
       metrics: components['schemas']['MeshMetrics']
       quantity: number
       leadTime: components['schemas']['LeadTimeId']
+      nozzle?: components['schemas']['NozzleId']
+      infill?: components['schemas']['InfillId']
+      color?: components['schemas']['ColorId']
     }
     PriceCompareRow: {
       process: components['schemas']['ProcessId']
@@ -653,13 +671,21 @@ export interface components {
     }
     BreakdownLine: {
       /** @enum {string} */
-      key: 'material' | 'machine' | 'finishing' | 'plates'
+      key: 'material' | 'machine' | 'finishing' | 'plates' | 'color'
       /** @description English debug prose; the frontend renders from key (+count). */
       label?: string
       /** @description Extra-plate count; only set for key=plates. */
       count?: number
       /** Format: double */
       amountPln: number
+    }
+    /** @description The unit price one alternative on a config axis would produce, everything else held equal. The quantity axis has its own table (PriceBreak); this covers the rest, so the client shows what a choice costs before it is made without ever deriving a price itself. */
+    OptionPrice: {
+      /** @enum {string} */
+      axis: 'nozzle' | 'infill' | 'leadTime' | 'color'
+      id: string
+      /** Format: double */
+      unitPricePln: number
     }
     PriceBreak: {
       quantity: number
@@ -695,6 +721,7 @@ export interface components {
       breakdown: components['schemas']['BreakdownLine'][]
       dfmFlags: components['schemas']['DfmFlag'][]
       priceBreaks: components['schemas']['PriceBreak'][]
+      optionPrices: components['schemas']['OptionPrice'][]
       /** @description Present only for multi-piece 3MF parts */
       pieceCount?: number
       /** @description Present only for multi-piece 3MF parts */
@@ -741,6 +768,23 @@ export interface components {
       mult: number
       businessDays: number
     }
+    CatalogNozzle: {
+      id: components['schemas']['NozzleId']
+      /** Format: double */
+      diameterMm: number
+    }
+    CatalogInfill: {
+      id: components['schemas']['InfillId']
+      /** Format: double */
+      fraction: number
+    }
+    CatalogColor: {
+      id: components['schemas']['ColorId']
+      /** @description Canonical English name. The frontend localizes from id and falls back to this, the same contract CatalogProcess.label uses — it is what lets a colour be added from the admin editor without a deploy. */
+      label: string
+      hex: string
+      inStock: boolean
+    }
     DiscountTier: {
       quantity: number
       /** Format: double */
@@ -759,6 +803,12 @@ export interface components {
     CatalogResponse: {
       processes: components['schemas']['CatalogProcess'][]
       leadTimes: components['schemas']['CatalogLeadTime'][]
+      nozzles: components['schemas']['CatalogNozzle'][]
+      infills: components['schemas']['CatalogInfill'][]
+      colors: components['schemas']['CatalogColor'][]
+      /** Format: double */
+      colorSurchargeFraction: number
+      colorSurchargeLeadDays: number
       discountTiers: components['schemas']['DiscountTier'][]
       fdm: components['schemas']['FdmModel']
       quantityChips: number[]
@@ -787,6 +837,8 @@ export interface components {
     ShipDate: {
       leadTime: components['schemas']['LeadTimeId']
       date: components['schemas']['CalDate']
+      /** @description The same date pushed out by colorSurchargeLeadDays business days — what a part in an on-request colour actually ships on. Equal to date when the delay is zero. */
+      datePlusColorDelay: components['schemas']['CalDate']
       dispatchStartsToday: boolean
       /** @description e.g. "Thu 16 Jul" (canonical engine label; UI formats the date per locale) */
       label: string
@@ -806,6 +858,9 @@ export interface components {
       process: components['schemas']['ProcessId']
       quantity: number
       leadTime: components['schemas']['LeadTimeId']
+      nozzle?: components['schemas']['NozzleId']
+      infill?: components['schemas']['InfillId']
+      color?: components['schemas']['ColorId']
     }
     SubmitQuoteRequest: {
       /** Format: email */
@@ -895,6 +950,9 @@ export interface components {
       process: components['schemas']['ProcessId']
       quantity: number
       leadTime: components['schemas']['LeadTimeId']
+      nozzle?: components['schemas']['NozzleId']
+      infill?: components['schemas']['InfillId']
+      color?: components['schemas']['ColorId']
       /** Format: double */
       unitPricePln: number
       /** Format: double */
@@ -995,8 +1053,14 @@ export interface components {
     PricingConfig: {
       Processes: components['schemas']['PricingProcessDef'][]
       LeadTimes: components['schemas']['PricingLeadTimeDef'][]
+      Nozzles: components['schemas']['PricingNozzleDef'][]
+      Infills: components['schemas']['PricingInfillDef'][]
+      Colors: components['schemas']['PricingColorDef'][]
       Fdm: components['schemas']['PricingFdmModel']
       DiscountTiers: components['schemas']['PricingDiscountTier'][]
+      /** Format: double */
+      ColorSurchargeFraction: number
+      ColorSurchargeLeadDays: number
       /** Format: double */
       ExtraPlateFeePln: number
       /** Format: double */
@@ -1044,6 +1108,28 @@ export interface components {
       /** Format: double */
       Mult: number
       BusinessDays: number
+    }
+    /** @description Multipliers on the FdmModel baseline, which is calibrated for 0.4 mm — n04 is the identity element. UNCALIBRATED seeds; see the note on pricing.Default. */
+    PricingNozzleDef: {
+      ID: string
+      /** Format: double */
+      DiameterMm: number
+      /** Format: double */
+      ShellMult: number
+      /** Format: double */
+      ThroughputMult: number
+    }
+    PricingInfillDef: {
+      ID: string
+      /** Format: double */
+      Fraction: number
+    }
+    PricingColorDef: {
+      ID: string
+      /** @description Canonical English name; the frontend localizes from ID. */
+      Label: string
+      Hex: string
+      InStock: boolean
     }
     PricingFdmModel: {
       /** Format: double */
@@ -1270,6 +1356,9 @@ export interface components {
       process: components['schemas']['ProcessId']
       quantity: number
       leadTime: components['schemas']['LeadTimeId']
+      nozzle?: components['schemas']['NozzleId']
+      infill?: components['schemas']['InfillId']
+      color?: components['schemas']['ColorId']
       /** Format: double */
       unitPricePln: number
       /** Format: double */
@@ -1328,6 +1417,7 @@ export interface components {
       | 'parts_count'
       | 'unknown_process'
       | 'unknown_lead_time'
+      | 'unknown_print_option'
       | 'quantity_range'
       | 'invalid_metrics'
       | 'invalid_email'
