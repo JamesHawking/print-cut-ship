@@ -47,11 +47,11 @@ docker compose --profile full up --build
 - `DATABASE_URL` — defaulted to `postgres://dev:dev@localhost:5432/instantquote`
   by the Makefiles and wired between compose services automatically. The
   **compiled binary still fails fast** if `DATABASE_URL` is unset in serve mode,
-  so production must inject it (Coolify, plan 03) — the default lives only in
-  local tooling, never in the binary.
+  so production must inject it (systemd `EnvironmentFile=/srv/iq/env/api.env`,
+  plan 03 §7) — the default lives only in local tooling, never in the binary.
 - **Migrations** live in `internal/db/migrations/` (goose SQL, embedded into the
   binary). Create one with `make migrate-new NAME=add_x`; the same binary runs
-  them via `api migrate` (Coolify runs this as a pre-deploy step — plan 03).
+  them via `api migrate` (`deploy/ship` runs this before each swap — plan 03 §7).
 - **Data access** is sqlc-generated from `internal/store/queries/*.sql` against
   the migration schema; regenerate with `make gen-sqlc` (part of `make gen`).
 - Money is stored as integer grosze (`internal/money`); the base schema is owned
@@ -63,27 +63,30 @@ Run the DB-backed handler test against a throwaway database:
 TEST_DATABASE_URL=postgres://dev:dev@localhost:5432/instantquote go test ./internal/httpapi/
 ```
 
-(It is skipped when `TEST_DATABASE_URL` is unset. CI provisions a Postgres
-service and runs `api migrate` before tests — plan 03.)
+(It is skipped when `TEST_DATABASE_URL` is unset. CI — dormant by decision,
+plan 03 §7 — would provision a Postgres service and run `api migrate` first.)
 
 ## File storage (plan 02)
 
-Uploaded models live in MinIO (S3-compatible), run from the same compose file.
+Uploaded models live in an S3-compatible store — compose MinIO locally,
+Garage v2 in production (plan 03 §7).
 `make dev` / `make db-up` start it alongside Postgres; `serve` ensures the
 bucket at startup, so no manual setup. The browser uploads on drop via a
 presigned PUT (`POST /api/v1/files` → PUT to MinIO → `POST /files/{id}/confirm`),
 deduped by content hash; MakerWorld downloads are teed into storage server-side.
 
-- S3 env (Makefile/compose defaults for local dev; prod injects via Coolify):
+- S3 env (Makefile/compose defaults for local dev; prod injects via
+  `/srv/iq/env/api.env` — including `S3_REGION=garage`, since Garage validates
+  the SigV4 region):
   `S3_ENDPOINT` (default `localhost:9000`), `S3_PUBLIC_ENDPOINT` (browser-facing
   host if it differs from the internal one — set in the compose `full` profile),
   `S3_ACCESS_KEY`/`S3_SECRET_KEY` (default `minioadmin`), `S3_BUCKET` (default
   `instantquote`), `S3_USE_SSL`.
 - **Retention sweep:** `make sweep` (or `api sweep`) soft-deletes stale pending
   reservations (>24h) and unreferenced uploaded files past
-  `FILE_RETENTION_UNORDERED_DAYS` (default 30), removing their objects. Coolify
-  runs this as a scheduled task (plan 03). Referenced/ordered-file retention
-  lands with plans 05/14.
+  `FILE_RETENTION_UNORDERED_DAYS` (default 30), removing their objects. The
+  `iq-sweep` systemd timer runs this nightly in production (plan 03 §7).
+  Referenced/ordered-file retention lands with plans 05/14.
 - Storage-backed tests need `TEST_S3_ENDPOINT` (e.g. `localhost:9000`) in
   addition to `TEST_DATABASE_URL`; skipped otherwise.
 
@@ -138,7 +141,8 @@ TypeScript engine — same arithmetic order, and `round2` replicates JS
 `Math.round` half-up semantics (`math.Floor(n*100+0.5)/100`). Exactness is
 enforced by `testdata/golden.json` fixtures generated from the TS
 implementation before it was deleted (1,512 part-quote cases + order totals
-+ packing + ship dates).
+
+- packing + ship dates).
 
 The fixtures are **frozen artifacts**: the generator
 (`instant-quote/tests/golden/generate.ts`) was removed together with the TS

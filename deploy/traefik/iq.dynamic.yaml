@@ -1,0 +1,122 @@
+# iq.dynamic.yaml — MICRO_FACTORY routing through the existing coolify-proxy
+# (Traefik v3). Install: cp to /data/coolify/proxy/dynamic/iq.yaml — the file
+# provider watches that directory, changes hot-reload, no proxy restart.
+#
+# Layout: PREVIEW stanza (sslip.io, plain http — LE on sslip.io is
+# unreliable) is active; PRODUCTION stanza is commented. Domain day: fill in
+# the domain, uncomment production, delete preview, save — done.
+#
+# Notes:
+# - `$` in the basicAuth hash is literal here (file provider — no `$$`
+#   doubling; that rule is docker-compose-only). Generate the hash with:
+#   htpasswd -nb iq '<password>'   (or: openssl passwd -apr1)
+# - Re-verify this file survived after any Coolify upgrade.
+
+http:
+  services:
+    iq-api:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8090"
+    iq-web:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3010"
+    iq-s3:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:9002"
+
+  middlewares:
+    # Stub checkout must never be publicly reachable (PAYMENTS_PROVIDER=stub
+    # until plan 18). Tailnet CGNAT range only; public internet gets 403.
+    # To exercise it, hit Traefik over tailnet with the right Host header
+    # (/etc/hosts line or curl --resolve — see deploy/README.md).
+    iq-stub-tailnet-only:
+      ipAllowList:
+        sourceRange:
+          - "100.64.0.0/10"
+    # Preview only — throwaway credentials, they travel cleartext over http.
+    iq-preview-auth:
+      basicAuth:
+        users:
+          - "iq:$apr1$CHANGEME$CHANGEMECHANGEMECHANGEME"
+    # Production only.
+    iq-redirect-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  routers:
+    # ---------- PREVIEW (delete this block on domain day) ----------
+    iq-prev-stub:
+      entryPoints: [http]
+      rule: "Host(`iq.37-27-84-96.sslip.io`) && PathPrefix(`/api/v1/payments/stub`)"
+      middlewares: [iq-stub-tailnet-only]
+      service: iq-api
+      priority: 300
+    # basicAuth here too: the browser re-sends cached credentials on
+    # same-origin fetches, so the app works — but anonymous bots can't hit
+    # /api (upload issuance, OTP requests) on the preview host. Note this
+    # also gates /healthz until the real domain.
+    iq-prev-api:
+      entryPoints: [http]
+      rule: "Host(`iq.37-27-84-96.sslip.io`) && (PathPrefix(`/api`) || Path(`/healthz`))"
+      middlewares: [iq-preview-auth]
+      service: iq-api
+      priority: 200
+    iq-prev-web:
+      entryPoints: [http]
+      rule: "Host(`iq.37-27-84-96.sslip.io`)"
+      middlewares: [iq-preview-auth]
+      service: iq-web
+      priority: 100
+    # Presigned uploads (browser -> MinIO). No auth — presigned PUTs can't
+    # carry basicAuth; the presignature itself is the credential.
+    iq-prev-s3:
+      entryPoints: [http]
+      rule: "Host(`s3-iq.37-27-84-96.sslip.io`)"
+      service: iq-s3
+      priority: 100
+
+    # ---------- PRODUCTION (uncomment on domain day; replace <domain>) ----
+    # The s3 host routes to Garage's S3 API (host 9002 -> container 3900)
+    # via the same iq-s3 service as preview — Garage has no Coolify FQDN
+    # wiring of its own, so this router stays ours in production too.
+    #
+    # iq-s3:
+    #   entryPoints: [https]
+    #   rule: "Host(`s3.<domain>`)"
+    #   service: iq-s3
+    #   priority: 100
+    #   tls:
+    #     certResolver: letsencrypt
+    #
+    # iq-http:
+    #   entryPoints: [http]
+    #   rule: "Host(`<domain>`)"
+    #   middlewares: [iq-redirect-https]
+    #   service: iq-web
+    #   priority: 100
+    # iq-stub:
+    #   entryPoints: [https]
+    #   rule: "Host(`<domain>`) && PathPrefix(`/api/v1/payments/stub`)"
+    #   middlewares: [iq-stub-tailnet-only]
+    #   service: iq-api
+    #   priority: 300
+    #   tls:
+    #     certResolver: letsencrypt
+    # iq-api:
+    #   entryPoints: [https]
+    #   rule: "Host(`<domain>`) && (PathPrefix(`/api`) || Path(`/healthz`))"
+    #   service: iq-api
+    #   priority: 200
+    #   tls:
+    #     certResolver: letsencrypt
+    # iq-web:
+    #   entryPoints: [https]
+    #   rule: "Host(`<domain>`)"
+    #   service: iq-web
+    #   priority: 100
+    #   tls:
+    #     certResolver: letsencrypt

@@ -1,0 +1,14 @@
+[Unit]
+Description=MICRO_FACTORY object-store backup to R2 (rclone copy)
+# Skip cleanly (not fail) until rclone remotes are configured.
+ConditionPathExists=/srv/iq/.config/rclone/rclone.conf
+
+[Service]
+Type=oneshot
+User=iq
+Group=iq
+# `copy`, never `sync`: a backstop must not replicate source-side deletions.
+# Growth is bounded in practice by the app's own retention sweep; add an R2
+# lifecycle rule if it ever matters.
+ExecStart=/usr/bin/rclone copy minio:instantquote r2:iq-minio-backup --config /srv/iq/.config/rclone/rclone.conf --transfers 4 --stats-one-line
+Nice=10
