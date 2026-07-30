@@ -16,6 +16,9 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 ENVFILE=/srv/iq/env/api.env
+# Explicit PATH like ship's — shell profiles are unreliable across
+# login/non-login/ssh-exec shells for a system user.
+export PATH=/usr/local/go/bin:/srv/iq/.bun/bin:/usr/local/bin:/usr/bin:/bin
 TSIP=$(tailscale ip -4 2>/dev/null | head -1 || true)
 TSIP=${TSIP:-100.114.132.68}
 

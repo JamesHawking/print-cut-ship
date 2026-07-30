@@ -95,6 +95,11 @@ id iq >/dev/null 2>&1 || {
 }
 install -d -o iq -g iq "$IQ"/{git,app,releases,current,env,dev,log,.config/rclone,.ssh}
 chmod 700 "$IQ/.ssh"
+# Login shells read .profile (not .bashrc); useradd -r created neither.
+[ -f "$IQ/.profile" ] || {
+  printf '[ -f ~/.bashrc ] && . ~/.bashrc\n' >"$IQ/.profile"
+  chown iq:iq "$IQ/.profile"
+}
 if [ ! -f "$IQ/.ssh/authorized_keys" ] && [ -f /root/.ssh/authorized_keys ]; then
   say "seeding iq authorized_keys from root's"
   install -o iq -g iq -m 600 /root/.ssh/authorized_keys "$IQ/.ssh/authorized_keys"
