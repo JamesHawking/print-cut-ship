@@ -36,9 +36,18 @@ export function InspectorPanel({
   const strings = useStrings()
 
   return (
+    // No rounding, no margin, no background of its own: the left border meets
+    // the viewport and the right edge is the window's, exactly as the design
+    // draws it. The grey comes from the shell's bg-background — the same
+    // oklch(0.966 0.002 250) the design's frame uses — so it only reads as
+    // grey while nothing card-coloured is stretched across it.
+    //
+    // Wider than the design's flat 380px, which the extra config axes
+    // outgrew. Stepped rather than flat: below xl the outliner and viewport
+    // are already tight, and the viewport is what the editor is for.
     <aside
       aria-label={strings.editor.inspectorLabel}
-      className="w-[380px] shrink-0 overflow-y-auto border-l p-4"
+      className="w-[380px] shrink-0 overflow-y-auto border-l p-4 xl:w-[420px] 2xl:w-[460px]"
     >
       {empty ? (
         <p className="text-muted-foreground px-2 py-6 text-center text-sm">
@@ -50,6 +59,7 @@ export function InspectorPanel({
           showDfmBadges={false}
           compareOpen={compareOpen}
           onToggleCompare={onToggleCompare}
+          flush
         />
       )}
     </aside>

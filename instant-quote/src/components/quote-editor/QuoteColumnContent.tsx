@@ -8,6 +8,7 @@ import type { Part } from '@/hooks/useParts'
 import { apiErrorMessage } from '@/lib/api/errors'
 import type { OrderTotals, PartConfig, PartQuote } from '@/lib/api/client'
 import { useStrings } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 interface Props {
   selectedPart: Part | null
@@ -32,6 +33,8 @@ interface Props {
   /** Editor only: materials-bench toggle in the config panel. */
   compareOpen?: boolean
   onToggleCompare?: () => void
+  /** Editor only: config sits flush on the inspector panel, not in a card. */
+  flush?: boolean
 }
 
 /**
@@ -60,14 +63,17 @@ export function QuoteColumnContent({
   showDfmBadges,
   compareOpen,
   onToggleCompare,
+  flush = false,
 }: Props) {
   const strings = useStrings()
 
   return (
-    <div className="min-w-0 space-y-6">
+    // 22px between sections in the editor rail — the design's aside gap. The
+    // page column keeps the app's 24px card rhythm.
+    <div className={cn('min-w-0', flush ? 'space-y-[22px]' : 'space-y-6')}>
       {selectedPart?.status === 'parsing' ||
       (selectedPart && !selectedQuote && priceQueryPending) ? (
-        <QuoteSkeleton />
+        <QuoteSkeleton flush={flush} />
       ) : selectedPart?.status === 'error' ? (
         // STEP files that OCCT can't read fall back to a manual quote.
         selectedPart.kind === 'step' ? (
@@ -107,6 +113,7 @@ export function QuoteColumnContent({
           showDfmBadges={showDfmBadges}
           compareOpen={compareOpen}
           onToggleCompare={onToggleCompare}
+          flush={flush}
         />
       ) : null}
 

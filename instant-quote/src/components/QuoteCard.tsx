@@ -22,6 +22,13 @@ interface Props {
   /** Editor only: shows the materials-bench toggle next to the process label. */
   compareOpen?: boolean
   onToggleCompare?: () => void
+  /**
+   * Editor only: drop the card chrome so the config sits directly on the
+   * inspector panel. The design wraps only the order block in a card — a
+   * near-white card filling the rail hides the panel's grey and reads as a
+   * floating sheet inset from the edges.
+   */
+  flush?: boolean
 }
 
 export function QuoteCard({
@@ -34,6 +41,7 @@ export function QuoteCard({
   showDfmBadges = true,
   compareOpen,
   onToggleCompare,
+  flush = false,
 }: Props) {
   const strings = useStrings()
   const locale = useLocale()
@@ -52,9 +60,17 @@ export function QuoteCard({
 
   return (
     // Mounts when the skeleton hands over — settle in instead of snapping
-    // (fade only under reduced motion).
-    <Card className="animate-in fade-in zoom-in-[0.98] motion-reduce:zoom-in-100 duration-200 ease-out">
-      <CardHeader className="leading-[normal]">
+    // (fade only under reduced motion). Flush drops the zoom too: scaling a
+    // whole rail reads as a glitch, where scaling a card reads as arrival.
+    <Card
+      className={cn(
+        'animate-in fade-in duration-200 ease-out',
+        flush
+          ? 'gap-5 rounded-none border-0 bg-transparent py-0 shadow-none'
+          : 'zoom-in-[0.98] motion-reduce:zoom-in-100',
+      )}
+    >
+      <CardHeader className={cn('leading-[normal]', flush && 'px-0')}>
         {/* min-w-0: CardHeader is a grid — without it the filename's nowrap
           truncation sets the column's min-content and blows out the card.
           No wrap: the price stays top-right and the filename truncates,
@@ -177,7 +193,12 @@ export function QuoteCard({
       {/* leading-[normal]: the workbench design never sets a line-height in
         the config section, so text sits at font-metric height (~1.2), not
         the body's 1.5 — this is most of its tighter vertical rhythm. */}
-      <CardContent className="space-y-5 border-t pt-5 leading-[normal]">
+      <CardContent
+        className={cn(
+          'space-y-5 border-t pt-5 leading-[normal]',
+          flush && 'px-0',
+        )}
+      >
         {/* The quantity chips carry each tier's per-part price now, so the
           separate price-break table would print the same five numbers twice. */}
         <ConfigPanel
