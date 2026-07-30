@@ -949,6 +949,7 @@ export const pl = {
     nozzleTag: (mm: string) => `DYSZA ${mm} MM`,
     infillTag: (name: string, pct: string) => `${name.toUpperCase()} · ${pct}`,
     perPartPrice: 'zł / szt. w progu',
+    customQuantity: 'Własna ilość',
     selected: '✓',
     noChange: '±0',
     delta: (amount: string, cheaper: boolean) =>

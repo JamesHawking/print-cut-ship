@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -85,6 +85,7 @@ export function ConfigPanel({
     express: strings.config.express,
   }
 
+  const qtyId = useId()
   const [qtyText, setQtyText] = useState(String(config.quantity))
   const qtyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -189,7 +190,10 @@ export function ConfigPanel({
             className="bg-card w-full font-semibold"
             disabled={loading}
           >
-            <SelectValue />
+            {/* Explicit children: Radix mirrors the selected item's ItemText
+              into the trigger, and the item's text now carries the delta —
+              left to itself the closed trigger read "PLA ✓". */}
+            <SelectValue>{process?.label}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {(catalog?.processes ?? []).map((p) => {
@@ -208,6 +212,11 @@ export function ConfigPanel({
                     // price sit at the item's right edge, where the design
                     // puts it; aria-selected still carries the state.
                     'px-2 py-[7px] [&>[data-slot=select-item-indicator]]:hidden',
+                    // Radix wraps children in an ItemText span that is a
+                    // shrink-to-fit flex item, so a w-full child inside it
+                    // measured 44px and justify-between had nothing to
+                    // spread. The row can only split once this fills.
+                    '[&>span:last-child]:w-full',
                     active && 'bg-accent font-bold',
                   )}
                 >
@@ -285,8 +294,13 @@ export function ConfigPanel({
                       className={cn(
                         'border-foreground/15 size-7 cursor-pointer rounded-full border transition-[box-shadow,transform] duration-100 active:scale-[0.94] motion-reduce:active:scale-100',
                         'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                        // A light gap then a dark ring, per the design's
+                        // "0 0 0 2px BG, 0 0 0 4px FG". Order matters: the
+                        // offset paints 0–2px and the ring 2–4px, so with
+                        // these two swapped the dark band hides underneath
+                        // and the visible outer ring is light-on-grey.
                         active &&
-                          'ring-background ring-offset-foreground ring-2 ring-offset-2',
+                          'ring-foreground ring-offset-background ring-2 ring-offset-2',
                       )}
                     />
                   )
@@ -424,15 +438,13 @@ export function ConfigPanel({
       {/* Quantity ------------------------------------------------------- */}
       <div className="space-y-2">
         <div className="flex items-baseline justify-between gap-3">
-          <Label
-            htmlFor="qty"
-            className="text-muted-foreground font-mono text-[0.625rem] font-normal tracking-[0.2em] uppercase"
-          >
-            {strings.config.quantity}
-          </Label>
+          <SectionLabel>{strings.config.quantity}</SectionLabel>
           <SectionTag>{strings.config.perPartPrice}</SectionTag>
         </div>
-        <div className="flex flex-wrap items-stretch gap-2">
+        {/* One row, tiers sharing the width equally — no wrapping and no
+          fixed chip width, so five tiers read as one scale. The free-form
+          input gets its own full-width row below. */}
+        <div className="flex gap-2">
           {(catalog?.quantityChips ?? []).map((q) => {
             const active = config.quantity === q
             // The resulting per-part price at that tier, straight from the
@@ -449,7 +461,7 @@ export function ConfigPanel({
                 onClick={() => onChange({ quantity: q })}
                 className={cn(
                   // Near-imperceptible press acknowledgment — felt, not seen.
-                  'min-h-[44px] min-w-[52px] cursor-pointer rounded-md border px-3 py-1.5 text-center font-mono transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
+                  'min-h-[46px] flex-1 cursor-pointer rounded-md border px-1 py-[7px] text-center font-mono transition-[color,background-color,border-color,transform] duration-100 active:scale-[0.98] motion-reduce:active:scale-100',
                   'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                   active
                     ? 'border-foreground bg-foreground text-background'
@@ -470,14 +482,25 @@ export function ConfigPanel({
               </button>
             )
           })}
+        </div>
+        <div className="flex items-center gap-2.5">
+          {/* useId, not a literal: quote.tsx mounts the editor and simplified
+            trees at once, so a hardcoded id would be duplicated and the label
+            would point at whichever input happened to render first. */}
+          <Label
+            htmlFor={qtyId}
+            className="text-muted-foreground shrink-0 text-[0.6875rem] font-normal"
+          >
+            {strings.config.customQuantity}
+          </Label>
           <Input
-            id="qty"
+            id={qtyId}
             type="number"
             min={1}
             value={qtyText}
             onChange={(e) => handleQtyInput(e.target.value)}
             disabled={loading}
-            className="h-auto min-h-11 w-24 self-stretch font-mono text-[0.8125rem]"
+            className="h-[34px] flex-1 font-mono text-[0.8125rem]"
           />
         </div>
       </div>

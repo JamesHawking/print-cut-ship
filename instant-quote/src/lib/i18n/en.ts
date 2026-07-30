@@ -913,6 +913,7 @@ export const en = {
     nozzleTag: (mm: string) => `${mm} MM NOZZLE`,
     infillTag: (name: string, pct: string) => `${name.toUpperCase()} · ${pct}`,
     perPartPrice: 'zł / part per tier',
+    customQuantity: 'Custom quantity',
     selected: '✓',
     noChange: '±0',
     delta: (amount: string, cheaper: boolean) =>
