@@ -491,10 +491,15 @@ SELECT to_char(o.created_at AT TIME ZONE 'Europe/Warsaw', 'YYYY-MM-DD') AS day,
        count(*)::int AS orders,
        coalesce(sum(o.gross_total_grosze), 0)::bigint AS gross_grosze
 FROM orders o
-WHERE o.created_at >= ((now() AT TIME ZONE 'Europe/Warsaw')::date - 14)::timestamptz
+WHERE o.created_at >= $1 AND o.created_at < $2
 GROUP BY 1
 ORDER BY 1
 `
+
+type AdminStatsDailyParams struct {
+	FromTs pgtype.Timestamptz
+	ToTs   pgtype.Timestamptz
+}
 
 type AdminStatsDailyRow struct {
 	Day         string
@@ -502,10 +507,14 @@ type AdminStatsDailyRow struct {
 	GrossGrosze int64
 }
 
-// KPI strip input: per-day order counts + gross on the Warsaw calendar,
-// covering today and the 14 lookback days (the Go side zero-fills).
-func (q *Queries) AdminStatsDaily(ctx context.Context) ([]AdminStatsDailyRow, error) {
-	rows, err := q.db.Query(ctx, adminStatsDaily)
+// KPI strip input: per-day order counts + gross on the Warsaw calendar, over
+// the half-open window [from_ts, to_ts) the caller derives from the request
+// clock (the Go side zero-fills the empty days). The window is a parameter
+// rather than now() so that the database clock cannot disagree with the clock
+// the Go side buckets against — with an injected clock they are different
+// clocks, and any drift silently drops days from the strip.
+func (q *Queries) AdminStatsDaily(ctx context.Context, arg AdminStatsDailyParams) ([]AdminStatsDailyRow, error) {
+	rows, err := q.db.Query(ctx, adminStatsDaily, arg.FromTs, arg.ToTs)
 	if err != nil {
 		return nil, err
 	}

@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/http"
 	"sort"
-	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/JamesHawking/print-cut-ship/backend/internal/leadtime"
 	"github.com/JamesHawking/print-cut-ship/backend/internal/money"
@@ -76,7 +76,19 @@ func (s *server) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "failed to load stats")
 		return
 	}
-	dailyRows, err := s.cfg.Store.AdminStatsDaily(ctx)
+	// One clock for the whole endpoint: the sparkline window is derived here
+	// and passed to the query, so the days the SQL aggregates are exactly the
+	// days the zero-fill below renders. Reading the window from the database's
+	// now() instead would make the two disagree whenever the request clock is
+	// injected.
+	today := leadtime.Today(s.now())
+	windowStart := today.AddDays(-13).StartOfDay()
+	windowEnd := today.AddDays(1).StartOfDay()
+
+	dailyRows, err := s.cfg.Store.AdminStatsDaily(ctx, store.AdminStatsDailyParams{
+		FromTs: pgtype.Timestamptz{Time: windowStart, Valid: true},
+		ToTs:   pgtype.Timestamptz{Time: windowEnd, Valid: true},
+	})
 	if err != nil {
 		s.cfg.Logger.Error("ops stats: daily failed", "err", err)
 		internalError(w, "failed to load stats")
@@ -95,8 +107,6 @@ func (s *server) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	today := leadtime.Today(s.now())
-
 	overdue := 0
 	for _, row := range openRows {
 		if ship := s.shipBy(row.Status, row.LeadTimes, row.PaidAt); ship != nil && ship.Before(today) {
@@ -108,14 +118,13 @@ func (s *server) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
 	for _, row := range dailyRows {
 		byDay[row.Day] = row
 	}
-	base := time.Date(today.Y, time.Month(today.M), today.D, 0, 0, 0, 0, time.UTC)
 	daily := make([]struct {
 		Date     string  `json:"date"`
 		GrossPln float32 `json:"grossPln"`
 		Orders   int     `json:"orders"`
 	}, 0, 14)
 	for i := 13; i >= 0; i-- {
-		iso := base.AddDate(0, 0, -i).Format("2006-01-02")
+		iso := today.AddDays(-i).ISO()
 		daily = append(daily, struct {
 			Date     string  `json:"date"`
 			GrossPln float32 `json:"grossPln"`
@@ -126,7 +135,7 @@ func (s *server) AdminGetOpsStats(w http.ResponseWriter, r *http.Request) {
 			Orders:   int(byDay[iso].Orders),
 		})
 	}
-	yesterdayISO := base.AddDate(0, 0, -1).Format("2006-01-02")
+	yesterdayISO := today.AddDays(-1).ISO()
 
 	byStatus := make([]struct {
 		Count  int    `json:"count"`

@@ -186,13 +186,17 @@ FROM orders o
 GROUP BY o.status;
 
 -- name: AdminStatsDaily :many
--- KPI strip input: per-day order counts + gross on the Warsaw calendar,
--- covering today and the 14 lookback days (the Go side zero-fills).
+-- KPI strip input: per-day order counts + gross on the Warsaw calendar, over
+-- the half-open window [from_ts, to_ts) the caller derives from the request
+-- clock (the Go side zero-fills the empty days). The window is a parameter
+-- rather than now() so that the database clock cannot disagree with the clock
+-- the Go side buckets against — with an injected clock they are different
+-- clocks, and any drift silently drops days from the strip.
 SELECT to_char(o.created_at AT TIME ZONE 'Europe/Warsaw', 'YYYY-MM-DD') AS day,
        count(*)::int AS orders,
        coalesce(sum(o.gross_total_grosze), 0)::bigint AS gross_grosze
 FROM orders o
-WHERE o.created_at >= ((now() AT TIME ZONE 'Europe/Warsaw')::date - 14)::timestamptz
+WHERE o.created_at >= sqlc.arg(from_ts) AND o.created_at < sqlc.arg(to_ts)
 GROUP BY 1
 ORDER BY 1;
 

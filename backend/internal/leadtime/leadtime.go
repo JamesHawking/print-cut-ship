@@ -95,6 +95,21 @@ func (d CalDate) ISO() string {
 	return fmt.Sprintf("%04d-%02d-%02d", d.Y, d.M, d.D)
 }
 
+// AddDays returns the calendar date n days from d (n may be negative). Pure
+// calendar arithmetic, like the rest of this package — no instant is involved,
+// so DST cannot skew it.
+func (d CalDate) AddDays(n int) CalDate {
+	return addCalendarDays(d, n)
+}
+
+// StartOfDay returns the instant at which d begins on the Warsaw wall clock.
+// Callers build half-open [start, start) ranges from it to filter timestamptz
+// columns by Warsaw calendar day. Safe across DST: Poland switches at
+// 02:00/03:00, so midnight is never skipped or repeated.
+func (d CalDate) StartOfDay() time.Time {
+	return time.Date(d.Y, time.Month(d.M), d.D, 0, 0, 0, 0, warsaw)
+}
+
 // Before reports whether d is an earlier calendar date than o.
 func (d CalDate) Before(o CalDate) bool {
 	if d.Y != o.Y {

@@ -85,3 +85,47 @@ func TestCutoffBoundary(t *testing.T) {
 		t.Error("14:00 Warsaw should NOT dispatch today")
 	}
 }
+
+// StartOfDay anchors a calendar day to the Warsaw wall clock, so a
+// [StartOfDay, StartOfDay) range over a timestamptz column selects exactly
+// that Warsaw day. Anchoring to UTC instead would shift the boundary by the
+// offset and leak the neighbouring day's late-evening rows into the bucket.
+func TestStartOfDayIsWarsawMidnight(t *testing.T) {
+	cases := []struct {
+		date CalDate
+		want string // the same instant, in UTC
+	}{
+		{CalDate{2026, 7, 15}, "2026-07-14T22:00:00Z"}, // CEST, UTC+2
+		{CalDate{2026, 1, 15}, "2026-01-14T23:00:00Z"}, // CET, UTC+1
+		// DST changeovers happen at 02:00/03:00, so midnight itself is
+		// never skipped or repeated on either transition day.
+		{CalDate{2026, 3, 29}, "2026-03-28T23:00:00Z"},  // spring forward
+		{CalDate{2026, 10, 25}, "2026-10-24T22:00:00Z"}, // fall back
+	}
+	for _, tc := range cases {
+		if got := tc.date.StartOfDay().UTC().Format(time.RFC3339); got != tc.want {
+			t.Errorf("%s StartOfDay = %s, want %s", tc.date.ISO(), got, tc.want)
+		}
+	}
+}
+
+// AddDays crosses month, year and leap-day boundaries, and runs backwards.
+func TestAddDays(t *testing.T) {
+	cases := []struct {
+		from CalDate
+		n    int
+		want CalDate
+	}{
+		{CalDate{2026, 7, 15}, -13, CalDate{2026, 7, 2}},
+		{CalDate{2026, 7, 15}, 1, CalDate{2026, 7, 16}},
+		{CalDate{2026, 1, 5}, -13, CalDate{2025, 12, 23}},
+		{CalDate{2028, 3, 1}, -1, CalDate{2028, 2, 29}},
+		{CalDate{2026, 7, 15}, 0, CalDate{2026, 7, 15}},
+	}
+	for _, tc := range cases {
+		if got := tc.from.AddDays(tc.n); got != tc.want {
+			t.Errorf("%s AddDays(%d) = %s, want %s",
+				tc.from.ISO(), tc.n, got.ISO(), tc.want.ISO())
+		}
+	}
+}
