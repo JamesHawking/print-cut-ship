@@ -182,21 +182,37 @@ export function ConfigPanel({
           value={config.process}
           onValueChange={(v) => onChange({ process: v as ProcessId })}
         >
-          <SelectTrigger className="w-full font-semibold" disabled={loading}>
+          {/* bg-card: the trigger is a card-coloured control sitting on the
+            panel's grey. The primitive defaults to bg-transparent, which read
+            as grey the moment the inspector stopped being a white card. */}
+          <SelectTrigger
+            className="bg-card w-full font-semibold"
+            disabled={loading}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {(catalog?.processes ?? []).map((p) => {
               // Deltas render inside the item rather than in a bespoke
               // popover, so Radix keeps typeahead and focus management.
-              const delta = deltaLabel(
-                materialUnit.get(p.id),
-                p.id === config.process,
-              )
+              const active = p.id === config.process
+              const delta = deltaLabel(materialUnit.get(p.id), active)
               return (
-                <SelectItem key={p.id} value={p.id}>
+                <SelectItem
+                  key={p.id}
+                  value={p.id}
+                  className={cn(
+                    // The primitive reserves pr-8 for a check indicator the
+                    // design doesn't use — it marks the current material with
+                    // weight and a tint instead. Hiding the tick lets the
+                    // price sit at the item's right edge, where the design
+                    // puts it; aria-selected still carries the state.
+                    'px-2 py-[7px] [&>[data-slot=select-item-indicator]]:hidden',
+                    active && 'bg-accent font-bold',
+                  )}
+                >
                   <span className="flex w-full items-baseline justify-between gap-3">
-                    <span>{p.label}</span>
+                    <span className="text-[0.8125rem]">{p.label}</span>
                     {delta && (
                       <span className="text-muted-foreground font-mono text-[0.59375rem] tabular-nums">
                         {delta}

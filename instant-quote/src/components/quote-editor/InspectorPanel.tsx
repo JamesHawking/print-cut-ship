@@ -42,12 +42,12 @@ export function InspectorPanel({
     // oklch(0.966 0.002 250) the design's frame uses — so it only reads as
     // grey while nothing card-coloured is stretched across it.
     //
-    // Wider than the design's flat 380px, which the extra config axes
-    // outgrew. Stepped rather than flat: below xl the outliner and viewport
-    // are already tight, and the viewport is what the editor is for.
+    // 380px flat, as the design specifies. Dropping the card chrome already
+    // gave the content back the ~34px those borders and paddings cost, so the
+    // rail does not need to grow into the viewport to fit the config.
     <aside
       aria-label={strings.editor.inspectorLabel}
-      className="w-[380px] shrink-0 overflow-y-auto border-l p-4 xl:w-[420px] 2xl:w-[460px]"
+      className="w-[380px] shrink-0 overflow-y-auto border-l p-4"
     >
       {empty ? (
         <p className="text-muted-foreground px-2 py-6 text-center text-sm">
